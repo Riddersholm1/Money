@@ -10,4 +10,33 @@
 
   <!-- No PackageReferences: System.Text.Json ships in the net10.0 shared framework. -->
 
+  <PropertyGroup>
+    <!-- Emit Currency members and the metadata table into this assembly rather than extension members. -->
+    <RiddersholmMoneyEmitCore>true</RiddersholmMoneyEmitCore>
+  </PropertyGroup>
+
+  <!--
+    Write the generator's output to disk for inspection:
+      dotnet build src/Riddersholm.Money -p:EmitGeneratedCurrencySource=true
+    Off by default so ordinary builds leave no untracked files behind.
+  -->
+  <PropertyGroup Condition="'$(EmitGeneratedCurrencySource)' == 'true'">
+    <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
+    <CompilerGeneratedFilesOutputPath>$(RepositoryRoot)generated/$(MSBuildProjectName)</CompilerGeneratedFilesOutputPath>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Riddersholm.Money.Generators\Riddersholm.Money.Generators.csproj"
+                      OutputItemType="Analyzer"
+                      ReferenceOutputAssembly="false" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The library dogfoods its own generator: the ISO table comes from the same path consumers use. -->
+    <AdditionalFiles Include="$(RepositoryRoot)eng\iso-4217.json" RiddersholmCurrencies="true" />
+    <CompilerVisibleItemMetadata Include="AdditionalFiles" MetadataName="RiddersholmCurrencies" />
+    <CompilerVisibleProperty Include="RiddersholmMoneyEmitCore" />
+    <CompilerVisibleProperty Include="RootNamespace" />
+  </ItemGroup>
+
 </Project>

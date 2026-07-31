@@ -1,6 +1,11 @@
 <Solution>
   <Folder Name="/src/">
+    <Project Path="src/Riddersholm.Money.Generators/Riddersholm.Money.Generators.csproj" />
     <Project Path="src/Riddersholm.Money/Riddersholm.Money.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Riddersholm.Money.Extensibility.Tests/Riddersholm.Money.Extensibility.Tests.csproj" />
+    <Project Path="tests/Riddersholm.Money.Tests/Riddersholm.Money.Tests.csproj" />
   </Folder>
   <Folder Name="/tools/">
     <Project Path="tools/Riddersholm.Money.DataSync/Riddersholm.Money.DataSync.csproj" />

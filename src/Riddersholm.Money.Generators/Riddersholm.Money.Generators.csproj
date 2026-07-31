@@ -1,0 +1,41 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!-- Roslyn loads analyzers into the compiler process, which requires netstandard2.0. -->
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <RootNamespace>Riddersholm.Money.Generators</RootNamespace>
+    <AssemblyName>Riddersholm.Money.Generators</AssemblyName>
+    <PackageId>Riddersholm.Money.Generators</PackageId>
+    <Description>Roslyn incremental source generator that turns an ISO 4217 currency definition file into strongly typed Currency members. Reference this package to define your own currencies (crypto, in-game, historic) with no reflection and no runtime registry.</Description>
+    <PackageTags>$(PackageTags);roslyn;source-generator;analyzer</PackageTags>
+
+    <EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
+    <IsRoslynComponent>true</IsRoslynComponent>
+
+    <!-- These are net8.0+ concepts and do not apply to a netstandard2.0 compiler component. -->
+    <IsAotCompatible>false</IsAotCompatible>
+    <IsTrimmable>false</IsTrimmable>
+    <EnableTrimAnalyzer>false</EnableTrimAnalyzer>
+    <EnableAotAnalyzer>false</EnableAotAnalyzer>
+    <EnableSingleFileAnalyzer>false</EnableSingleFileAnalyzer>
+
+    <!-- Analyzers ship as loose assemblies under analyzers/, never as a lib/ reference. -->
+    <IncludeBuildOutput>false</IncludeBuildOutput>
+    <DevelopmentDependency>true</DevelopmentDependency>
+    <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" PrivateAssets="all" ExcludeAssets="runtime" />
+    <PackageReference Include="Microsoft.CodeAnalysis.Analyzers" PrivateAssets="all" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="$(OutputPath)\$(AssemblyName).dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
+    <None Include="build\**" Pack="true" PackagePath="build" />
+    <!-- Required by RS2008: every diagnostic the generator can raise is tracked across releases. -->
+    <AdditionalFiles Include="AnalyzerReleases.Shipped.md" />
+    <AdditionalFiles Include="AnalyzerReleases.Unshipped.md" />
+  </ItemGroup>
+
+</Project>

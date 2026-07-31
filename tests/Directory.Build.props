@@ -8,8 +8,10 @@
     <TargetFramework>net10.0</TargetFramework>
     <!-- xUnit v3 runs on Microsoft.Testing.Platform: each test project is its own executable. -->
     <OutputType>Exe</OutputType>
-    <UseMicrosoftTestingPlatformRunner>true</UseMicrosoftTestingPlatformRunner>
     <TestingPlatformDotnetTestSupport>true</TestingPlatformDotnetTestSupport>
+
+    <!-- Tests assert on exact values and exercise APIs in deliberately awkward ways. -->
+    <NoWarn>$(NoWarn);CA1707;CA2007;CA1861;CA1305</NoWarn>
   </PropertyGroup>
 
 </Project>
