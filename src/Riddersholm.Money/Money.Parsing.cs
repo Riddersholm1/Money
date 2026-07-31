@@ -275,11 +275,25 @@ public readonly partial record struct Money :
         && char.IsAsciiLetter(text[start + 1])
         && char.IsAsciiLetter(text[start + 2]);
 
+    /// <summary>Whether the culture's symbol appears at all, so a currency can be attributed.</summary>
+    /// <remarks>
+    /// <para>
+    /// Deliberately permissive. This decides only <em>which</em> currency the text might be in; whether
+    /// the text actually parses is settled afterwards by <see cref="decimal.TryParse(ReadOnlySpan{char}, NumberStyles, IFormatProvider, out decimal)"/>
+    /// with <see cref="NumberStyles.AllowCurrencySymbol"/>, which knows where each culture puts the
+    /// symbol. A false positive here — "kr" inside "kroner" — costs nothing, because the number parse
+    /// then fails and the whole attempt returns <see langword="false"/>.
+    /// </para>
+    /// <para>
+    /// An earlier version restricted this to a leading or trailing match after trimming ASCII signs and
+    /// brackets. That looked tidier and broke right-to-left cultures outright: <c>fa-IR</c> writes a
+    /// negative amount as <c>U+200E U+2212 ریال…</c>, where neither the mark nor the minus sign is
+    /// ASCII, so the symbol no longer led or trailed and the currency became unresolvable. The culture
+    /// matrix test exists because of that regression.
+    /// </para>
+    /// </remarks>
     private static bool ContainsSymbol(ReadOnlySpan<char> text, string symbol) =>
-        text.StartsWith(symbol, StringComparison.OrdinalIgnoreCase)
-        || text.EndsWith(symbol, StringComparison.OrdinalIgnoreCase)
-        // A negative pattern can put the sign or a bracket outside the symbol, as in "-kr. 5" or "(kr. 5)".
-        || text.Contains(symbol, StringComparison.OrdinalIgnoreCase);
+        text.Contains(symbol, StringComparison.OrdinalIgnoreCase);
 
     private static bool TryGetRegionCurrency(CultureInfo culture, out Currency currency)
     {

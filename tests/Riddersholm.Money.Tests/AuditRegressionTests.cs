@@ -213,6 +213,55 @@ public sealed class AuditRegressionTests
         }
     }
 
+    [Theory]
+    [InlineData(2, 1_000_000_000_000_000_000L)] // 18-decimal divisor claimed at 2 digits
+    [InlineData(2, 3L)]                         // thirds are not expressible in decimal places
+    [InlineData(0, 100L)]                       // hundredths claimed at zero digits
+    public void M1_a_divisor_that_the_digit_count_cannot_express_is_rejected(byte digits, long minorUnits)
+    {
+        // Accepting these silently produces amounts that report IsCanonical while rounding to an
+        // increment the currency cannot represent.
+        ArgumentException error = Assert.Throws<ArgumentException>(() =>
+            new CurrencyInfo("QMM", 0, "Mismatched", "Q", digits, minorUnits, digits, 1));
+
+        Assert.Equal("minorUnitsPerMajor", error.ParamName);
+    }
+
+    [Theory]
+    [InlineData(2, 100L)]   // the ordinary case
+    [InlineData(2, 5L)]     // MRU and MGA: a fifth of the major unit
+    [InlineData(2, 20L)]    // a twentieth is expressible in two places
+    [InlineData(0, 1L)]     // JPY
+    [InlineData(3, 1000L)]  // KWD
+    [InlineData(8, 100_000_000L)]
+    [InlineData(2, 0L)]     // no minor unit at all
+    public void M1_a_divisor_the_digit_count_can_express_is_accepted(byte digits, long minorUnits) =>
+        Assert.Equal(minorUnits, new CurrencyInfo("QMM", 0, "Fine", "Q", digits, minorUnits, digits, 1).MinorUnitsPerMajor);
+
+    [Fact]
+    public void M2_the_code_validation_message_matches_the_behaviour()
+    {
+        // Lower case is accepted and normalised, so claiming "uppercase" was misleading.
+        Assert.Equal("DKK", new CurrencyInfo("dkk", 208, "Danish Krone", "kr", 2, 100L, 2, 1).Code);
+
+        ArgumentException error = Assert.Throws<ArgumentException>(() =>
+            new CurrencyInfo("D1", 0, "Bad", "B", 2, 100L, 2, 1));
+
+        Assert.DoesNotContain("uppercase", error.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void M3_currency_satisfies_the_generic_comparison_constraint()
+    {
+        // Currency defined all four relational operators without declaring the interface, so
+        // generic-math code could not see them.
+        Assert.True(GreaterThan(Currency.USD, Currency.DKK));
+        Assert.False(GreaterThan(Currency.DKK, Currency.USD));
+
+        static bool GreaterThan<T>(T left, T right)
+            where T : System.Numerics.IComparisonOperators<T, T, bool> => left > right;
+    }
+
     [Fact]
     public void Struct_sizes_match_what_the_architecture_documentation_claims()
     {

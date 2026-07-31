@@ -23,6 +23,13 @@ namespace Riddersholm.Money;
 /// </remarks>
 internal static class CurrencyFormatCache
 {
+    /// <summary>
+    /// How many derived formats to memoise. Comfortably covers any real application — a handful of
+    /// cultures against a handful of currencies — while keeping the cache from growing without bound
+    /// if the culture or currency is influenced by untrusted input.
+    /// </summary>
+    private const int MaximumCachedFormats = 1024;
+
     private static readonly ConcurrentDictionary<(string Culture, uint Currency), NumberFormatInfo> Formats = new();
 
     /// <summary>ISO currency code per culture name; <see langword="null"/> when the culture has no region.</summary>
@@ -54,10 +61,22 @@ internal static class CurrencyFormatCache
             return Build(culture.NumberFormat, culture, currency, decimalDigits);
         }
 
-        return Formats.GetOrAdd(
-            (culture.Name, currency.PackedValue),
-            static (_, state) => Build(state.Culture.NumberFormat, state.Culture, state.Currency, null),
-            (Culture: culture, Currency: currency));
+        if (Formats.TryGetValue((culture.Name, currency.PackedValue), out NumberFormatInfo? cached))
+        {
+            return cached;
+        }
+
+        NumberFormatInfo built = Build(culture.NumberFormat, culture, currency, null);
+
+        // Bounded on purpose. The key space is cultures × currencies — on the order of 10^5 — and an
+        // application that formats attacker-influenced pairs could otherwise grow this without limit.
+        // Past the cap, formatting still works; it just stops memoising.
+        if (Formats.Count < MaximumCachedFormats)
+        {
+            return Formats.GetOrAdd((culture.Name, currency.PackedValue), built);
+        }
+
+        return built;
     }
 
     private static NumberFormatInfo Build(

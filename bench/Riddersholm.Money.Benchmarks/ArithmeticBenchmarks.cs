@@ -22,8 +22,13 @@ public class ArithmeticBenchmarks
     private readonly decimal _decimalLeft = 100.50m;
     private readonly decimal _decimalRight = 50.25m;
 
+    /// <remarks>
+    /// The amount comes from a field rather than a literal. With a constant the JIT folds the whole
+    /// construction away and BenchmarkDotNet reports a duration indistinguishable from an empty
+    /// method — a number that says nothing except that the optimiser works.
+    /// </remarks>
     [Benchmark, BenchmarkCategory("Create")]
-    public Money Create() => new(100.50m, Currency.DKK);
+    public Money Create() => new(_decimalLeft, Currency.DKK);
 
     [Benchmark, BenchmarkCategory("Create")]
     public NodaMoney.Money Create_NodaMoney() => new(100.50m, "DKK");

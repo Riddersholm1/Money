@@ -199,7 +199,14 @@ public readonly partial record struct Money
         };
 
         specifier[0] = letter;
-        precision.TryFormat(specifier[1..], out int specifierLength, provider: CultureInfo.InvariantCulture);
+
+        // Precision is capped at 28, so two digits always fit the remaining three chars. Checking the
+        // result anyway keeps the invariant honest rather than assumed.
+        if (!precision.TryFormat(specifier[1..], out int specifierLength, provider: CultureInfo.InvariantCulture))
+        {
+            written = 0;
+            return false;
+        }
 
         return Amount.TryFormat(destination, out written, specifier[..(specifierLength + 1)], numberFormat);
     }

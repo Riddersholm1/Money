@@ -168,6 +168,7 @@ public readonly partial record struct Money
 
         decimal units = ToMinorUnits(out long unitsPerMajor);
         int count = ratios.Length;
+        bool integerPath = TryUseIntegerPath(units, unitsPerMajor, out _, out byte scale);
 
         // Shortfalls are needed twice, so they are computed once. A stack buffer covers the sizes
         // money is realistically split across; larger splits fall back to the heap.
@@ -215,8 +216,6 @@ public readonly partial record struct Money
             shares[best] += step;
             shortfalls[best] = -1m;
         }
-
-        bool integerPath = TryUseIntegerPath(units, unitsPerMajor, out _, out byte scale);
 
         for (int i = 0; i < count; i++)
         {

@@ -13,10 +13,18 @@ public class AllocationBenchmarks
     private readonly NodaMoney.Money _nodaMoney = new(1000m, "DKK");
 
     private readonly Money[] _destination = new Money[64];
-    private readonly int[] _ratios = [50, 30, 20];
+
+    private int[] _ratios = [];
 
     [Params(3, 12, 64)]
     public int Recipients { get; set; }
+
+    /// <summary>
+    /// Weights are built to match <see cref="Recipients"/>. A fixed-size array would make this
+    /// benchmark's three rows identical while appearing to measure how the split scales.
+    /// </summary>
+    [GlobalSetup]
+    public void Setup() => _ratios = [.. Enumerable.Range(1, Recipients)];
 
     [Benchmark]
     public Money[] Allocate() => _money.Allocate(Recipients);

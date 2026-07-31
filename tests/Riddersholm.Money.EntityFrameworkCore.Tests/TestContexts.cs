@@ -10,6 +10,9 @@ public sealed class Product
     public string Name { get; set; } = string.Empty;
 
     public Money Price { get; set; }
+
+    /// <summary>An optional amount — the case a money library has to get right to be usable.</summary>
+    public Money? Discount { get; set; }
 }
 
 public sealed class Ledger
@@ -31,6 +34,7 @@ public sealed class TwoColumnContext(DbContextOptions<TwoColumnContext> options)
         ArgumentNullException.ThrowIfNull(modelBuilder);
 
         modelBuilder.Entity<Product>().HasMoney(p => p.Price);
+        modelBuilder.Entity<Product>().HasMoney(p => p.Discount);
     }
 }
 
@@ -57,6 +61,7 @@ public sealed class HighPrecisionContext(DbContextOptions<HighPrecisionContext> 
         ArgumentNullException.ThrowIfNull(modelBuilder);
 
         modelBuilder.Entity<Product>().HasMoney(p => p.Price, precision: 28, scale: 8);
+        modelBuilder.Entity<Product>().HasMoney(p => p.Discount, precision: 28, scale: 8);
     }
 }
 

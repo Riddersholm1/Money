@@ -55,7 +55,7 @@ public sealed class CurrencyInfo
         if (!CurrencyCodec.TryPack(code, out uint packed))
         {
             throw new ArgumentException(
-                $"'{code}' is not a valid ISO 4217 alphabetic code; expected three uppercase ASCII letters.",
+                $"'{code}' is not a valid ISO 4217 alphabetic code; expected three ASCII letters.",
                 nameof(code));
         }
 
@@ -64,6 +64,18 @@ public sealed class CurrencyInfo
         ArgumentOutOfRangeException.ThrowIfGreaterThan(minorUnitsPerMajor, MaximumMinorUnitsPerMajor, nameof(minorUnitsPerMajor));
         ArgumentOutOfRangeException.ThrowIfGreaterThan(cashDecimalDigits, MaximumDecimalDigits, nameof(cashDecimalDigits));
         ArgumentOutOfRangeException.ThrowIfZero(cashRoundingStep, nameof(cashRoundingStep));
+
+        // The minor unit has to be expressible in the declared number of decimal places, or rounding
+        // would snap to an increment the currency cannot represent. 100/5 is fine — that is MRU's
+        // khoum — but 2 digits with 10^18 units is a mis-registration, and silently accepting it
+        // produces amounts that look canonical and are not.
+        if (minorUnitsPerMajor > 0 && decimalDigits <= 18 && Pow10(decimalDigits) % minorUnitsPerMajor != 0)
+        {
+            throw new ArgumentException(
+                $"'{code}' declares {minorUnitsPerMajor} minor units per major unit, which cannot be "
+              + $"expressed in {decimalDigits} decimal places. The divisor must divide 10^{decimalDigits}.",
+                nameof(minorUnitsPerMajor));
+        }
 
         Currency = new Currency(packed);
         // Stored rather than delegated to Currency.Code: that property consults this object, so
@@ -153,4 +165,16 @@ public sealed class CurrencyInfo
 
     /// <summary>Returns the ISO 4217 alphabetic code.</summary>
     public override string ToString() => Code;
+
+    private static long Pow10(int exponent)
+    {
+        long result = 1;
+
+        for (int i = 0; i < exponent; i++)
+        {
+            result *= 10;
+        }
+
+        return result;
+    }
 }

@@ -17,9 +17,24 @@ public sealed class CurrencyValueConverter : ValueConverter<Currency, string>
     public CurrencyValueConverter()
         : base(
             currency => currency.Code,
-            code => Currency.FromCode(code))
+            code => Read(code))
     {
     }
+
+    /// <summary>
+    /// Turns a stored code back into a currency, naming the offending value when the column holds
+    /// something that is not one.
+    /// </summary>
+    /// <remarks>
+    /// Without this, corrupt data surfaces as a bare <see cref="ArgumentException"/> from deep inside
+    /// EF's materialisation, with no indication of which row or value was at fault.
+    /// </remarks>
+    private static Currency Read(string code) =>
+        Currency.TryFromCode(code, out Currency currency)
+            ? currency
+            : throw new InvalidOperationException(
+                $"Cannot read a Currency from the stored value '{code}': an ISO 4217 alphabetic code "
+              + "is three ASCII letters. The column contains data this library did not write.");
 }
 
 /// <summary>

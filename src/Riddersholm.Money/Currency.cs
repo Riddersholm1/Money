@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.Numerics;
 using System.Runtime.CompilerServices;
 
 namespace Riddersholm.Money;
@@ -38,6 +39,7 @@ namespace Riddersholm.Money;
 public readonly partial record struct Currency :
     IComparable<Currency>,
     IComparable,
+    IComparisonOperators<Currency, Currency, bool>,
     ISpanFormattable,
     IUtf8SpanFormattable,
     ISpanParsable<Currency>,

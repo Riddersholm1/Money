@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Linq.Expressions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
@@ -10,7 +11,7 @@ namespace Riddersholm.Money.EntityFrameworkCore;
 /// There are two mappings, and the choice matters.
 /// </para>
 /// <para>
-/// <b>Two columns</b> — <see cref="HasMoney{TEntity}"/> — maps the amount and currency separately using
+/// <b>Two columns</b> — <c>HasMoney</c> — maps the amount and currency separately using
 /// an EF complex type. This is the one to reach for: the amount stays a real numeric column, so
 /// <c>SUM</c>, <c>ORDER BY</c>, range predicates and indexes all work in SQL.
 /// </para>
@@ -62,6 +63,57 @@ public static class MoneyModelBuilderExtensions
         ArgumentNullException.ThrowIfNull(propertyExpression);
 
         entity.ComplexProperty(propertyExpression, money => money.ConfigureMoney(precision, scale));
+
+        return entity;
+    }
+
+    /// <summary>Maps an optional <see cref="Money"/> property to an amount column and a currency column.</summary>
+    /// <typeparam name="TEntity">The entity type.</typeparam>
+    /// <param name="entity">The entity being configured.</param>
+    /// <param name="propertyExpression">The nullable <see cref="Money"/> property to map.</param>
+    /// <param name="precision">Total digits stored for the amount.</param>
+    /// <param name="scale">Decimal digits stored for the amount.</param>
+    /// <returns><paramref name="entity"/>, for chaining.</returns>
+    /// <remarks>
+    /// <para>
+    /// An absent amount is stored as <see langword="null"/> in <em>both</em> columns, so "no price" is
+    /// distinguishable from "zero in an unspecified currency" — which is what
+    /// <c>default(Money)</c> would otherwise persist as.
+    /// </para>
+    /// <para>
+    /// Note that a nullable complex property makes the amount column nullable too, so a
+    /// <c>SUM</c> over it follows SQL's usual null-skipping rules rather than treating absence as zero.
+    /// </para>
+    /// </remarks>
+    /// <example>
+    /// <code>
+    /// modelBuilder.Entity&lt;Product&gt;().HasMoney(p =&gt; p.Discount);
+    /// // columns: Discount_Amount decimal(19,4) NULL, Discount_Currency char(3) NULL
+    /// </code>
+    /// </example>
+    /// <exception cref="ArgumentNullException"><paramref name="entity"/> or <paramref name="propertyExpression"/> is <see langword="null"/>.</exception>
+    [SuppressMessage(
+        "ApiDesign",
+        "RS0026:Do not add multiple overloads with optional parameters",
+        Justification = "Both overloads ship in the same version, so no compiled caller can rebind. " +
+                        "They are distinguished by the lambda's return type, which overload resolution " +
+                        "settles unambiguously, and naming the nullable one differently would make the " +
+                        "obvious call for an optional price fail to compile.")]
+    public static EntityTypeBuilder<TEntity> HasMoney<TEntity>(
+        this EntityTypeBuilder<TEntity> entity,
+        Expression<Func<TEntity, Money?>> propertyExpression,
+        int precision = DefaultPrecision,
+        int scale = DefaultScale)
+        where TEntity : class
+    {
+        ArgumentNullException.ThrowIfNull(entity);
+        ArgumentNullException.ThrowIfNull(propertyExpression);
+
+        entity.ComplexProperty(propertyExpression, money =>
+        {
+            money.IsRequired(false);
+            money.ConfigureMoney(precision, scale);
+        });
 
         return entity;
     }
@@ -125,7 +177,7 @@ public static class MoneyModelBuilderExtensions
     /// <param name="property">The property being configured.</param>
     /// <returns><paramref name="property"/>, for chaining.</returns>
     /// <remarks>
-    /// The database cannot aggregate, order or index this. Prefer <see cref="HasMoney{TEntity}"/> unless
+    /// The database cannot aggregate, order or index this. Prefer <c>HasMoney</c> unless
     /// the column is genuinely write-and-read-whole.
     /// </remarks>
     /// <exception cref="ArgumentNullException"><paramref name="property"/> is <see langword="null"/>.</exception>
@@ -148,7 +200,7 @@ public static class MoneyModelBuilderExtensions
     /// <returns><paramref name="configurationBuilder"/>, for chaining.</returns>
     /// <remarks>
     /// This gives <see cref="Money"/> the single-column text mapping. Properties that should be split
-    /// across two columns still opt in with <see cref="HasMoney{TEntity}"/>, which takes precedence.
+    /// across two columns still opt in with <c>HasMoney</c>, which takes precedence.
     /// </remarks>
     /// <example>
     /// <code>

@@ -112,4 +112,22 @@ Money.Parse(value.ToString("R", CultureInfo.InvariantCulture), CultureInfo.Invar
 ```
 
 This is property-tested across all 166 currencies. `G` and `I` also round-trip under the invariant
-culture; `C` round-trips within the culture that produced it. `N` does not — it has no currency.
+culture. `N` does not — it has no currency.
+
+**`C` is display-oriented, and only round-trips for a culture's own currency.** The asymmetry is
+deliberate: `C` *writes* the currency's symbol, while parsing only ever *resolves* the culture's symbol,
+because `kr` alone is DKK, NOK, SEK and ISK. So `da-DK` reads back its own kroner:
+
+```csharp
+var text = new Money(1234.5m, Currency.DKK).ToString("C", daDK);   // 1.234,50 kr.
+Money.Parse(text, daDK);                                           // works
+```
+
+but `en-US` cannot read back the kroner it just wrote, because it has nothing to say about `kr`:
+
+```csharp
+var text = new Money(1234.5m, Currency.DKK).ToString("C", enUS);   // kr1,234.50
+Money.TryParse(text, enUS, out _);                                 // false — and correctly so
+```
+
+Use `R` whenever the text has to survive a round trip. Use `C` when a human is going to read it.
