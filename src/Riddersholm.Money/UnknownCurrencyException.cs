@@ -12,7 +12,7 @@ namespace Riddersholm.Money;
 /// <para>
 /// What is refused is <em>changing an amount</em> based on a guessed precision. Rounding to two
 /// decimals because that is the ISO default would silently alter money whenever the guess is wrong,
-/// so <see cref="Money.Round()"/> raises this instead. Rounding to an explicit number of decimals
+/// so <see cref="Money.Round(System.MidpointRounding)"/> raises this instead. Rounding to an explicit number of decimals
 /// works for any currency.
 /// </para>
 /// </remarks>

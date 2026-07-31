@@ -1,18 +1,10 @@
 <Project>
 
   <!--
-    Packable projects get the full open-source treatment: XML docs, SourceLink, deterministic
-    symbol packages, package validation, and public-API tracking.
+    Packable projects get the full open-source treatment: SourceLink, README, and public-API tracking.
+    The properties that shape the package live in src/Directory.Build.props, because the SDK reads
+    several of them while evaluating the project body.
   -->
-  <PropertyGroup Condition="'$(IsPackable)' == 'true'">
-    <GenerateDocumentationFile>true</GenerateDocumentationFile>
-    <PublishRepositoryUrl>true</PublishRepositoryUrl>
-    <EmbedUntrackedSources>true</EmbedUntrackedSources>
-    <IncludeSymbols>true</IncludeSymbols>
-    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
-    <EnablePackageValidation>true</EnablePackageValidation>
-  </PropertyGroup>
-
   <ItemGroup Condition="'$(IsPackable)' == 'true'">
     <PackageReference Include="Microsoft.SourceLink.GitHub" PrivateAssets="all" />
     <None Include="$(RepositoryRoot)README.md" Pack="true" PackagePath="\" Visible="false" />

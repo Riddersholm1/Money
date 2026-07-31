@@ -16,7 +16,7 @@ public readonly partial record struct Money
     /// <para>
     /// For a currency the library does not recognise this answers using the ISO default of two
     /// decimals, which is a guess — check <see cref="Currency.IsKnown"/> first if that matters. Reading
-    /// a best-effort answer is safe; <see cref="Round()"/> refuses to <em>change</em> money on a guess.
+    /// a best-effort answer is safe; <see cref="Round(System.MidpointRounding)"/> refuses to <em>change</em> money on a guess.
     /// </para>
     /// </remarks>
     public bool IsCanonical
@@ -87,7 +87,7 @@ public readonly partial record struct Money
     /// <remarks>
     /// Cash precision is coarser than accounting precision wherever small coins have been withdrawn:
     /// Swiss cash rounds to <c>0.05</c>, Danish cash to <c>0.50</c>, Hungarian cash to <c>5</c> forint.
-    /// Ledgers want <see cref="Round()"/>; tills want this.
+    /// Ledgers want <see cref="Round(System.MidpointRounding)"/>; tills want this.
     /// </remarks>
     /// <exception cref="UnknownCurrencyException">The currency is not recognised.</exception>
     public Money RoundToCash(MidpointRounding mode = MidpointRounding.ToEven)

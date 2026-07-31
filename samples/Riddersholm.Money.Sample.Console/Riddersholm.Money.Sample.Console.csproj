@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>Riddersholm.Money.Sample.Console</RootNamespace>
+    <AssemblyName>Riddersholm.Money.Sample.Console</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Riddersholm.Money\Riddersholm.Money.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -185,6 +185,9 @@ public readonly partial record struct Money :
     /// <summary>
     /// Removes the currency token from <paramref name="text"/> and reports what it named.
     /// </summary>
+    /// <param name="text">The remaining text, with any currency token removed.</param>
+    /// <param name="style">Which currency forms may be recognised.</param>
+    /// <param name="provider">Supplies the one culture whose symbol may be resolved.</param>
     /// <param name="currency">The currency named by the token, or <see cref="Currency.None"/>.</param>
     /// <param name="found">
     /// Whether a currency token was present at all. Distinct from <paramref name="currency"/> being

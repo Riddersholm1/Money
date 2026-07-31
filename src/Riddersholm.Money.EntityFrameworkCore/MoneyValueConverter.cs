@@ -10,9 +10,8 @@ namespace Riddersholm.Money.EntityFrameworkCore;
 /// <para>
 /// Convenient, but the weaker of the two mappings. A single column cannot be aggregated
 /// (<c>SUM(Price)</c> is impossible), cannot be compared or ordered in SQL, and cannot be indexed
-/// usefully. Prefer
-/// <see cref="MoneyModelBuilderExtensions.HasMoneyConversion{TEntity}(Microsoft.EntityFrameworkCore.Metadata.Builders.ComplexPropertyBuilder{Money})"/>,
-/// which maps the amount and currency to their own columns.
+/// usefully. Prefer <see cref="MoneyModelBuilderExtensions.HasMoney"/>, which maps the amount and
+/// currency to their own columns.
 /// </para>
 /// <para>
 /// The stored form is the round-trippable <c>R</c> format, always invariant, so the column reads the

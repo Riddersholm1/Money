@@ -6,6 +6,14 @@
     <AssemblyName>Riddersholm.Money</AssemblyName>
     <PackageId>Riddersholm.Money</PackageId>
     <Description>A modern, immutable Money value object for .NET with complete ISO 4217 currency support, exact decimal arithmetic, sum-preserving allocation, allocation-free formatting and parsing, System.Text.Json support, and full trimming/NativeAOT compatibility.</Description>
+
+    <!--
+      RS0041 (public API uses oblivious reference types) fires only on the JsonTypeInfo properties that
+      System.Text.Json's own generator emits into MoneyJsonSerializerContext. That code is not ours to
+      annotate, and the context has to stay public for consumers to use it under NativeAOT. Every
+      hand-written public member is fully annotated and tracked in PublicAPI.Shipped.txt.
+    -->
+    <NoWarn>$(NoWarn);RS0041</NoWarn>
   </PropertyGroup>
 
   <!-- No PackageReferences: System.Text.Json ships in the net10.0 shared framework. -->

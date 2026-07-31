@@ -55,7 +55,7 @@ internal static class CoreEmitter
 
         foreach (CurrencyDefinition currency in currencies)
         {
-            source.Line($"    /// <summary>{Escape(currency.Name)} ({currency.Code}, ISO {currency.NumericCode}).</summary>");
+            source.Line($"    /// <summary>{EscapeXml(currency.Name)} ({currency.Code}, ISO {currency.NumericCode}).</summary>");
             source.Line($"    public static Currency {currency.Code} => new({currency.Packed}u);");
             source.Line();
         }
@@ -164,7 +164,20 @@ internal static class CoreEmitter
 
     private static string Quote(string value) => "\"" + Escape(value) + "\"";
 
+    /// <summary>Escapes a value for use inside a C# string literal.</summary>
     private static string Escape(string value) => value
         .Replace("\\", "\\\\")
         .Replace("\"", "\\\"");
+
+    /// <summary>
+    /// Escapes a value for use inside an XML documentation comment.
+    /// </summary>
+    /// <remarks>
+    /// Two ISO currencies carry a bare ampersand — "São Tomé &amp; Príncipe Dobra" and "Trinidad
+    /// &amp; Tobago Dollar" — which is not valid XML and breaks the documentation build.
+    /// </remarks>
+    private static string EscapeXml(string value) => value
+        .Replace("&", "&amp;")
+        .Replace("<", "&lt;")
+        .Replace(">", "&gt;");
 }

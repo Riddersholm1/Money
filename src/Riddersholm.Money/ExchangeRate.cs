@@ -15,7 +15,7 @@ namespace Riddersholm.Money;
 /// auditing implications. This type only applies a rate you supply.
 /// </para>
 /// <para>
-/// Conversion is exact and does not round; call <see cref="Money.Round()"/> when you have decided
+/// Conversion is exact and does not round; call <see cref="Money.Round(System.MidpointRounding)"/> when you have decided
 /// where rounding belongs.
 /// </para>
 /// </remarks>

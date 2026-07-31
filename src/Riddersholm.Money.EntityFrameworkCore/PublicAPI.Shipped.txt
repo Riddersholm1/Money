@@ -1,0 +1,20 @@
+#nullable enable
+Riddersholm.Money.EntityFrameworkCore.CurrencyNumericValueConverter
+Riddersholm.Money.EntityFrameworkCore.CurrencyNumericValueConverter.CurrencyNumericValueConverter() -> void
+Riddersholm.Money.EntityFrameworkCore.CurrencyValueComparer
+Riddersholm.Money.EntityFrameworkCore.CurrencyValueComparer.CurrencyValueComparer() -> void
+Riddersholm.Money.EntityFrameworkCore.CurrencyValueConverter
+Riddersholm.Money.EntityFrameworkCore.CurrencyValueConverter.CurrencyValueConverter() -> void
+Riddersholm.Money.EntityFrameworkCore.MoneyModelBuilderExtensions
+Riddersholm.Money.EntityFrameworkCore.MoneyValueComparer
+Riddersholm.Money.EntityFrameworkCore.MoneyValueComparer.MoneyValueComparer() -> void
+Riddersholm.Money.EntityFrameworkCore.MoneyValueConverter
+Riddersholm.Money.EntityFrameworkCore.MoneyValueConverter.MoneyValueConverter() -> void
+const Riddersholm.Money.EntityFrameworkCore.MoneyModelBuilderExtensions.DefaultPrecision = 19 -> int
+const Riddersholm.Money.EntityFrameworkCore.MoneyModelBuilderExtensions.DefaultScale = 4 -> int
+static Riddersholm.Money.EntityFrameworkCore.MoneyModelBuilderExtensions.ConfigureMoney(this Microsoft.EntityFrameworkCore.Metadata.Builders.ComplexPropertyBuilder<Riddersholm.Money.Money>! money, int precision = 19, int scale = 4) -> Microsoft.EntityFrameworkCore.Metadata.Builders.ComplexPropertyBuilder<Riddersholm.Money.Money>!
+static Riddersholm.Money.EntityFrameworkCore.MoneyModelBuilderExtensions.ConfigureMoneyConventions(this Microsoft.EntityFrameworkCore.ModelConfigurationBuilder! configurationBuilder) -> Microsoft.EntityFrameworkCore.ModelConfigurationBuilder!
+static Riddersholm.Money.EntityFrameworkCore.MoneyModelBuilderExtensions.HasCurrencyConversion(this Microsoft.EntityFrameworkCore.Metadata.Builders.ComplexTypePropertyBuilder<Riddersholm.Money.Currency>! property) -> Microsoft.EntityFrameworkCore.Metadata.Builders.ComplexTypePropertyBuilder<Riddersholm.Money.Currency>!
+static Riddersholm.Money.EntityFrameworkCore.MoneyModelBuilderExtensions.HasCurrencyConversion(this Microsoft.EntityFrameworkCore.Metadata.Builders.PropertyBuilder<Riddersholm.Money.Currency>! property) -> Microsoft.EntityFrameworkCore.Metadata.Builders.PropertyBuilder<Riddersholm.Money.Currency>!
+static Riddersholm.Money.EntityFrameworkCore.MoneyModelBuilderExtensions.HasMoney<TEntity>(this Microsoft.EntityFrameworkCore.Metadata.Builders.EntityTypeBuilder<TEntity!>! entity, System.Linq.Expressions.Expression<System.Func<TEntity!, Riddersholm.Money.Money>!>! propertyExpression, int precision = 19, int scale = 4) -> Microsoft.EntityFrameworkCore.Metadata.Builders.EntityTypeBuilder<TEntity!>!
+static Riddersholm.Money.EntityFrameworkCore.MoneyModelBuilderExtensions.HasMoneyConversion(this Microsoft.EntityFrameworkCore.Metadata.Builders.PropertyBuilder<Riddersholm.Money.Money>! property) -> Microsoft.EntityFrameworkCore.Metadata.Builders.PropertyBuilder<Riddersholm.Money.Money>!

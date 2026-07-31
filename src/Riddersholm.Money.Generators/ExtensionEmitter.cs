@@ -54,7 +54,7 @@ internal static class ExtensionEmitter
 
         foreach (CurrencyDefinition currency in currencies)
         {
-            source.Line($"        /// <summary>{Escape(currency.Name)} ({currency.Code}).</summary>");
+            source.Line($"        /// <summary>{EscapeXml(currency.Name)} ({currency.Code}).</summary>");
             source.Line($"        public static Currency {currency.Code} => Values.{currency.Code};");
             source.Line();
         }
@@ -129,7 +129,17 @@ internal static class ExtensionEmitter
         return identifier.ToString();
     }
 
+    /// <summary>Escapes a value for use inside a C# string literal.</summary>
     private static string Escape(string value) => value
         .Replace("\\", "\\\\")
         .Replace("\"", "\\\"");
+
+    /// <summary>
+    /// Escapes a value for use inside an XML documentation comment. A bare ampersand is not valid XML,
+    /// and two ISO currency names contain one.
+    /// </summary>
+    private static string EscapeXml(string value) => value
+        .Replace("&", "&amp;")
+        .Replace("<", "&lt;")
+        .Replace(">", "&gt;");
 }

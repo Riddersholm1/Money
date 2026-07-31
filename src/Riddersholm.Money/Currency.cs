@@ -85,7 +85,7 @@ public readonly partial record struct Currency :
     /// <remarks>
     /// An unknown currency is still a perfectly usable value: it compares, formats, parses, and
     /// persists correctly. What it lacks is a name, a symbol, and a trustworthy precision — which is
-    /// why <see cref="Money.Round()"/> refuses to round one.
+    /// why <see cref="Money.Round(System.MidpointRounding)"/> refuses to round one.
     /// </remarks>
     public bool IsKnown => CurrencyTable.TryGetOrdinal(_packed, out _) || CurrencyRegistry.TryGet(_packed, out _);
 

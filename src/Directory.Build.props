@@ -4,6 +4,18 @@
 
   <PropertyGroup>
     <IsPackable>true</IsPackable>
+
+    <!--
+      These must be set in .props, not .targets: the SDK computes DocumentationFile from
+      GenerateDocumentationFile while evaluating the project body, so setting it afterwards silently
+      produces a package with no XML documentation at all.
+    -->
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <EnablePackageValidation>true</EnablePackageValidation>
     <!--
       Shipping libraries must survive trimming and NativeAOT. These analyzers turn "probably fine"
       into a build error; tests/Riddersholm.Money.AotTests proves the end result actually publishes.

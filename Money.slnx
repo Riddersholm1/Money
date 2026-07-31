@@ -2,6 +2,10 @@
   <Folder Name="/bench/">
     <Project Path="bench/Riddersholm.Money.Benchmarks/Riddersholm.Money.Benchmarks.csproj" />
   </Folder>
+  <Folder Name="/samples/">
+    <Project Path="samples/Riddersholm.Money.Sample.Api/Riddersholm.Money.Sample.Api.csproj" />
+    <Project Path="samples/Riddersholm.Money.Sample.Console/Riddersholm.Money.Sample.Console.csproj" />
+  </Folder>
   <Folder Name="/src/">
     <Project Path="src/Riddersholm.Money.EntityFrameworkCore/Riddersholm.Money.EntityFrameworkCore.csproj" />
     <Project Path="src/Riddersholm.Money.Generators/Riddersholm.Money.Generators.csproj" />

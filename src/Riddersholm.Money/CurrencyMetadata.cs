@@ -7,7 +7,7 @@ namespace Riddersholm.Money;
 /// </summary>
 /// <remarks>
 /// Nothing here runs unless a caller actually asks for descriptive metadata or enumerates
-/// <see cref="Currency.All"/>. Arithmetic, comparison, rounding, and formatting read the generated
+/// <see cref="Currency.Known"/>. Arithmetic, comparison, rounding, and formatting read the generated
 /// scalar tables directly, so a program that only moves money around never allocates a single
 /// <see cref="CurrencyInfo"/>.
 /// </remarks>
@@ -66,7 +66,7 @@ internal static class CurrencyMetadata
     /// Describes a currency the library has never seen, so that loading unfamiliar data reads its
     /// metadata instead of throwing. The precision is the ISO default and is explicitly not trustworthy,
     /// which is why <see cref="CurrencyInfo.IsKnown"/> is <see langword="false"/> and
-    /// <see cref="Money.Round()"/> refuses to act on it.
+    /// <see cref="Money.Round(System.MidpointRounding)"/> refuses to act on it.
     /// </summary>
     private static CurrencyInfo CreateFallback(uint packed)
     {

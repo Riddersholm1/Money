@@ -12,7 +12,7 @@ namespace Riddersholm.Money;
 /// <b>Amounts are exact.</b> <c>new Money(100.005m, Currency.DKK)</c> keeps <c>100.005</c>, and
 /// multiplication and division never round. Rounding is a policy decision — whether VAT is rounded per
 /// line or per invoice is a domain question with legal consequences — so the library refuses to make
-/// it on your behalf. Call <see cref="Round()"/> when you mean to, which is usually when persisting or
+/// it on your behalf. Call <see cref="Round(System.MidpointRounding)"/> when you mean to, which is usually when persisting or
 /// displaying. <see cref="IsCanonical"/> tells you whether an amount is representable in its currency.
 /// </para>
 /// <para>
