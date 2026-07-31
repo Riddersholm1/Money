@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>Riddersholm.Money</RootNamespace>
+    <AssemblyName>Riddersholm.Money</AssemblyName>
+    <PackageId>Riddersholm.Money</PackageId>
+    <Description>A modern, immutable Money value object for .NET with complete ISO 4217 currency support, exact decimal arithmetic, sum-preserving allocation, allocation-free formatting and parsing, System.Text.Json support, and full trimming/NativeAOT compatibility.</Description>
+  </PropertyGroup>
+
+  <!-- No PackageReferences: System.Text.Json ships in the net10.0 shared framework. -->
+
+</Project>

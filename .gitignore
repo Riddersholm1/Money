@@ -1,0 +1,25 @@
+## Build output
+[Bb]in/
+[Oo]bj/
+artifacts/
+BenchmarkDotNet.Artifacts/
+*.user
+*.suo
+
+## Generated files emitted for inspection
+generated/
+
+## Test / tooling output
+TestResults/
+*.received.*
+*.coverage
+*.trx
+coverage*.json
+coverage*.xml
+
+## IDE
+.vs/
+.vscode/
+.idea/
+*.swp
+.DS_Store

@@ -1,0 +1,55 @@
+<Project>
+
+  <!--
+    Repository-wide defaults. Deliberately does NOT set TargetFramework: the core packages target
+    net10.0 while the Roslyn generator must target netstandard2.0 to load into the compiler.
+  -->
+
+  <PropertyGroup>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <InvariantGlobalization>false</InvariantGlobalization>
+  </PropertyGroup>
+
+  <!-- Analysis: the build is the first line of defence, so warnings are errors everywhere. -->
+  <PropertyGroup>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+    <AnalysisLevel>latest-recommended</AnalysisLevel>
+    <EnableNETAnalyzers>true</EnableNETAnalyzers>
+    <NoWarn>$(NoWarn);CA1303</NoWarn>
+  </PropertyGroup>
+
+  <!-- Deterministic, reproducible builds. -->
+  <PropertyGroup>
+    <Deterministic>true</Deterministic>
+    <ContinuousIntegrationBuild Condition="'$(CI)' == 'true'">true</ContinuousIntegrationBuild>
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+    <CentralPackageTransitivePinningEnabled>true</CentralPackageTransitivePinningEnabled>
+    <NuGetAudit>true</NuGetAudit>
+    <NuGetAuditMode>all</NuGetAuditMode>
+  </PropertyGroup>
+
+  <!-- Shared package identity. Individual packages override Description/PackageTags. -->
+  <PropertyGroup>
+    <VersionPrefix>1.0.0</VersionPrefix>
+    <Authors>Riddersholm</Authors>
+    <Company>Riddersholm</Company>
+    <Product>Riddersholm.Money</Product>
+    <Copyright>Copyright (c) Riddersholm</Copyright>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/Riddersholm1/Money</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/Riddersholm1/Money</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageTags>money;currency;iso4217;value-object;ddd;decimal;finance</PackageTags>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <RepositoryRoot>$(MSBuildThisFileDirectory)</RepositoryRoot>
+    <ArtifactsPath>$(RepositoryRoot)artifacts</ArtifactsPath>
+  </PropertyGroup>
+
+</Project>

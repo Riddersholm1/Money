@@ -1,0 +1,16 @@
+<Project>
+
+  <Import Project="$([MSBuild]::GetPathOfFileAbove('Directory.Build.props', '$(MSBuildThisFileDirectory)../'))" />
+
+  <PropertyGroup>
+    <IsPackable>false</IsPackable>
+    <TargetFramework>net10.0</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <!-- BenchmarkDotNet requires optimized, non-server-GC-tweaked builds to produce valid numbers. -->
+    <Optimize>true</Optimize>
+    <ServerGarbageCollection>false</ServerGarbageCollection>
+    <!-- Benchmark bodies intentionally discard results and call things in unusual ways. -->
+    <NoWarn>$(NoWarn);CA1822;CA1024</NoWarn>
+  </PropertyGroup>
+
+</Project>
