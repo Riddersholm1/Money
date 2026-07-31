@@ -34,6 +34,7 @@ namespace Riddersholm.Money;
 /// </code>
 /// </example>
 [DebuggerDisplay("{Code,nq}")]
+[System.Text.Json.Serialization.JsonConverter(typeof(Serialization.CurrencyJsonConverter))]
 public readonly partial record struct Currency :
     IComparable<Currency>,
     IComparable,

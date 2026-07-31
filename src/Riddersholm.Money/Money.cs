@@ -37,6 +37,7 @@ namespace Riddersholm.Money;
 /// </code>
 /// </example>
 [DebuggerDisplay("{Amount} {Currency.Code,nq}")]
+[System.Text.Json.Serialization.JsonConverter(typeof(Serialization.MoneyJsonConverter))]
 public readonly partial record struct Money :
     IAdditionOperators<Money, Money, Money>,
     ISubtractionOperators<Money, Money, Money>,
