@@ -27,6 +27,17 @@ public sealed class UnknownCurrencyException : InvalidOperationException
 
     /// <summary>Creates an exception with a custom message.</summary>
     /// <param name="message">The message that describes the error.</param>
+    /// <param name="currency">The currency whose metadata was missing.</param>
+    public UnknownCurrencyException(string message, Currency currency)
+        : base(message)
+        => Currency = currency;
+
+    /// <summary>Creates an exception with a custom message.</summary>
+    /// <param name="message">The message that describes the error.</param>
+    /// <remarks>
+    /// Prefer <see cref="UnknownCurrencyException(string, Currency)"/> so that <see cref="Currency"/>
+    /// carries the offending value rather than defaulting.
+    /// </remarks>
     public UnknownCurrencyException(string message)
         : base(message)
     {

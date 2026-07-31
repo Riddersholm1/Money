@@ -212,7 +212,28 @@ public readonly partial record struct Currency :
         CurrencyMetadata.TryGetByNumericCode(numericCode, out currency);
 
     /// <summary>Compares by alphabetic code, ordinally.</summary>
-    public int CompareTo(Currency other) => string.CompareOrdinal(Code, other.Code);
+    /// <param name="other">The currency to compare against.</param>
+    /// <remarks>
+    /// Works directly on the packed letters rather than on <see cref="Code"/>, so it allocates nothing
+    /// even for a currency the library does not recognise — where reading <see cref="Code"/> would
+    /// materialise a string on every call. This is on the sorting path via
+    /// <see cref="Money.CompareTo(Money)"/>, so an allocation here would cost O(n log n) strings per sort.
+    /// </remarks>
+    public int CompareTo(Currency other)
+    {
+        if (_packed == other._packed)
+        {
+            return 0;
+        }
+
+        Span<char> left = stackalloc char[3];
+        Span<char> right = stackalloc char[3];
+
+        CurrencyCodec.Unpack(_packed, left);
+        CurrencyCodec.Unpack(other._packed, right);
+
+        return left.SequenceCompareTo(right);
+    }
 
     /// <inheritdoc />
     int IComparable.CompareTo(object? obj) => obj switch

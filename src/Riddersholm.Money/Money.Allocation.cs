@@ -181,7 +181,9 @@ public readonly partial record struct Money
 
         for (int i = 0; i < count; i++)
         {
-            decimal exact = units * ratios[i] / total;
+            // Divide before multiplying. The other order overflows whenever the weights are large —
+            // and passing raw amounts as weights is an entirely natural thing to do.
+            decimal exact = units * (ratios[i] / total);
             decimal share = decimal.Truncate(exact);
 
             shares[i] = share;
@@ -288,7 +290,10 @@ public readonly partial record struct Money
 
         if (unitsPerMajor == 0)
         {
-            throw new UnknownCurrencyException(
+            // Not an *unknown* currency: XXX and XTS are perfectly well known, they simply have no
+            // indivisible unit to distribute. Conflating the two would mislead anyone reading the
+            // exception type rather than the message.
+            throw new InvalidOperationException(
                 $"'{Currency.Code}' has no minor unit, so there is no indivisible amount to allocate in.");
         }
 

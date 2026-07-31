@@ -1,3 +1,4 @@
+using System.Buffers;
 using System.Globalization;
 using System.Text;
 
@@ -10,10 +11,16 @@ namespace Riddersholm.Money;
 public readonly partial record struct Money
 {
     /// <summary>
-    /// Comfortably fits the widest possible output: 30 characters of <see cref="decimal"/>, group
-    /// separators, and the longest currency name in the table.
+    /// Comfortably fits the widest output any ISO currency can produce: 30 characters of
+    /// <see cref="decimal"/>, group separators, and the longest name in the generated table.
     /// </summary>
     private const int StackBufferSize = 128;
+
+    /// <summary>
+    /// The fallback size for output that exceeds <see cref="StackBufferSize"/>, which only a
+    /// runtime-registered currency with an unusually long name can do.
+    /// </summary>
+    private const int LargeBufferSize = 1024;
 
     /// <summary>Returns the amount followed by its ISO 4217 code, in the current culture's number format.</summary>
     /// <remarks>
@@ -45,11 +52,19 @@ public readonly partial record struct Money
             return new string(buffer[..written]);
         }
 
-        // Only reachable for a currency with an unusually long name; fall back to the heap.
-        char[] larger = new char[StackBufferSize * 4];
-        return TryFormat(larger, out written, format, formatProvider)
-            ? new string(larger, 0, written)
-            : throw new FormatException($"Could not format '{Amount}' with format '{format}'.");
+        // Only reachable for a currency with an unusually long name; borrow a larger buffer.
+        char[] rented = ArrayPool<char>.Shared.Rent(LargeBufferSize);
+
+        try
+        {
+            return TryFormat(rented, out written, format, formatProvider)
+                ? new string(rented, 0, written)
+                : throw new FormatException($"Could not format '{Amount}' with format '{format}'.");
+        }
+        finally
+        {
+            ArrayPool<char>.Shared.Return(rented);
+        }
     }
 
     /// <inheritdoc cref="ToString(string?, IFormatProvider?)" />
@@ -127,16 +142,42 @@ public readonly partial record struct Money
         IFormatProvider? provider = null)
     {
         // Formatting to UTF-16 first and transcoding once keeps a single implementation of the layout
-        // rules. The intermediate lives on the stack, so this still allocates nothing.
+        // rules. The intermediate lives on the stack for every realistic input.
         Span<char> buffer = stackalloc char[StackBufferSize];
 
-        if (!TryFormat(buffer, out int written, format, provider))
+        if (TryFormat(buffer, out int written, format, provider))
         {
-            bytesWritten = 0;
-            return false;
+            return Encoding.UTF8.TryGetBytes(buffer[..written], utf8Destination, out bytesWritten);
         }
 
-        return Encoding.UTF8.TryGetBytes(buffer[..written], utf8Destination, out bytesWritten);
+        // The interface contract says false means *the caller's* buffer was too small, so a shortfall
+        // in this method's own scratch space must not be reported as one. A registered currency with a
+        // very long name is the case that reaches here.
+        return TryFormatUtf8Large(utf8Destination, out bytesWritten, format, provider);
+    }
+
+    private bool TryFormatUtf8Large(
+        Span<byte> utf8Destination,
+        out int bytesWritten,
+        ReadOnlySpan<char> format,
+        IFormatProvider? provider)
+    {
+        char[] rented = ArrayPool<char>.Shared.Rent(LargeBufferSize);
+
+        try
+        {
+            if (!TryFormat(rented, out int written, format, provider))
+            {
+                bytesWritten = 0;
+                return false;
+            }
+
+            return Encoding.UTF8.TryGetBytes(rented.AsSpan(0, written), utf8Destination, out bytesWritten);
+        }
+        finally
+        {
+            ArrayPool<char>.Shared.Return(rented);
+        }
     }
 
     private bool TryWriteAmount(

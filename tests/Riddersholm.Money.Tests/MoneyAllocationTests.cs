@@ -125,8 +125,14 @@ public sealed class MoneyAllocationTests
     }
 
     [Fact]
-    public void Allocating_a_currency_without_a_minor_unit_is_refused() =>
-        Assert.Throws<UnknownCurrencyException>(() => new Money(10m, Currency.XXX).Allocate(3));
+    public void Allocating_a_currency_without_a_minor_unit_is_refused()
+    {
+        // XXX is a *known* currency with no indivisible unit, so this is not an unknown-currency error.
+        InvalidOperationException error =
+            Assert.Throws<InvalidOperationException>(() => new Money(10m, Currency.XXX).Allocate(3));
+
+        Assert.IsNotType<UnknownCurrencyException>(error);
+    }
 
     [Fact]
     public void Allocating_an_unknown_currency_is_refused() =>

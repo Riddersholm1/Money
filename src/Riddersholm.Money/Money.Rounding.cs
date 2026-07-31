@@ -30,8 +30,28 @@ public readonly partial record struct Money
                 return true;
             }
 
-            decimal minorUnits = Amount * units;
-            return decimal.Truncate(minorUnits) == minorUnits;
+            byte digits = Currency.DecimalDigits;
+
+            // The common case never multiplies, so it cannot overflow: an amount is representable
+            // exactly when rounding it to the currency's digit count leaves it unchanged.
+            if (units == Pow10Long(digits))
+            {
+                return Math.Round(Amount, digits, MidpointRounding.ToZero) == Amount;
+            }
+
+            // MRU and MGA divide by five, which no digit count expresses, so the increment has to be
+            // applied directly. Overflow is possible in principle for an astronomically large amount;
+            // a property must answer rather than throw, and an amount that cannot even be scaled is
+            // certainly not a whole number of minor units.
+            try
+            {
+                decimal minorUnits = Amount * units;
+                return decimal.Truncate(minorUnits) == minorUnits;
+            }
+            catch (OverflowException)
+            {
+                return false;
+            }
         }
     }
 
