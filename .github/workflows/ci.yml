@@ -36,6 +36,10 @@ jobs:
       - name: Build
         run: dotnet build -c Release --no-restore
 
+      # Coverage collection is deliberately absent. Microsoft.Testing.Extensions.CodeCoverage does not
+      # currently load under this xUnit v3 / Microsoft.Testing.Platform host — it fails at
+      # AddSelfRegisteredExtensions before any test runs — and a green suite is worth more than a
+      # coverage number. Revisit when the extension supports this host.
       - name: Test
         run: dotnet test -c Release --no-build
 

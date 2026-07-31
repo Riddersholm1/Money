@@ -8,28 +8,32 @@ design decision where speed and robustness pull apart. Reproduce them with:
 dotnet run -c Release --project bench/Riddersholm.Money.Benchmarks
 ```
 
-The short-job numbers reproduced here are indicative rather than publication-grade; run without
-`--job short` for tighter intervals.
+The arithmetic table below is from a full BenchmarkDotNet job. The remaining tables are short-job runs,
+which are indicative rather than publication-grade; re-run without `--job short` before quoting them.
 
 ## Arithmetic
 
 | Operation | Riddersholm.Money | NodaMoney | bare `decimal` |
 |---|---:|---:|---:|
-| Create | 0.02 ns | 27.5 ns | — |
-| `Currency.FromCode("DKK")` | 2.4 ns | — | — |
-| Add | 4.6 ns | 21.6 ns | 5.6 ns |
-| Subtract | 4.9 ns | 28.2 ns | — |
-| Multiply | 2.5 ns | 30.6 ns | — |
-| Divide | 27.7 ns | 52.8 ns | — |
-| Round | 9.7 ns | — | 0.16 ns |
-| Equality | 3.3 ns | 1.6 ns | — |
-| Read `DecimalDigits` | 2.0 ns | — | — |
-| Read `Symbol` | 3.5 ns | — | — |
+| Create | 0.22 ns | 26.8 ns | — |
+| `Currency.FromCode("DKK")` | 2.2 ns | — | — |
+| Add | 4.7 ns | 22.8 ns | 5.8 ns |
+| Subtract | 4.7 ns | 27.7 ns | — |
+| Multiply | 2.1 ns | 31.1 ns | — |
+| Divide | 26.7 ns | 53.5 ns | — |
+| Round | 8.9 ns | — | 0.09 ns |
+| Equality | 2.9 ns | 1.5 ns | — |
+| Read `DecimalDigits` | 2.1 ns | — | — |
+| Read `Symbol` | 3.9 ns | — | — |
 
-**Nothing here allocates.** Construction is free — the JIT inlines it away entirely — and addition
-costs about what adding two bare `decimal`s costs, so the currency check is effectively free.
+**Nothing here allocates.**
 
-Two rows deserve comment.
+On addition, `Money` and a bare `decimal` measure within about a nanosecond of each other, and the
+ordering between them is not stable enough to mean anything — the honest reading is that **the currency
+check costs nothing measurable**, not that adding money is faster than adding a number. An earlier
+version of this document reported the difference as though it were a result; it was harness noise.
+
+Two rows do deserve comment.
 
 **Equality is slower than NodaMoney's, and that is the design working as intended.** NodaMoney packs
 the currency into the unused bits of the `decimal`'s flags word, which gets `Money` down to 16 bytes and

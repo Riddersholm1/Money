@@ -1,0 +1,81 @@
+name: Release
+
+# Publishing is gated on the same checks as a normal build, so a tag can never ship something CI
+# would have rejected. The version comes from the tag, so it cannot drift from what was tested.
+on:
+  push:
+    tags: ["v*.*.*"]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to publish, without the leading v (e.g. 1.0.1)"
+        required: true
+        type: string
+
+env:
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+  CI: true
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: Verify
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-dotnet@v5
+        with:
+          global-json-file: global.json
+
+      - run: dotnet build -c Release
+      - run: dotnet test -c Release --no-build
+
+      # A release must not ship something that cannot be AOT-published.
+      - run: dotnet publish tests/Riddersholm.Money.AotTests -c Release -r linux-x64
+      - run: ./artifacts/publish/Riddersholm.Money.AotTests/release_linux-x64/Riddersholm.Money.AotTests
+
+  publish:
+    name: Publish to NuGet
+    needs: verify
+    runs-on: ubuntu-latest
+    environment: nuget
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-dotnet@v5
+        with:
+          global-json-file: global.json
+
+      - name: Resolve version from the tag
+        id: version
+        run: |
+          if [ -n "${{ inputs.version }}" ]; then
+            echo "value=${{ inputs.version }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "value=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Pack
+        run: dotnet pack -c Release -o ./artifacts/nuget -p:Version=${{ steps.version.outputs.value }}
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nuget-packages
+          path: ./artifacts/nuget/*.*nupkg
+          if-no-files-found: error
+
+      # --skip-duplicate makes a re-run after a partial failure safe rather than fatal.
+      - name: Push
+        run: >
+          dotnet nuget push "./artifacts/nuget/*.nupkg"
+          --source https://api.nuget.org/v3/index.json
+          --api-key "${{ secrets.NUGET_API_KEY }}"
+          --skip-duplicate

@@ -216,6 +216,20 @@ fail.
 
 ---
 
+## The assemblies are not strong-named
+
+**Against:** some enterprise environments still require strong-named assemblies, and a consumer whose
+own assembly is strong-named cannot reference one that is not. That is a hard blocker for those users,
+and it cannot be fixed later without a breaking change.
+
+**For:** strong naming solves a problem .NET Core does not have. It provides no security — the key is
+public, and anyone can re-sign — and its real effect is to force strict-version binding on everyone
+downstream, which is why Microsoft's guidance stopped recommending it for new packages. Adding it
+propagates the constraint to every consumer to serve a shrinking minority.
+
+Recorded here rather than left implicit, because "we never decided" is the worst answer to this
+question, and because reversing it later *is* a breaking change and should be argued on its merits.
+
 ## `XTS` and `XXX` ship; metals and fund codes do not
 
 **Against:** an ISO 4217 library that omits ISO 4217 codes is incomplete.

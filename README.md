@@ -216,6 +216,16 @@ dotnet publish tests/Riddersholm.Money.AotTests -c Release -r linux-x64   # the 
 dotnet run -c Release --project bench/Riddersholm.Money.Benchmarks
 ```
 
+## Contributing
+
+Bug reports and pull requests are welcome — see [CONTRIBUTING.md](CONTRIBUTING.md) for what a good
+change looks like here, and [SECURITY.md](SECURITY.md) for reporting anything that could lose money or
+exhaust memory from untrusted input.
+
+Before proposing an API, it's worth reading [docs/design-decisions.md](docs/design-decisions.md):
+several obvious-looking features are absent on purpose, and each entry records the argument *against*
+the decision as well as for it.
+
 ## License
 
 MIT — see [LICENSE](LICENSE).

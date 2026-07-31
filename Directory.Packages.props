@@ -39,7 +39,6 @@
       only. FsCheck.Xunit.v3 is the xUnit v3 integration.
     -->
     <PackageVersion Include="FsCheck.Xunit.v3" Version="3.3.4" />
-    <PackageVersion Include="Microsoft.Testing.Extensions.CodeCoverage" Version="18.9.0" />
   </ItemGroup>
 
   <ItemGroup Label="Benchmarks">
