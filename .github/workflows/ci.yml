@@ -51,14 +51,13 @@ jobs:
         with:
           global-json-file: global.json
 
-      # Publishing with TrimMode=full and PublishAot proves the trim/AOT claims instead of
-      # asserting them. Any IL2xxx/IL3xxx warning fails the build (TreatWarningsAsErrors).
+      # The project sets PublishAot and TrimMode=full itself. They must NOT be passed on the command
+      # line: -p: creates a global property that would reach the netstandard2.0 generator, which
+      # cannot be AOT-compiled. Any IL2xxx/IL3xxx warning fails the build (TreatWarningsAsErrors).
       - name: Publish AOT smoke test
-        run: >
-          dotnet publish tests/Riddersholm.Money.AotTests
-          -c Release -r linux-x64
-          -p:PublishAot=true -p:TrimMode=full
+        run: dotnet publish tests/Riddersholm.Money.AotTests -c Release -r linux-x64
 
+      # Exits non-zero if any assertion fails, so a trimmed-away code path is caught at runtime too.
       - name: Run native binary
         run: ./artifacts/publish/Riddersholm.Money.AotTests/release_linux-x64/Riddersholm.Money.AotTests
 
