@@ -48,7 +48,9 @@ public readonly partial record struct Money :
     IComparisonOperators<Money, Money, bool>,
     IAdditiveIdentity<Money, Money>,
     IComparable<Money>,
-    IComparable
+    IComparable,
+    ISpanFormattable,
+    IUtf8SpanFormattable
 {
     /// <summary>Creates an amount in a currency, preserving the value exactly.</summary>
     /// <param name="amount">The amount. It is stored as given and is not rounded to the currency's precision.</param>

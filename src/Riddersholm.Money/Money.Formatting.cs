@@ -1,19 +1,274 @@
 using System.Globalization;
+using System.Text;
 
 namespace Riddersholm.Money;
 
-/// <content>Textual representation. The full formatting surface is defined here.</content>
+/// <content>
+/// Formatting. Every path writes through <c>TryFormat</c> into a stack buffer, so producing text
+/// allocates at most the final string — and nothing at all when the caller supplies the buffer.
+/// </content>
 public readonly partial record struct Money
 {
-    /// <summary>Returns the amount followed by its ISO 4217 code, using the current culture's number format.</summary>
+    /// <summary>
+    /// Comfortably fits the widest possible output: 30 characters of <see cref="decimal"/>, group
+    /// separators, and the longest currency name in the table.
+    /// </summary>
+    private const int StackBufferSize = 128;
+
+    /// <summary>Returns the amount followed by its ISO 4217 code, in the current culture's number format.</summary>
+    /// <remarks>
+    /// Never hides precision: <c>100.005 DKK</c> renders all three decimals even though DKK has two, so
+    /// a non-canonical amount is visible rather than silently rounded in the output.
+    /// </remarks>
     public override string ToString() => ToString(null, null);
 
     /// <summary>Formats the amount.</summary>
-    /// <param name="format">The format specifier; <see langword="null"/> means <c>G</c>.</param>
-    /// <param name="formatProvider">Supplies the number format; <see langword="null"/> means the current culture.</param>
+    /// <param name="format">
+    /// <list type="table">
+    /// <item><term><c>G</c></term><description>Default. <c>100.50 DKK</c> — amount then ISO code, in the provider's number format.</description></item>
+    /// <item><term><c>R</c></term><description>Round-trippable. Always invariant; <c>Parse</c> reads it back exactly.</description></item>
+    /// <item><term><c>C</c></term><description>Culture currency layout with the symbol: <c>kr. 100,50</c>.</description></item>
+    /// <item><term><c>I</c></term><description>ISO layout, code first: <c>DKK 100.50</c>.</description></item>
+    /// <item><term><c>N</c></term><description>The number alone, with group separators: <c>1,234.50</c>.</description></item>
+    /// <item><term><c>L</c></term><description>Amount and English currency name: <c>100.50 Danish Krone</c>.</description></item>
+    /// </list>
+    /// A digit count may follow the letter (<c>C0</c>, <c>N4</c>) to override the currency's precision.
+    /// </param>
+    /// <param name="formatProvider">Supplies separators and layout; <see langword="null"/> means the current culture.</param>
+    /// <exception cref="FormatException"><paramref name="format"/> is not recognised.</exception>
     public string ToString(string? format, IFormatProvider? formatProvider)
     {
-        NumberFormatInfo numberFormat = NumberFormatInfo.GetInstance(formatProvider);
-        return $"{Amount.ToString("0.############################", numberFormat)} {Currency.Code}";
+        Span<char> buffer = stackalloc char[StackBufferSize];
+
+        if (TryFormat(buffer, out int written, format, formatProvider))
+        {
+            return new string(buffer[..written]);
+        }
+
+        // Only reachable for a currency with an unusually long name; fall back to the heap.
+        char[] larger = new char[StackBufferSize * 4];
+        return TryFormat(larger, out written, format, formatProvider)
+            ? new string(larger, 0, written)
+            : throw new FormatException($"Could not format '{Amount}' with format '{format}'.");
+    }
+
+    /// <inheritdoc cref="ToString(string?, IFormatProvider?)" />
+    /// <param name="destination">Receives the formatted text.</param>
+    /// <param name="charsWritten">The number of characters written.</param>
+    /// <param name="format">The format specifier.</param>
+    /// <param name="provider">The format provider.</param>
+    /// <returns><see langword="false"/> if <paramref name="destination"/> is too small.</returns>
+    public bool TryFormat(
+        Span<char> destination,
+        out int charsWritten,
+        ReadOnlySpan<char> format = default,
+        IFormatProvider? provider = null)
+    {
+        charsWritten = 0;
+
+        (MoneyFormat kind, int? digits) = ParseFormat(format);
+
+        if (kind == MoneyFormat.RoundTrip)
+        {
+            provider = CultureInfo.InvariantCulture;
+        }
+
+        NumberFormatInfo numberFormat = kind == MoneyFormat.Currency
+            ? CurrencyFormatCache.ForCurrency(provider, Currency, digits)
+            : NumberFormatInfo.GetInstance(provider);
+
+        int position = 0;
+
+        // Code-first layouts put the currency before the number.
+        if (kind == MoneyFormat.Iso && !TryWriteCode(destination, ref position, separator: true))
+        {
+            return false;
+        }
+
+        if (!TryWriteAmount(destination[position..], out int amountLength, kind, digits, numberFormat))
+        {
+            return false;
+        }
+
+        position += amountLength;
+
+        switch (kind)
+        {
+            case MoneyFormat.General or MoneyFormat.RoundTrip:
+                if (!TryWriteCode(destination, ref position, separator: false))
+                {
+                    return false;
+                }
+
+                break;
+
+            case MoneyFormat.Name:
+                if (!TryWriteText(Currency.EnglishName, destination, ref position, separator: true))
+                {
+                    return false;
+                }
+
+                break;
+        }
+
+        charsWritten = position;
+        return true;
+    }
+
+    /// <inheritdoc cref="TryFormat(Span{char}, out int, ReadOnlySpan{char}, IFormatProvider?)" />
+    /// <param name="utf8Destination">Receives the formatted UTF-8 text.</param>
+    /// <param name="bytesWritten">The number of bytes written.</param>
+    /// <param name="format">The format specifier.</param>
+    /// <param name="provider">The format provider.</param>
+    public bool TryFormat(
+        Span<byte> utf8Destination,
+        out int bytesWritten,
+        ReadOnlySpan<char> format = default,
+        IFormatProvider? provider = null)
+    {
+        // Formatting to UTF-16 first and transcoding once keeps a single implementation of the layout
+        // rules. The intermediate lives on the stack, so this still allocates nothing.
+        Span<char> buffer = stackalloc char[StackBufferSize];
+
+        if (!TryFormat(buffer, out int written, format, provider))
+        {
+            bytesWritten = 0;
+            return false;
+        }
+
+        return Encoding.UTF8.TryGetBytes(buffer[..written], utf8Destination, out bytesWritten);
+    }
+
+    private bool TryWriteAmount(
+        Span<char> destination,
+        out int written,
+        MoneyFormat kind,
+        int? digits,
+        NumberFormatInfo numberFormat)
+    {
+        int precision = digits ?? SignificantDigits(Amount, Currency.DecimalDigits);
+
+        Span<char> specifier = stackalloc char[4];
+        char letter = kind switch
+        {
+            MoneyFormat.Currency => 'C',
+            MoneyFormat.Number => 'N',
+            // 'F' rather than 'N': no group separators, so the output stays trivially parseable.
+            _ => 'F',
+        };
+
+        specifier[0] = letter;
+        precision.TryFormat(specifier[1..], out int specifierLength, provider: CultureInfo.InvariantCulture);
+
+        return Amount.TryFormat(destination, out written, specifier[..(specifierLength + 1)], numberFormat);
+    }
+
+    private bool TryWriteCode(Span<char> destination, ref int position, bool separator)
+    {
+        int needed = 3 + (position > 0 || separator ? 1 : 0);
+
+        if (destination.Length - position < needed)
+        {
+            return false;
+        }
+
+        if (position > 0)
+        {
+            destination[position++] = ' ';
+        }
+
+        CurrencyCodec.Unpack(Currency.PackedValue, destination[position..]);
+        position += 3;
+
+        if (separator && position < destination.Length)
+        {
+            destination[position++] = ' ';
+        }
+
+        return true;
+    }
+
+    private static bool TryWriteText(string text, Span<char> destination, ref int position, bool separator)
+    {
+        int needed = text.Length + (separator ? 1 : 0);
+
+        if (destination.Length - position < needed)
+        {
+            return false;
+        }
+
+        if (separator)
+        {
+            destination[position++] = ' ';
+        }
+
+        text.CopyTo(destination[position..]);
+        position += text.Length;
+        return true;
+    }
+
+    /// <summary>
+    /// How many decimals are needed to show the value honestly: at least the currency's precision, and
+    /// more when the amount actually carries more.
+    /// </summary>
+    /// <remarks>
+    /// Trailing zeros are ignored, so equal amounts always format identically — <c>100m</c> and
+    /// <c>100.00m</c> are the same money and must not render differently.
+    /// </remarks>
+    private static int SignificantDigits(decimal amount, byte currencyDigits)
+    {
+        int scale = amount.Scale;
+
+        while (scale > 0 && Math.Round(amount, scale - 1) == amount)
+        {
+            scale--;
+        }
+
+        return Math.Max(scale, currencyDigits);
+    }
+
+    private static (MoneyFormat Kind, int? Digits) ParseFormat(ReadOnlySpan<char> format)
+    {
+        if (format.IsEmpty)
+        {
+            return (MoneyFormat.General, null);
+        }
+
+        MoneyFormat kind = format[0] switch
+        {
+            'G' or 'g' => MoneyFormat.General,
+            'R' or 'r' => MoneyFormat.RoundTrip,
+            'C' or 'c' => MoneyFormat.Currency,
+            'I' or 'i' => MoneyFormat.Iso,
+            'N' or 'n' => MoneyFormat.Number,
+            'L' or 'l' => MoneyFormat.Name,
+            _ => throw new FormatException(
+                $"'{format}' is not a supported Money format string. Use G, R, C, I, N, or L, optionally followed by a digit count."),
+        };
+
+        if (format.Length == 1)
+        {
+            return (kind, null);
+        }
+
+        if (!int.TryParse(format[1..], NumberStyles.None, CultureInfo.InvariantCulture, out int digits) || digits > 28)
+        {
+            throw new FormatException($"'{format}' is not a supported Money format string: expected 0 to 28 digits after '{format[0]}'.");
+        }
+
+        // A round-trip format that dropped precision would not round-trip.
+        return kind == MoneyFormat.RoundTrip
+            ? throw new FormatException("The round-trip format 'R' cannot take a digit count: it must preserve the exact amount.")
+            : (kind, digits);
+    }
+
+    private enum MoneyFormat
+    {
+        General,
+        RoundTrip,
+        Currency,
+        Iso,
+        Number,
+        Name,
     }
 }
