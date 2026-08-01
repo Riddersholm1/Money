@@ -239,6 +239,108 @@ public sealed class AuditRegressionTests
         Assert.Equal(minorUnits, new CurrencyInfo("QMM", 0, "Fine", "Q", digits, minorUnits, digits, 1).MinorUnitsPerMajor);
 
     [Fact]
+    public void N1_a_precision_above_18_rounds_to_the_currencys_real_increment()
+    {
+        // Pow10Long used to saturate at 10^18, so `unitsPerMajor == Pow10Long(digits)` answered true for
+        // every digit count past 18. This currency's increment is 10^-18, but it was being rounded to
+        // 20 decimals — that is, not rounded at all.
+        Currency currency = RegisterWidePrecisionCurrency();
+
+        Money halfAUnit = new(0.0000000000000000005m, currency);
+
+        Assert.Equal(
+            new Money(0.000000000000000001m, currency),
+            halfAUnit.Round(MidpointRounding.AwayFromZero));
+
+        Assert.Equal(new Money(0m, currency), halfAUnit.Round(MidpointRounding.ToZero));
+    }
+
+    [Fact]
+    public void N1_is_canonical_agrees_with_round_above_18_digits()
+    {
+        // The two share the power-of-ten test, so the saturating version made both wrong together:
+        // IsCanonical reported a half-unit amount as representable.
+        Currency currency = RegisterWidePrecisionCurrency();
+
+        Assert.False(new Money(0.0000000000000000005m, currency).IsCanonical);
+        Assert.True(new Money(0.000000000000000001m, currency).IsCanonical);
+        Assert.True(new Money(0.000000000000000001000m, currency).IsCanonical);
+    }
+
+    [Theory]
+    [InlineData(20, 3L)]    // thirds are not expressible in any number of decimal places
+    [InlineData(28, 7L)]
+    [InlineData(19, 300L)]  // 3 × 10^2 does not divide 10^19
+    public void N1_a_mismatched_divisor_is_rejected_above_18_digits_too(byte digits, long minorUnits)
+    {
+        // The validation added for M1 computed 10^digits in a long, so it gave up above 18 digits —
+        // leaving exactly the registrations that also confused rounding unchecked.
+        ArgumentException error = Assert.Throws<ArgumentException>(() =>
+            new CurrencyInfo("QNV", 0, "Mismatched", "Q", digits, minorUnits, digits, 1));
+
+        Assert.Equal("minorUnitsPerMajor", error.ParamName);
+    }
+
+    [Fact]
+    public void N3_allocation_gives_every_recipient_at_most_one_extra_minor_unit()
+    {
+        // The largest-remainder loop marks each winner as spent, so a surplus at or above the recipient
+        // count would land on index 0 repeatedly. The arithmetic says that cannot happen; the guard and
+        // this test say so without relying on the argument.
+        Money total = new(1_000_000.01m, Currency.DKK);
+        int[] weights = [.. Enumerable.Range(1, 97)];
+
+        Money[] parts = total.Allocate(weights);
+
+        Assert.Equal(total, parts.Sum());
+
+        for (int i = 0; i < parts.Length; i++)
+        {
+            decimal exact = total.Amount * weights[i] / weights.Sum();
+            Assert.True(
+                Math.Abs(parts[i].Amount - exact) < 0.01m,
+                $"Part {i} was {parts[i].Amount}, more than one øre from its exact share {exact}.");
+        }
+    }
+
+    [Fact]
+    public void N4_formatting_is_not_bounded_by_the_pooled_fallback_buffer()
+    {
+        // The pooled fallback was a fixed 1024 characters, so H1's contract violation survived for any
+        // name longer than that. The buffer now doubles until the text fits.
+        Currency currency = Currency.FromCode("QVL");
+
+        if (!currency.IsKnown)
+        {
+            CurrencyRegistry.Register(new CurrencyInfo(
+                code: "QVL",
+                numericCode: 0,
+                englishName: new string('V', 5_000),
+                symbol: "Q",
+                decimalDigits: 2,
+                minorUnitsPerMajor: 100L,
+                cashDecimalDigits: 2,
+                cashRoundingStep: 1));
+        }
+
+        Money value = new(1234.56m, currency);
+        string formatted = value.ToString("L", CultureInfo.InvariantCulture);
+
+        Assert.Equal(new string('V', 5_000), formatted[^5_000..]);
+
+        char[] chars = new char[8192];
+        Assert.True(value.TryFormat(chars, out int charsWritten, "L", CultureInfo.InvariantCulture));
+        Assert.Equal(formatted, new string(chars, 0, charsWritten));
+
+        byte[] bytes = new byte[8192];
+        Assert.True(value.TryFormat(bytes, out int bytesWritten, "L", CultureInfo.InvariantCulture));
+        Assert.Equal(formatted, System.Text.Encoding.UTF8.GetString(bytes, 0, bytesWritten));
+
+        // Still honest about a destination that genuinely cannot hold the result.
+        Assert.False(value.TryFormat(new byte[64], out _, "L", CultureInfo.InvariantCulture));
+    }
+
+    [Fact]
     public void M2_the_code_validation_message_matches_the_behaviour()
     {
         // Lower case is accepted and normalised, so claiming "uppercase" was misleading.
@@ -270,6 +372,30 @@ public sealed class AuditRegressionTests
         Assert.Equal(4, Unsafe.SizeOf<Currency>());
         Assert.Equal(24, Unsafe.SizeOf<Money>());
         Assert.Equal(24, Unsafe.SizeOf<ExchangeRate>());
+    }
+
+    /// <summary>
+    /// A currency whose declared digit count exceeds 18 while its increment does not — a legal
+    /// registration, since 10^18 divides 10^20, and the case the saturating power-of-ten test got wrong.
+    /// </summary>
+    private static Currency RegisterWidePrecisionCurrency()
+    {
+        Currency currency = Currency.FromCode("QNP");
+
+        if (!currency.IsKnown)
+        {
+            CurrencyRegistry.Register(new CurrencyInfo(
+                code: "QNP",
+                numericCode: 0,
+                englishName: "Wide precision test unit",
+                symbol: "QNP",
+                decimalDigits: 20,
+                minorUnitsPerMajor: 1_000_000_000_000_000_000L,
+                cashDecimalDigits: 20,
+                cashRoundingStep: 1));
+        }
+
+        return currency;
     }
 
     private static Currency RegisterHighPrecisionCurrency()

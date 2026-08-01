@@ -69,7 +69,11 @@ public sealed class CurrencyInfo
         // would snap to an increment the currency cannot represent. 100/5 is fine — that is MRU's
         // khoum — but 2 digits with 10^18 units is a mis-registration, and silently accepting it
         // produces amounts that look canonical and are not.
-        if (minorUnitsPerMajor > 0 && decimalDigits <= 18 && Pow10(decimalDigits) % minorUnitsPerMajor != 0)
+        //
+        // Checked in decimal across the whole 0..28 range. An earlier version stopped at 18 because it
+        // computed the power in a long, which left exactly the registrations that also confused
+        // Money.Round unvalidated.
+        if (minorUnitsPerMajor > 0 && Pow10(decimalDigits) % minorUnitsPerMajor != 0m)
         {
             throw new ArgumentException(
                 $"'{code}' declares {minorUnitsPerMajor} minor units per major unit, which cannot be "
@@ -166,13 +170,14 @@ public sealed class CurrencyInfo
     /// <summary>Returns the ISO 4217 alphabetic code.</summary>
     public override string ToString() => Code;
 
-    private static long Pow10(int exponent)
+    /// <summary>Ten to the power of <paramref name="exponent"/>, in decimal so the full 0..28 range fits.</summary>
+    private static decimal Pow10(int exponent)
     {
-        long result = 1;
+        decimal result = 1m;
 
         for (int i = 0; i < exponent; i++)
         {
-            result *= 10;
+            result *= 10m;
         }
 
         return result;

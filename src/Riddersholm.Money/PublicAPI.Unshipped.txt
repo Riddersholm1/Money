@@ -1,2 +1,1 @@
 #nullable enable
-Riddersholm.Money.UnknownCurrencyException.UnknownCurrencyException(string! message, Riddersholm.Money.Currency currency) -> void

@@ -34,6 +34,16 @@
   <!-- Shared package identity. Individual packages override Description/PackageTags. -->
   <PropertyGroup>
     <VersionPrefix>1.0.0</VersionPrefix>
+    <!--
+      The first public version is a release candidate. Two adversarial audits each turned up real
+      defects, so a third pass — by actual consumers — will probably turn up more, and an rc lets that
+      happen before the API is a permanent semver commitment rather than after. Clear this to promote
+      to 1.0.0.
+
+      The release workflow overrides this with -p:Version from the git tag, so the tag remains the
+      single source of truth for what is published; this only governs local and CI pack output.
+    -->
+    <VersionSuffix>rc.1</VersionSuffix>
     <Authors>Riddersholm</Authors>
     <Company>Riddersholm</Company>
     <Product>Riddersholm.Money</Product>
@@ -44,6 +54,8 @@
     <RepositoryType>git</RepositoryType>
     <PackageTags>money;currency;iso4217;value-object;ddd;decimal;finance</PackageTags>
     <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageIcon>icon.png</PackageIcon>
+    <PackageReleaseNotes>See the CHANGELOG for this release: https://github.com/Riddersholm1/Money/blob/main/CHANGELOG.md</PackageReleaseNotes>
     <IsPackable>false</IsPackable>
   </PropertyGroup>
 

@@ -171,10 +171,26 @@ public readonly partial record struct Money
         return result;
     }
 
-    private static long Pow10Long(int exponent)
+    /// <summary>
+    /// Ten to the power of <paramref name="exponent"/>, or <c>-1</c> when that does not fit a
+    /// <see cref="long"/>.
+    /// </summary>
+    /// <remarks>
+    /// Returning a sentinel rather than saturating at 10^18 matters. Callers use this to decide whether
+    /// the minor-unit divisor is a power of ten, and a saturating version answered "yes" for every
+    /// precision above 18 — so a currency registered with 28 digits and a 10^18 divisor was rounded to
+    /// 28 decimal places when its real increment is 10⁻¹⁸. An impossible value can never compare equal
+    /// to a real divisor, so the general path is taken instead, which is correct for any divisor.
+    /// </remarks>
+    internal static long Pow10Long(int exponent)
     {
+        if (exponent is < 0 or > 18)
+        {
+            return -1;
+        }
+
         long result = 1;
-        for (int i = 0; i < exponent && result <= 100_000_000_000_000_000L; i++)
+        for (int i = 0; i < exponent; i++)
         {
             result *= 10;
         }

@@ -64,6 +64,29 @@ Parsing allocates nothing at all, and `ToString` allocates only the string it re
 are the result, not overhead. Every formatting path goes through `TryFormat` into a stack buffer, so
 supplying your own buffer removes the last allocation.
 
+### The `C` format's derived-format cache, once it is full
+
+`C` needs a `NumberFormatInfo` carrying the *currency's* symbol and precision rather than the culture's,
+so one is derived per culture/currency pair and memoised. The cache is capped at 1024 entries, because
+the key space is cultures × currencies and an application formatting attacker-influenced pairs could
+otherwise grow it without bound. Past the cap, formatting still works — it just stops memoising.
+
+| | Time | Allocated |
+|---|---:|---:|
+| `ToString("C")`, pair is cached | 140 ns | 48 B |
+| `ToString("C")`, past the cap | 292 ns | 360 B |
+| `ToString("C")`, past the cap, with the original cap check | **5364 ns** | 360 B |
+
+The extra 150 ns and 312 bytes on the middle row are one `NumberFormatInfo.Clone()` — the honest price
+of not memoising, and the reason the cap does not simply throw the cache away.
+
+The third row is the one worth keeping. The cap was first tested with `ConcurrentDictionary.Count`,
+which acquires **every bucket lock**; the moment the cache filled, each format call for an uncached pair
+took all of them — an 18× regression on a path that is supposed to be lock-free, and that was
+single-threaded, so under real concurrency it would have been a convoy. The size is now tracked in an
+`Interlocked` counter read with `Volatile.Read`. `FormatCacheBenchmarks` exists to make that row visible
+if anyone reintroduces the problem.
+
 ## Allocation (splitting an amount)
 
 | Recipients | `Allocate(n)` | `Allocate(Span<Money>)` | NodaMoney `Split` |

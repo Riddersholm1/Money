@@ -9,9 +9,11 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 Nothing yet.
 
-## [1.0.0] — 2026-07-31
+## [1.0.0-rc.1] — 2026-08-01
 
-First release.
+First public release candidate. The API is complete and the implementation is what 1.0.0 is intended
+to be; the `rc` marks that no one outside the project has used it yet. It will be promoted to 1.0.0
+unchanged if nothing surfaces.
 
 ### Riddersholm.Money
 
@@ -57,5 +59,5 @@ First release.
 - Nullable `Money?` support, a single-column text mapping by convention, and value comparers that treat
   `100 DKK` and `100.00 DKK` as the same money rather than as a modification.
 
-[Unreleased]: https://github.com/Riddersholm1/Money/compare/v1.0.0...HEAD
-[1.0.0]: https://github.com/Riddersholm1/Money/releases/tag/v1.0.0
+[Unreleased]: https://github.com/Riddersholm1/Money/compare/v1.0.0-rc.1...HEAD
+[1.0.0-rc.1]: https://github.com/Riddersholm1/Money/releases/tag/v1.0.0-rc.1

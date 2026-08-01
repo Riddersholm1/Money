@@ -194,12 +194,32 @@ public readonly partial record struct Money
 
         // Hand out what truncation left behind, one minor unit at a time, to whoever was shortchanged
         // most — the largest-remainder method. Ties go to the earlier position, so the split is
-        // reproducible. Each truncation loses less than one unit, so the outstanding count is always
-        // below the number of recipients and nobody can win twice.
+        // reproducible.
         decimal remainder = units - assigned;
         decimal step = Math.Sign(remainder);
+        decimal outstandingExact = Math.Abs(remainder);
 
-        for (int outstanding = (int)Math.Abs(remainder); outstanding > 0; outstanding--)
+        // Each truncation loses strictly less than one unit, so the outstanding count is always below
+        // the number of recipients — but the loop below marks each winner as spent, and if that ever
+        // stopped being true index 0 would take the surplus repeatedly, breaking the documented
+        // guarantee that parts differ by at most one minor unit. Rather than rest on the reasoning,
+        // hand everyone the whole part of the surplus up front. What remains is provably less than
+        // `count`, which also makes the cast below safe. In practice this branch is never taken.
+        decimal bulk = decimal.Truncate(outstandingExact / count);
+
+        if (bulk > 0m)
+        {
+            decimal bulkStep = bulk * step;
+
+            for (int i = 0; i < count; i++)
+            {
+                shares[i] += bulkStep;
+            }
+
+            outstandingExact -= bulk * count;
+        }
+
+        for (int outstanding = (int)outstandingExact; outstanding > 0; outstanding--)
         {
             int best = 0;
             decimal bestShortfall = shortfalls[0];

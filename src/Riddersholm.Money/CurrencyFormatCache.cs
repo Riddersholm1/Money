@@ -32,6 +32,9 @@ internal static class CurrencyFormatCache
 
     private static readonly ConcurrentDictionary<(string Culture, uint Currency), NumberFormatInfo> Formats = new();
 
+    /// <summary>Approximate entry count, maintained so the cap check never has to lock the dictionary.</summary>
+    private static int _count;
+
     /// <summary>ISO currency code per culture name; <see langword="null"/> when the culture has no region.</summary>
     private static readonly ConcurrentDictionary<string, string?> RegionCurrencies = new(StringComparer.Ordinal);
 
@@ -71,12 +74,26 @@ internal static class CurrencyFormatCache
         // Bounded on purpose. The key space is cultures × currencies — on the order of 10^5 — and an
         // application that formats attacker-influenced pairs could otherwise grow this without limit.
         // Past the cap, formatting still works; it just stops memoising.
-        if (Formats.Count < MaximumCachedFormats)
+        //
+        // The count is tracked separately rather than read from the dictionary:
+        // ConcurrentDictionary.Count acquires every bucket lock, and this runs on each miss, so using
+        // it would put a lock convoy on the formatting path the moment the cache filled up — a worse
+        // failure than the unbounded growth the cap exists to prevent.
+        if (Volatile.Read(ref _count) >= MaximumCachedFormats)
         {
-            return Formats.GetOrAdd((culture.Name, currency.PackedValue), built);
+            return built;
         }
 
-        return built;
+        if (Formats.TryAdd((culture.Name, currency.PackedValue), built))
+        {
+            Interlocked.Increment(ref _count);
+            return built;
+        }
+
+        // Another thread cached an equivalent instance first; prefer the shared one.
+        return Formats.TryGetValue((culture.Name, currency.PackedValue), out NumberFormatInfo? raced)
+            ? raced
+            : built;
     }
 
     private static NumberFormatInfo Build(

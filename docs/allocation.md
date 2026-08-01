@@ -73,6 +73,13 @@ For every allocation, whatever the amount, count, ratios, or sign:
 All five are property-tested over hundreds of random amounts, counts, and ratios, including negatives.
 Guarantee 1 is the reason this API exists.
 
+Guarantee 4 holds for ratio allocation because the largest-remainder loop hands each recipient at most
+one extra unit and truncation can never leave more units outstanding than there are recipients. The
+second half of that is an argument, not a check, so the implementation does not rely on it: any surplus
+at or above the recipient count is divided out evenly before the loop runs. In practice that branch is
+never taken — it exists so the guarantee is a property of the code rather than of the reasoning about
+it.
+
 ## What is refused
 
 **Non-canonical amounts.**

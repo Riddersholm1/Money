@@ -34,9 +34,16 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <!--
+      PrivateAssets="all" is belt-and-braces. Packing was checked and the generator does not leak into
+      this package's dependency list today, but nothing in the build asserted that, and the README's
+      "no dependencies" claim depends on it. The CI pack job now verifies it; this attribute states the
+      intent so a future NuGet change cannot quietly turn the claim false.
+    -->
     <ProjectReference Include="..\Riddersholm.Money.Generators\Riddersholm.Money.Generators.csproj"
                       OutputItemType="Analyzer"
-                      ReferenceOutputAssembly="false" />
+                      ReferenceOutputAssembly="false"
+                      PrivateAssets="all" />
   </ItemGroup>
 
   <ItemGroup>

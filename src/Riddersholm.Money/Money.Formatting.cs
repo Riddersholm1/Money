@@ -17,8 +17,9 @@ public readonly partial record struct Money
     private const int StackBufferSize = 128;
 
     /// <summary>
-    /// The fallback size for output that exceeds <see cref="StackBufferSize"/>, which only a
-    /// runtime-registered currency with an unusually long name can do.
+    /// The first fallback size for output that exceeds <see cref="StackBufferSize"/>, which only a
+    /// runtime-registered currency with an unusually long name can do. The buffer doubles from here
+    /// until the text fits, so this is a starting point rather than a limit.
     /// </summary>
     private const int LargeBufferSize = 1024;
 
@@ -53,13 +54,11 @@ public readonly partial record struct Money
         }
 
         // Only reachable for a currency with an unusually long name; borrow a larger buffer.
-        char[] rented = ArrayPool<char>.Shared.Rent(LargeBufferSize);
+        char[] rented = RentFormatted(format, formatProvider, out written);
 
         try
         {
-            return TryFormat(rented, out written, format, formatProvider)
-                ? new string(rented, 0, written)
-                : throw new FormatException($"Could not format '{Amount}' with format '{format}'.");
+            return new string(rented, 0, written);
         }
         finally
         {
@@ -162,21 +161,70 @@ public readonly partial record struct Money
         ReadOnlySpan<char> format,
         IFormatProvider? provider)
     {
-        char[] rented = ArrayPool<char>.Shared.Rent(LargeBufferSize);
+        char[] rented = RentFormatted(format, provider, out int written);
 
         try
         {
-            if (!TryFormat(rented, out int written, format, provider))
-            {
-                bytesWritten = 0;
-                return false;
-            }
-
+            // The scratch buffer is guaranteed to have held the whole text, so a false here means what
+            // the interface says it means: the caller's buffer was too small.
             return Encoding.UTF8.TryGetBytes(rented.AsSpan(0, written), utf8Destination, out bytesWritten);
         }
         finally
         {
             ArrayPool<char>.Shared.Return(rented);
+        }
+    }
+
+    /// <summary>
+    /// Formats into a pooled buffer that doubles until the text fits, and hands the buffer back for the
+    /// caller to consume and return.
+    /// </summary>
+    /// <remarks>
+    /// A fixed fallback size would reintroduce the defect this replaced: <c>TryFormat</c> returning
+    /// <see langword="false"/> for a destination that was in fact large enough, because an internal
+    /// buffer — not the caller's — ran out. Growing until it fits means the only bound on the output is
+    /// the length of the currency's own name, which is exactly the contract both overloads document.
+    /// </remarks>
+    /// <exception cref="FormatException">
+    /// The text does not fit the largest array the runtime can allocate, which takes a currency name of
+    /// roughly two billion characters.
+    /// </exception>
+    private char[] RentFormatted(ReadOnlySpan<char> format, IFormatProvider? provider, out int written)
+    {
+        int size = LargeBufferSize;
+
+        while (true)
+        {
+            char[] rented = ArrayPool<char>.Shared.Rent(size);
+            bool fits;
+
+            try
+            {
+                fits = TryFormat(rented, out written, format, provider);
+            }
+            catch
+            {
+                // An unsupported format string throws out of here; the buffer still goes back.
+                ArrayPool<char>.Shared.Return(rented);
+                throw;
+            }
+
+            if (fits)
+            {
+                return rented;
+            }
+
+            // Rent may hand back more than was asked for, so grow from what was actually tried —
+            // otherwise the next attempt could be no larger and the loop would not terminate.
+            size = rented.Length;
+            ArrayPool<char>.Shared.Return(rented);
+
+            if (size >= Array.MaxLength)
+            {
+                throw new FormatException($"Could not format '{Amount}' with format '{format}': the result is too large.");
+            }
+
+            size = (int)Math.Min((long)size * 2, Array.MaxLength);
         }
     }
 

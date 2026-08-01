@@ -8,17 +8,35 @@ Riddersholm.Money.Currency.Currency() -> void
 Riddersholm.Money.Currency.DecimalDigits.get -> byte
 Riddersholm.Money.Currency.EnglishName.get -> string!
 Riddersholm.Money.Currency.Equals(Riddersholm.Money.Currency other) -> bool
+static Riddersholm.Money.Currency.FromCode(System.ReadOnlySpan<char> code) -> Riddersholm.Money.Currency
+static Riddersholm.Money.Currency.FromCode(string! code) -> Riddersholm.Money.Currency
 Riddersholm.Money.Currency.HasMinorUnit.get -> bool
 Riddersholm.Money.Currency.Info.get -> Riddersholm.Money.CurrencyInfo!
 Riddersholm.Money.Currency.IsKnown.get -> bool
 Riddersholm.Money.Currency.IsNone.get -> bool
+static Riddersholm.Money.Currency.Known.get -> System.ReadOnlySpan<Riddersholm.Money.Currency>
 Riddersholm.Money.Currency.MinorUnit.get -> decimal
 Riddersholm.Money.Currency.MinorUnitsPerMajor.get -> long
+static Riddersholm.Money.Currency.None.get -> Riddersholm.Money.Currency
 Riddersholm.Money.Currency.NumericCode.get -> short
+static Riddersholm.Money.Currency.Parse(System.ReadOnlySpan<byte> utf8Text, System.IFormatProvider? provider = null) -> Riddersholm.Money.Currency
+static Riddersholm.Money.Currency.Parse(System.ReadOnlySpan<char> s, System.IFormatProvider? provider = null) -> Riddersholm.Money.Currency
+static Riddersholm.Money.Currency.Parse(string! s, System.IFormatProvider? provider = null) -> Riddersholm.Money.Currency
 Riddersholm.Money.Currency.Symbol.get -> string!
 Riddersholm.Money.Currency.ToString(string? format, System.IFormatProvider? formatProvider) -> string!
 Riddersholm.Money.Currency.TryFormat(System.Span<byte> utf8Destination, out int bytesWritten, System.ReadOnlySpan<char> format = default(System.ReadOnlySpan<char>), System.IFormatProvider? provider = null) -> bool
 Riddersholm.Money.Currency.TryFormat(System.Span<char> destination, out int charsWritten, System.ReadOnlySpan<char> format = default(System.ReadOnlySpan<char>), System.IFormatProvider? provider = null) -> bool
+static Riddersholm.Money.Currency.TryFromCode(System.ReadOnlySpan<char> code, out Riddersholm.Money.Currency currency) -> bool
+static Riddersholm.Money.Currency.TryFromNumericCode(short numericCode, out Riddersholm.Money.Currency currency) -> bool
+static Riddersholm.Money.Currency.TryParse(System.ReadOnlySpan<byte> utf8Text, System.IFormatProvider? provider, out Riddersholm.Money.Currency result) -> bool
+static Riddersholm.Money.Currency.TryParse(System.ReadOnlySpan<char> s, System.IFormatProvider? provider, out Riddersholm.Money.Currency result) -> bool
+static Riddersholm.Money.Currency.TryParse(string? s, System.IFormatProvider? provider, out Riddersholm.Money.Currency result) -> bool
+static Riddersholm.Money.Currency.operator !=(Riddersholm.Money.Currency left, Riddersholm.Money.Currency right) -> bool
+static Riddersholm.Money.Currency.operator <(Riddersholm.Money.Currency left, Riddersholm.Money.Currency right) -> bool
+static Riddersholm.Money.Currency.operator <=(Riddersholm.Money.Currency left, Riddersholm.Money.Currency right) -> bool
+static Riddersholm.Money.Currency.operator ==(Riddersholm.Money.Currency left, Riddersholm.Money.Currency right) -> bool
+static Riddersholm.Money.Currency.operator >(Riddersholm.Money.Currency left, Riddersholm.Money.Currency right) -> bool
+static Riddersholm.Money.Currency.operator >=(Riddersholm.Money.Currency left, Riddersholm.Money.Currency right) -> bool
 Riddersholm.Money.CurrencyInfo
 Riddersholm.Money.CurrencyInfo.CashDecimalDigits.get -> byte
 Riddersholm.Money.CurrencyInfo.CashRoundingStep.get -> byte
@@ -41,6 +59,8 @@ Riddersholm.Money.CurrencyMismatchException.CurrencyMismatchException(string! me
 Riddersholm.Money.CurrencyMismatchException.Left.get -> Riddersholm.Money.Currency
 Riddersholm.Money.CurrencyMismatchException.Right.get -> Riddersholm.Money.Currency
 Riddersholm.Money.CurrencyRegistry
+static Riddersholm.Money.CurrencyRegistry.Custom.get -> System.Collections.Generic.IReadOnlyCollection<Riddersholm.Money.CurrencyInfo!>!
+static Riddersholm.Money.CurrencyRegistry.Register(params System.ReadOnlySpan<Riddersholm.Money.CurrencyInfo!> currencies) -> void
 Riddersholm.Money.ExchangeRate
 Riddersholm.Money.ExchangeRate.BaseCurrency.get -> Riddersholm.Money.Currency
 Riddersholm.Money.ExchangeRate.Convert(Riddersholm.Money.Money amount) -> Riddersholm.Money.Money
@@ -51,9 +71,12 @@ Riddersholm.Money.ExchangeRate.ExchangeRate(Riddersholm.Money.Currency baseCurre
 Riddersholm.Money.ExchangeRate.Invert() -> Riddersholm.Money.ExchangeRate
 Riddersholm.Money.ExchangeRate.QuoteCurrency.get -> Riddersholm.Money.Currency
 Riddersholm.Money.ExchangeRate.Rate.get -> decimal
+static Riddersholm.Money.ExchangeRate.operator !=(Riddersholm.Money.ExchangeRate left, Riddersholm.Money.ExchangeRate right) -> bool
+static Riddersholm.Money.ExchangeRate.operator ==(Riddersholm.Money.ExchangeRate left, Riddersholm.Money.ExchangeRate right) -> bool
 Riddersholm.Money.Money
 Riddersholm.Money.Money.Abs() -> Riddersholm.Money.Money
 Riddersholm.Money.Money.Add(Riddersholm.Money.Money other) -> Riddersholm.Money.Money
+static Riddersholm.Money.Money.AdditiveIdentity.get -> Riddersholm.Money.Money
 Riddersholm.Money.Money.Allocate(System.ReadOnlySpan<decimal> ratios) -> Riddersholm.Money.Money[]!
 Riddersholm.Money.Money.Allocate(System.ReadOnlySpan<decimal> ratios, System.Span<Riddersholm.Money.Money> destination) -> void
 Riddersholm.Money.Money.Allocate(System.ReadOnlySpan<int> ratios) -> Riddersholm.Money.Money[]!
@@ -62,6 +85,7 @@ Riddersholm.Money.Money.Allocate(System.Span<Riddersholm.Money.Money> destinatio
 Riddersholm.Money.Money.Allocate(int count) -> Riddersholm.Money.Money[]!
 Riddersholm.Money.Money.Amount.get -> decimal
 Riddersholm.Money.Money.Ceiling() -> Riddersholm.Money.Money
+static Riddersholm.Money.Money.Clamp(Riddersholm.Money.Money value, Riddersholm.Money.Money min, Riddersholm.Money.Money max) -> Riddersholm.Money.Money
 Riddersholm.Money.Money.CompareTo(Riddersholm.Money.Money other) -> int
 Riddersholm.Money.Money.Currency.get -> Riddersholm.Money.Currency
 Riddersholm.Money.Money.Deconstruct(out decimal amount, out Riddersholm.Money.Currency currency) -> void
@@ -73,11 +97,19 @@ Riddersholm.Money.Money.IsCanonical.get -> bool
 Riddersholm.Money.Money.IsNegative.get -> bool
 Riddersholm.Money.Money.IsPositive.get -> bool
 Riddersholm.Money.Money.IsZero.get -> bool
+static Riddersholm.Money.Money.Max(Riddersholm.Money.Money left, Riddersholm.Money.Money right) -> Riddersholm.Money.Money
+static Riddersholm.Money.Money.Min(Riddersholm.Money.Money left, Riddersholm.Money.Money right) -> Riddersholm.Money.Money
 Riddersholm.Money.Money.Money() -> void
 Riddersholm.Money.Money.Money(decimal amount, Riddersholm.Money.Currency currency) -> void
 Riddersholm.Money.Money.Money(decimal amount, System.ReadOnlySpan<char> currencyCode) -> void
 Riddersholm.Money.Money.Multiply(decimal factor) -> Riddersholm.Money.Money
 Riddersholm.Money.Money.Negate() -> Riddersholm.Money.Money
+static Riddersholm.Money.Money.Parse(System.ReadOnlySpan<byte> utf8Text, Riddersholm.Money.MoneyStyles style, System.IFormatProvider? provider) -> Riddersholm.Money.Money
+static Riddersholm.Money.Money.Parse(System.ReadOnlySpan<byte> utf8Text, System.IFormatProvider? provider = null) -> Riddersholm.Money.Money
+static Riddersholm.Money.Money.Parse(System.ReadOnlySpan<char> s, Riddersholm.Money.MoneyStyles style, System.IFormatProvider? provider) -> Riddersholm.Money.Money
+static Riddersholm.Money.Money.Parse(System.ReadOnlySpan<char> s, System.IFormatProvider? provider = null) -> Riddersholm.Money.Money
+static Riddersholm.Money.Money.Parse(string! s, Riddersholm.Money.MoneyStyles style, System.IFormatProvider? provider = null) -> Riddersholm.Money.Money
+static Riddersholm.Money.Money.Parse(string! s, System.IFormatProvider? provider = null) -> Riddersholm.Money.Money
 Riddersholm.Money.Money.Round(System.MidpointRounding mode = System.MidpointRounding.ToEven) -> Riddersholm.Money.Money
 Riddersholm.Money.Money.Round(int decimals, System.MidpointRounding mode = System.MidpointRounding.ToEven) -> Riddersholm.Money.Money
 Riddersholm.Money.Money.RoundToCash(System.MidpointRounding mode = System.MidpointRounding.ToEven) -> Riddersholm.Money.Money
@@ -88,100 +120,13 @@ Riddersholm.Money.Money.Truncate() -> Riddersholm.Money.Money
 Riddersholm.Money.Money.TryCompareTo(Riddersholm.Money.Money other, out int result) -> bool
 Riddersholm.Money.Money.TryFormat(System.Span<byte> utf8Destination, out int bytesWritten, System.ReadOnlySpan<char> format = default(System.ReadOnlySpan<char>), System.IFormatProvider? provider = null) -> bool
 Riddersholm.Money.Money.TryFormat(System.Span<char> destination, out int charsWritten, System.ReadOnlySpan<char> format = default(System.ReadOnlySpan<char>), System.IFormatProvider? provider = null) -> bool
-Riddersholm.Money.Money.WithCurrency(Riddersholm.Money.Currency currency) -> Riddersholm.Money.Money
-Riddersholm.Money.MoneyEnumerableExtensions
-Riddersholm.Money.MoneyStyles
-Riddersholm.Money.MoneyStyles.AllowCurrencyCode = 128 -> Riddersholm.Money.MoneyStyles
-Riddersholm.Money.MoneyStyles.AllowCurrencySymbol = 256 -> Riddersholm.Money.MoneyStyles
-Riddersholm.Money.MoneyStyles.AllowDecimalPoint = 64 -> Riddersholm.Money.MoneyStyles
-Riddersholm.Money.MoneyStyles.AllowLeadingSign = 4 -> Riddersholm.Money.MoneyStyles
-Riddersholm.Money.MoneyStyles.AllowLeadingWhite = 1 -> Riddersholm.Money.MoneyStyles
-Riddersholm.Money.MoneyStyles.AllowParentheses = 16 -> Riddersholm.Money.MoneyStyles
-Riddersholm.Money.MoneyStyles.AllowThousands = 32 -> Riddersholm.Money.MoneyStyles
-Riddersholm.Money.MoneyStyles.AllowTrailingSign = 8 -> Riddersholm.Money.MoneyStyles
-Riddersholm.Money.MoneyStyles.AllowTrailingWhite = 2 -> Riddersholm.Money.MoneyStyles
-Riddersholm.Money.MoneyStyles.Currency = Riddersholm.Money.MoneyStyles.AllowTrailingSign | Riddersholm.Money.MoneyStyles.AllowParentheses | Riddersholm.Money.MoneyStyles.Number | Riddersholm.Money.MoneyStyles.AllowCurrencyCode | Riddersholm.Money.MoneyStyles.AllowCurrencySymbol | Riddersholm.Money.MoneyStyles.RequireCurrency -> Riddersholm.Money.MoneyStyles
-Riddersholm.Money.MoneyStyles.None = 0 -> Riddersholm.Money.MoneyStyles
-Riddersholm.Money.MoneyStyles.Number = Riddersholm.Money.MoneyStyles.AllowLeadingWhite | Riddersholm.Money.MoneyStyles.AllowTrailingWhite | Riddersholm.Money.MoneyStyles.AllowLeadingSign | Riddersholm.Money.MoneyStyles.AllowThousands | Riddersholm.Money.MoneyStyles.AllowDecimalPoint -> Riddersholm.Money.MoneyStyles
-Riddersholm.Money.MoneyStyles.RequireCurrency = 512 -> Riddersholm.Money.MoneyStyles
-Riddersholm.Money.Serialization.CurrencyJsonConverter
-Riddersholm.Money.Serialization.CurrencyJsonConverter.CurrencyJsonConverter() -> void
-Riddersholm.Money.Serialization.MoneyJsonConverter
-Riddersholm.Money.Serialization.MoneyJsonConverter.Format.get -> Riddersholm.Money.Serialization.MoneyJsonFormat
-Riddersholm.Money.Serialization.MoneyJsonConverter.MoneyJsonConverter() -> void
-Riddersholm.Money.Serialization.MoneyJsonConverter.MoneyJsonConverter(Riddersholm.Money.Serialization.MoneyJsonFormat format) -> void
-Riddersholm.Money.Serialization.MoneyJsonExtensions
-Riddersholm.Money.Serialization.MoneyJsonFormat
-Riddersholm.Money.Serialization.MoneyJsonFormat.Compact = 2 -> Riddersholm.Money.Serialization.MoneyJsonFormat
-Riddersholm.Money.Serialization.MoneyJsonFormat.NumericAmount = 0 -> Riddersholm.Money.Serialization.MoneyJsonFormat
-Riddersholm.Money.Serialization.MoneyJsonFormat.StringAmount = 1 -> Riddersholm.Money.Serialization.MoneyJsonFormat
-Riddersholm.Money.Serialization.MoneyJsonSerializerContext
-Riddersholm.Money.Serialization.MoneyJsonSerializerContext.MoneyJsonSerializerContext() -> void
-Riddersholm.Money.Serialization.MoneyJsonSerializerContext.MoneyJsonSerializerContext(System.Text.Json.JsonSerializerOptions! options) -> void
-Riddersholm.Money.UnknownCurrencyException
-Riddersholm.Money.UnknownCurrencyException.Currency.get -> Riddersholm.Money.Currency
-Riddersholm.Money.UnknownCurrencyException.UnknownCurrencyException() -> void
-Riddersholm.Money.UnknownCurrencyException.UnknownCurrencyException(Riddersholm.Money.Currency currency) -> void
-Riddersholm.Money.UnknownCurrencyException.UnknownCurrencyException(string! message) -> void
-Riddersholm.Money.UnknownCurrencyException.UnknownCurrencyException(string! message, System.Exception! innerException) -> void
-const Riddersholm.Money.CurrencyInfo.MaximumDecimalDigits = 28 -> byte
-const Riddersholm.Money.CurrencyInfo.MaximumIsoDecimalDigits = 4 -> byte
-const Riddersholm.Money.CurrencyInfo.MaximumMinorUnitsPerMajor = 1000000000000000000 -> long
-const Riddersholm.Money.Money.DefaultStyles = Riddersholm.Money.MoneyStyles.Currency -> Riddersholm.Money.MoneyStyles
-override Riddersholm.Money.Currency.GetHashCode() -> int
-override Riddersholm.Money.Currency.ToString() -> string!
-override Riddersholm.Money.CurrencyInfo.ToString() -> string!
-override Riddersholm.Money.ExchangeRate.GetHashCode() -> int
-override Riddersholm.Money.ExchangeRate.ToString() -> string!
-override Riddersholm.Money.Money.GetHashCode() -> int
-override Riddersholm.Money.Money.ToString() -> string!
-override Riddersholm.Money.Serialization.CurrencyJsonConverter.Read(ref System.Text.Json.Utf8JsonReader reader, System.Type! typeToConvert, System.Text.Json.JsonSerializerOptions! options) -> Riddersholm.Money.Currency
-override Riddersholm.Money.Serialization.CurrencyJsonConverter.ReadAsPropertyName(ref System.Text.Json.Utf8JsonReader reader, System.Type! typeToConvert, System.Text.Json.JsonSerializerOptions! options) -> Riddersholm.Money.Currency
-override Riddersholm.Money.Serialization.CurrencyJsonConverter.Write(System.Text.Json.Utf8JsonWriter! writer, Riddersholm.Money.Currency value, System.Text.Json.JsonSerializerOptions! options) -> void
-override Riddersholm.Money.Serialization.CurrencyJsonConverter.WriteAsPropertyName(System.Text.Json.Utf8JsonWriter! writer, Riddersholm.Money.Currency value, System.Text.Json.JsonSerializerOptions! options) -> void
-override Riddersholm.Money.Serialization.MoneyJsonConverter.Read(ref System.Text.Json.Utf8JsonReader reader, System.Type! typeToConvert, System.Text.Json.JsonSerializerOptions! options) -> Riddersholm.Money.Money
-override Riddersholm.Money.Serialization.MoneyJsonConverter.ReadAsPropertyName(ref System.Text.Json.Utf8JsonReader reader, System.Type! typeToConvert, System.Text.Json.JsonSerializerOptions! options) -> Riddersholm.Money.Money
-override Riddersholm.Money.Serialization.MoneyJsonConverter.Write(System.Text.Json.Utf8JsonWriter! writer, Riddersholm.Money.Money value, System.Text.Json.JsonSerializerOptions! options) -> void
-override Riddersholm.Money.Serialization.MoneyJsonConverter.WriteAsPropertyName(System.Text.Json.Utf8JsonWriter! writer, Riddersholm.Money.Money value, System.Text.Json.JsonSerializerOptions! options) -> void
-override Riddersholm.Money.Serialization.MoneyJsonSerializerContext.GetTypeInfo(System.Type! type) -> System.Text.Json.Serialization.Metadata.JsonTypeInfo?
-static Riddersholm.Money.Currency.FromCode(System.ReadOnlySpan<char> code) -> Riddersholm.Money.Currency
-static Riddersholm.Money.Currency.FromCode(string! code) -> Riddersholm.Money.Currency
-static Riddersholm.Money.Currency.Known.get -> System.ReadOnlySpan<Riddersholm.Money.Currency>
-static Riddersholm.Money.Currency.None.get -> Riddersholm.Money.Currency
-static Riddersholm.Money.Currency.Parse(System.ReadOnlySpan<byte> utf8Text, System.IFormatProvider? provider = null) -> Riddersholm.Money.Currency
-static Riddersholm.Money.Currency.Parse(System.ReadOnlySpan<char> s, System.IFormatProvider? provider = null) -> Riddersholm.Money.Currency
-static Riddersholm.Money.Currency.Parse(string! s, System.IFormatProvider? provider = null) -> Riddersholm.Money.Currency
-static Riddersholm.Money.Currency.TryFromCode(System.ReadOnlySpan<char> code, out Riddersholm.Money.Currency currency) -> bool
-static Riddersholm.Money.Currency.TryFromNumericCode(short numericCode, out Riddersholm.Money.Currency currency) -> bool
-static Riddersholm.Money.Currency.TryParse(System.ReadOnlySpan<byte> utf8Text, System.IFormatProvider? provider, out Riddersholm.Money.Currency result) -> bool
-static Riddersholm.Money.Currency.TryParse(System.ReadOnlySpan<char> s, System.IFormatProvider? provider, out Riddersholm.Money.Currency result) -> bool
-static Riddersholm.Money.Currency.TryParse(string? s, System.IFormatProvider? provider, out Riddersholm.Money.Currency result) -> bool
-static Riddersholm.Money.Currency.operator !=(Riddersholm.Money.Currency left, Riddersholm.Money.Currency right) -> bool
-static Riddersholm.Money.Currency.operator <(Riddersholm.Money.Currency left, Riddersholm.Money.Currency right) -> bool
-static Riddersholm.Money.Currency.operator <=(Riddersholm.Money.Currency left, Riddersholm.Money.Currency right) -> bool
-static Riddersholm.Money.Currency.operator ==(Riddersholm.Money.Currency left, Riddersholm.Money.Currency right) -> bool
-static Riddersholm.Money.Currency.operator >(Riddersholm.Money.Currency left, Riddersholm.Money.Currency right) -> bool
-static Riddersholm.Money.Currency.operator >=(Riddersholm.Money.Currency left, Riddersholm.Money.Currency right) -> bool
-static Riddersholm.Money.CurrencyRegistry.Custom.get -> System.Collections.Generic.IReadOnlyCollection<Riddersholm.Money.CurrencyInfo!>!
-static Riddersholm.Money.CurrencyRegistry.Register(params System.ReadOnlySpan<Riddersholm.Money.CurrencyInfo!> currencies) -> void
-static Riddersholm.Money.ExchangeRate.operator !=(Riddersholm.Money.ExchangeRate left, Riddersholm.Money.ExchangeRate right) -> bool
-static Riddersholm.Money.ExchangeRate.operator ==(Riddersholm.Money.ExchangeRate left, Riddersholm.Money.ExchangeRate right) -> bool
-static Riddersholm.Money.Money.AdditiveIdentity.get -> Riddersholm.Money.Money
-static Riddersholm.Money.Money.Clamp(Riddersholm.Money.Money value, Riddersholm.Money.Money min, Riddersholm.Money.Money max) -> Riddersholm.Money.Money
-static Riddersholm.Money.Money.Max(Riddersholm.Money.Money left, Riddersholm.Money.Money right) -> Riddersholm.Money.Money
-static Riddersholm.Money.Money.Min(Riddersholm.Money.Money left, Riddersholm.Money.Money right) -> Riddersholm.Money.Money
-static Riddersholm.Money.Money.Parse(System.ReadOnlySpan<byte> utf8Text, Riddersholm.Money.MoneyStyles style, System.IFormatProvider? provider) -> Riddersholm.Money.Money
-static Riddersholm.Money.Money.Parse(System.ReadOnlySpan<byte> utf8Text, System.IFormatProvider? provider = null) -> Riddersholm.Money.Money
-static Riddersholm.Money.Money.Parse(System.ReadOnlySpan<char> s, Riddersholm.Money.MoneyStyles style, System.IFormatProvider? provider) -> Riddersholm.Money.Money
-static Riddersholm.Money.Money.Parse(System.ReadOnlySpan<char> s, System.IFormatProvider? provider = null) -> Riddersholm.Money.Money
-static Riddersholm.Money.Money.Parse(string! s, Riddersholm.Money.MoneyStyles style, System.IFormatProvider? provider = null) -> Riddersholm.Money.Money
-static Riddersholm.Money.Money.Parse(string! s, System.IFormatProvider? provider = null) -> Riddersholm.Money.Money
 static Riddersholm.Money.Money.TryParse(System.ReadOnlySpan<byte> utf8Text, Riddersholm.Money.MoneyStyles style, System.IFormatProvider? provider, out Riddersholm.Money.Money result) -> bool
 static Riddersholm.Money.Money.TryParse(System.ReadOnlySpan<byte> utf8Text, System.IFormatProvider? provider, out Riddersholm.Money.Money result) -> bool
 static Riddersholm.Money.Money.TryParse(System.ReadOnlySpan<char> s, Riddersholm.Money.MoneyStyles style, System.IFormatProvider? provider, out Riddersholm.Money.Money result) -> bool
 static Riddersholm.Money.Money.TryParse(System.ReadOnlySpan<char> s, System.IFormatProvider? provider, out Riddersholm.Money.Money result) -> bool
 static Riddersholm.Money.Money.TryParse(string? s, Riddersholm.Money.MoneyStyles style, System.IFormatProvider? provider, out Riddersholm.Money.Money result) -> bool
 static Riddersholm.Money.Money.TryParse(string? s, System.IFormatProvider? provider, out Riddersholm.Money.Money result) -> bool
+Riddersholm.Money.Money.WithCurrency(Riddersholm.Money.Currency currency) -> Riddersholm.Money.Money
 static Riddersholm.Money.Money.Zero(Riddersholm.Money.Currency currency) -> Riddersholm.Money.Money
 static Riddersholm.Money.Money.operator !=(Riddersholm.Money.Money left, Riddersholm.Money.Money right) -> bool
 static Riddersholm.Money.Money.operator *(Riddersholm.Money.Money left, decimal right) -> Riddersholm.Money.Money
@@ -206,13 +151,69 @@ static Riddersholm.Money.Money.operator <=(Riddersholm.Money.Money left, Ridders
 static Riddersholm.Money.Money.operator ==(Riddersholm.Money.Money left, Riddersholm.Money.Money right) -> bool
 static Riddersholm.Money.Money.operator >(Riddersholm.Money.Money left, Riddersholm.Money.Money right) -> bool
 static Riddersholm.Money.Money.operator >=(Riddersholm.Money.Money left, Riddersholm.Money.Money right) -> bool
+Riddersholm.Money.MoneyEnumerableExtensions
 static Riddersholm.Money.MoneyEnumerableExtensions.Average(this System.Collections.Generic.IEnumerable<Riddersholm.Money.Money>! source) -> Riddersholm.Money.Money
 static Riddersholm.Money.MoneyEnumerableExtensions.Max(this System.Collections.Generic.IEnumerable<Riddersholm.Money.Money>! source) -> Riddersholm.Money.Money
 static Riddersholm.Money.MoneyEnumerableExtensions.Min(this System.Collections.Generic.IEnumerable<Riddersholm.Money.Money>! source) -> Riddersholm.Money.Money
 static Riddersholm.Money.MoneyEnumerableExtensions.Sum(this System.Collections.Generic.IEnumerable<Riddersholm.Money.Money>! source) -> Riddersholm.Money.Money
 static Riddersholm.Money.MoneyEnumerableExtensions.Sum<TSource>(this System.Collections.Generic.IEnumerable<TSource>! source, System.Func<TSource, Riddersholm.Money.Money>! selector) -> Riddersholm.Money.Money
+Riddersholm.Money.MoneyStyles
+Riddersholm.Money.MoneyStyles.AllowCurrencyCode = 128 -> Riddersholm.Money.MoneyStyles
+Riddersholm.Money.MoneyStyles.AllowCurrencySymbol = 256 -> Riddersholm.Money.MoneyStyles
+Riddersholm.Money.MoneyStyles.AllowDecimalPoint = 64 -> Riddersholm.Money.MoneyStyles
+Riddersholm.Money.MoneyStyles.AllowLeadingSign = 4 -> Riddersholm.Money.MoneyStyles
+Riddersholm.Money.MoneyStyles.AllowLeadingWhite = 1 -> Riddersholm.Money.MoneyStyles
+Riddersholm.Money.MoneyStyles.AllowParentheses = 16 -> Riddersholm.Money.MoneyStyles
+Riddersholm.Money.MoneyStyles.AllowThousands = 32 -> Riddersholm.Money.MoneyStyles
+Riddersholm.Money.MoneyStyles.AllowTrailingSign = 8 -> Riddersholm.Money.MoneyStyles
+Riddersholm.Money.MoneyStyles.AllowTrailingWhite = 2 -> Riddersholm.Money.MoneyStyles
+Riddersholm.Money.MoneyStyles.Currency = Riddersholm.Money.MoneyStyles.AllowTrailingSign | Riddersholm.Money.MoneyStyles.AllowParentheses | Riddersholm.Money.MoneyStyles.Number | Riddersholm.Money.MoneyStyles.AllowCurrencyCode | Riddersholm.Money.MoneyStyles.AllowCurrencySymbol | Riddersholm.Money.MoneyStyles.RequireCurrency -> Riddersholm.Money.MoneyStyles
+Riddersholm.Money.MoneyStyles.None = 0 -> Riddersholm.Money.MoneyStyles
+Riddersholm.Money.MoneyStyles.Number = Riddersholm.Money.MoneyStyles.AllowLeadingWhite | Riddersholm.Money.MoneyStyles.AllowTrailingWhite | Riddersholm.Money.MoneyStyles.AllowLeadingSign | Riddersholm.Money.MoneyStyles.AllowThousands | Riddersholm.Money.MoneyStyles.AllowDecimalPoint -> Riddersholm.Money.MoneyStyles
+Riddersholm.Money.MoneyStyles.RequireCurrency = 512 -> Riddersholm.Money.MoneyStyles
+Riddersholm.Money.Serialization.CurrencyJsonConverter
+Riddersholm.Money.Serialization.CurrencyJsonConverter.CurrencyJsonConverter() -> void
+Riddersholm.Money.Serialization.MoneyJsonConverter
+Riddersholm.Money.Serialization.MoneyJsonConverter.Format.get -> Riddersholm.Money.Serialization.MoneyJsonFormat
+Riddersholm.Money.Serialization.MoneyJsonConverter.MoneyJsonConverter() -> void
+Riddersholm.Money.Serialization.MoneyJsonConverter.MoneyJsonConverter(Riddersholm.Money.Serialization.MoneyJsonFormat format) -> void
+Riddersholm.Money.Serialization.MoneyJsonExtensions
 static Riddersholm.Money.Serialization.MoneyJsonExtensions.AddMoney(this System.Text.Json.JsonSerializerOptions! options, Riddersholm.Money.Serialization.MoneyJsonFormat format = Riddersholm.Money.Serialization.MoneyJsonFormat.NumericAmount) -> System.Text.Json.JsonSerializerOptions!
+Riddersholm.Money.Serialization.MoneyJsonFormat
+Riddersholm.Money.Serialization.MoneyJsonFormat.Compact = 2 -> Riddersholm.Money.Serialization.MoneyJsonFormat
+Riddersholm.Money.Serialization.MoneyJsonFormat.NumericAmount = 0 -> Riddersholm.Money.Serialization.MoneyJsonFormat
+Riddersholm.Money.Serialization.MoneyJsonFormat.StringAmount = 1 -> Riddersholm.Money.Serialization.MoneyJsonFormat
+Riddersholm.Money.Serialization.MoneyJsonSerializerContext
 static Riddersholm.Money.Serialization.MoneyJsonSerializerContext.Default.get -> Riddersholm.Money.Serialization.MoneyJsonSerializerContext!
+Riddersholm.Money.Serialization.MoneyJsonSerializerContext.MoneyJsonSerializerContext() -> void
+Riddersholm.Money.Serialization.MoneyJsonSerializerContext.MoneyJsonSerializerContext(System.Text.Json.JsonSerializerOptions! options) -> void
+Riddersholm.Money.UnknownCurrencyException
+Riddersholm.Money.UnknownCurrencyException.Currency.get -> Riddersholm.Money.Currency
+Riddersholm.Money.UnknownCurrencyException.UnknownCurrencyException() -> void
+Riddersholm.Money.UnknownCurrencyException.UnknownCurrencyException(Riddersholm.Money.Currency currency) -> void
+Riddersholm.Money.UnknownCurrencyException.UnknownCurrencyException(string! message) -> void
+Riddersholm.Money.UnknownCurrencyException.UnknownCurrencyException(string! message, Riddersholm.Money.Currency currency) -> void
+Riddersholm.Money.UnknownCurrencyException.UnknownCurrencyException(string! message, System.Exception! innerException) -> void
+const Riddersholm.Money.CurrencyInfo.MaximumDecimalDigits = 28 -> byte
+const Riddersholm.Money.CurrencyInfo.MaximumIsoDecimalDigits = 4 -> byte
+const Riddersholm.Money.CurrencyInfo.MaximumMinorUnitsPerMajor = 1000000000000000000 -> long
+const Riddersholm.Money.Money.DefaultStyles = Riddersholm.Money.MoneyStyles.Currency -> Riddersholm.Money.MoneyStyles
+override Riddersholm.Money.Currency.GetHashCode() -> int
+override Riddersholm.Money.Currency.ToString() -> string!
+override Riddersholm.Money.CurrencyInfo.ToString() -> string!
+override Riddersholm.Money.ExchangeRate.GetHashCode() -> int
+override Riddersholm.Money.ExchangeRate.ToString() -> string!
+override Riddersholm.Money.Money.GetHashCode() -> int
+override Riddersholm.Money.Money.ToString() -> string!
+override Riddersholm.Money.Serialization.CurrencyJsonConverter.Read(ref System.Text.Json.Utf8JsonReader reader, System.Type! typeToConvert, System.Text.Json.JsonSerializerOptions! options) -> Riddersholm.Money.Currency
+override Riddersholm.Money.Serialization.CurrencyJsonConverter.ReadAsPropertyName(ref System.Text.Json.Utf8JsonReader reader, System.Type! typeToConvert, System.Text.Json.JsonSerializerOptions! options) -> Riddersholm.Money.Currency
+override Riddersholm.Money.Serialization.CurrencyJsonConverter.Write(System.Text.Json.Utf8JsonWriter! writer, Riddersholm.Money.Currency value, System.Text.Json.JsonSerializerOptions! options) -> void
+override Riddersholm.Money.Serialization.CurrencyJsonConverter.WriteAsPropertyName(System.Text.Json.Utf8JsonWriter! writer, Riddersholm.Money.Currency value, System.Text.Json.JsonSerializerOptions! options) -> void
+override Riddersholm.Money.Serialization.MoneyJsonConverter.Read(ref System.Text.Json.Utf8JsonReader reader, System.Type! typeToConvert, System.Text.Json.JsonSerializerOptions! options) -> Riddersholm.Money.Money
+override Riddersholm.Money.Serialization.MoneyJsonConverter.ReadAsPropertyName(ref System.Text.Json.Utf8JsonReader reader, System.Type! typeToConvert, System.Text.Json.JsonSerializerOptions! options) -> Riddersholm.Money.Money
+override Riddersholm.Money.Serialization.MoneyJsonConverter.Write(System.Text.Json.Utf8JsonWriter! writer, Riddersholm.Money.Money value, System.Text.Json.JsonSerializerOptions! options) -> void
+override Riddersholm.Money.Serialization.MoneyJsonConverter.WriteAsPropertyName(System.Text.Json.Utf8JsonWriter! writer, Riddersholm.Money.Money value, System.Text.Json.JsonSerializerOptions! options) -> void
+override Riddersholm.Money.Serialization.MoneyJsonSerializerContext.GetTypeInfo(System.Type! type) -> System.Text.Json.Serialization.Metadata.JsonTypeInfo?
 ~Riddersholm.Money.Serialization.MoneyJsonSerializerContext.Currency.get -> System.Text.Json.Serialization.Metadata.JsonTypeInfo<Riddersholm.Money.Currency>
 ~Riddersholm.Money.Serialization.MoneyJsonSerializerContext.Money.get -> System.Text.Json.Serialization.Metadata.JsonTypeInfo<Riddersholm.Money.Money>
 ~Riddersholm.Money.Serialization.MoneyJsonSerializerContext.MoneyArray.get -> System.Text.Json.Serialization.Metadata.JsonTypeInfo<Riddersholm.Money.Money[]>
