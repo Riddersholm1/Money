@@ -43,6 +43,26 @@ jobs:
       - name: Test
         run: dotnet test -c Release --no-build
 
+  audit:
+    name: Audit dependencies
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-dotnet@v5
+        with:
+          global-json-file: global.json
+
+      # Directory.Build.props demotes NU1900-NU1904 to warnings so that a newly published advisory,
+      # or an unreachable feed, does not break every developer's build for reasons outside this
+      # repository. Shipping with a known-vulnerable dependency is a different matter, so this job
+      # promotes them back to errors. -warnaserror is passed here rather than being the default
+      # precisely so the failure lands in CI and not on someone's inner loop.
+      - name: Restore with vulnerability findings as errors
+        run: dotnet restore -warnaserror:NU1900,NU1901,NU1902,NU1903,NU1904
+
   aot:
     name: NativeAOT & trimming gate
     runs-on: ubuntu-latest

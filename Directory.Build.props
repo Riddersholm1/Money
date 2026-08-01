@@ -29,6 +29,20 @@
     <CentralPackageTransitivePinningEnabled>true</CentralPackageTransitivePinningEnabled>
     <NuGetAudit>true</NuGetAudit>
     <NuGetAuditMode>all</NuGetAuditMode>
+    <!--
+      Audit findings warn locally and fail in CI, rather than failing everywhere.
+
+      NU1901-NU1904 report vulnerable packages and NU1900 reports that a feed could not be reached to
+      check. Under the blanket TreatWarningsAsErrors above, both classes break the build for reasons
+      outside this repository's control: a newly published advisory against a transitive dependency
+      turns every developer's F5 red with no change to the code, and NU1900 does the same to anyone
+      whose internal feed is behind a VPN that happens to be down.
+
+      Neither is a reason to stop working, but both are certainly a reason to stop shipping. The
+      "Audit dependencies" job in .github/workflows/ci.yml re-runs restore with these promoted back
+      to errors, so the signal is not lost — it just no longer lands on the inner loop.
+    -->
+    <WarningsNotAsErrors>$(WarningsNotAsErrors);NU1900;NU1901;NU1902;NU1903;NU1904</WarningsNotAsErrors>
   </PropertyGroup>
 
   <!-- Shared package identity. Individual packages override Description/PackageTags. -->

@@ -170,78 +170,203 @@ public readonly partial record struct Money
         int count = ratios.Length;
         bool integerPath = TryUseIntegerPath(units, unitsPerMajor, out _, out byte scale);
 
-        // Shortfalls are needed twice, so they are computed once. A stack buffer covers the sizes
-        // money is realistically split across; larger splits fall back to the heap.
-        Span<decimal> shortfalls = count <= 32 ? stackalloc decimal[32] : new decimal[count];
-        shortfalls = shortfalls[..count];
-
         Span<decimal> shares = count <= 32 ? stackalloc decimal[32] : new decimal[count];
         shares = shares[..count];
 
-        decimal assigned = 0m;
-
-        for (int i = 0; i < count; i++)
-        {
-            // Divide before multiplying. The other order overflows whenever the weights are large —
-            // and passing raw amounts as weights is an entirely natural thing to do.
-            decimal exact = units * (ratios[i] / total);
-            decimal share = decimal.Truncate(exact);
-
-            shares[i] = share;
-            shortfalls[i] = Math.Abs(exact - share);
-            assigned += share;
-        }
-
-        // Hand out what truncation left behind, one minor unit at a time, to whoever was shortchanged
-        // most — the largest-remainder method. Ties go to the earlier position, so the split is
-        // reproducible.
-        decimal remainder = units - assigned;
-        decimal step = Math.Sign(remainder);
-        decimal outstandingExact = Math.Abs(remainder);
-
-        // Each truncation loses strictly less than one unit, so the outstanding count is always below
-        // the number of recipients — but the loop below marks each winner as spent, and if that ever
-        // stopped being true index 0 would take the surplus repeatedly, breaking the documented
-        // guarantee that parts differ by at most one minor unit. Rather than rest on the reasoning,
-        // hand everyone the whole part of the surplus up front. What remains is provably less than
-        // `count`, which also makes the cast below safe. In practice this branch is never taken.
-        decimal bulk = decimal.Truncate(outstandingExact / count);
-
-        if (bulk > 0m)
-        {
-            decimal bulkStep = bulk * step;
-
-            for (int i = 0; i < count; i++)
-            {
-                shares[i] += bulkStep;
-            }
-
-            outstandingExact -= bulk * count;
-        }
-
-        for (int outstanding = (int)outstandingExact; outstanding > 0; outstanding--)
-        {
-            int best = 0;
-            decimal bestShortfall = shortfalls[0];
-
-            for (int i = 1; i < count; i++)
-            {
-                if (shortfalls[i] > bestShortfall)
-                {
-                    bestShortfall = shortfalls[i];
-                    best = i;
-                }
-            }
-
-            shares[best] += step;
-            shortfalls[best] = -1m;
-        }
+        DistributeByRatio(units, ratios, total, shares);
 
         for (int i = 0; i < count; i++)
         {
             destination[i] = new Money(
                 integerPath ? FromMinorUnits((long)shares[i], scale) : shares[i] / unitsPerMajor,
                 Currency);
+        }
+    }
+
+    /// <summary>
+    /// Works out each recipient's whole number of minor units by the largest-remainder method.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The arithmetic is integer rather than <see cref="decimal"/> because the shortfalls are
+    /// <em>compared</em>, and comparing rounded values is not the same as comparing the values. Two
+    /// recipients tie whenever <c>units × wᵢ</c> leaves the same remainder against the total, and the
+    /// documented rule is that the earlier position wins — that is what makes a split reproducible.
+    /// </para>
+    /// <para>
+    /// Computed as <c>units * (wᵢ / total)</c> in decimal, the division rounds to 28 significant digits
+    /// and a genuine tie becomes an arbitrary ordering. Splitting 757197 JPY across nineteen weights
+    /// gave the spare yen to recipient 17 rather than recipient 2, whose exact shortfalls were both
+    /// 4977/8883. Nothing downstream noticed: the total stayed exact and no part was off by more than a
+    /// unit. But the result no longer matched the algorithm the documentation names, so a second
+    /// implementation of the same rule — in SQL, in a report, in another system — would disagree, and
+    /// the two would not reconcile. A differential test against an exact integer oracle found it.
+    /// </para>
+    /// <para>
+    /// <see cref="Int128"/> handles every input whose products stay representable, which is all
+    /// realistic money and costs no allocation. <see cref="System.Numerics.BigInteger"/> handles the
+    /// rest, including fractional weights, which are scaled to whole numbers first. Neither rounds, so
+    /// neither can misorder a tie.
+    /// </para>
+    /// </remarks>
+    private static void DistributeByRatio(
+        decimal units,
+        ReadOnlySpan<decimal> ratios,
+        decimal total,
+        Span<decimal> shares)
+    {
+        if (!TryDistributeInt128(units, ratios, shares))
+        {
+            DistributeBigInteger(units, ratios, total, shares);
+        }
+    }
+
+    private static bool TryDistributeInt128(decimal units, ReadOnlySpan<decimal> ratios, Span<decimal> shares)
+    {
+        int count = ratios.Length;
+
+        Span<Int128> shortfalls = count <= 32 ? stackalloc Int128[32] : new Int128[count];
+        shortfalls = shortfalls[..count];
+
+        try
+        {
+            checked
+            {
+                Int128 total = Int128.Zero;
+
+                foreach (decimal ratio in ratios)
+                {
+                    // Fractional weights have no exact Int128 form; BigInteger scales them instead.
+                    if (decimal.Truncate(ratio) != ratio)
+                    {
+                        return false;
+                    }
+
+                    total += (Int128)ratio;
+                }
+
+                Int128 scaledUnits = (Int128)units;
+                Int128 assigned = Int128.Zero;
+
+                for (int i = 0; i < count; i++)
+                {
+                    Int128 scaled = scaledUnits * (Int128)ratios[i];
+                    Int128 share = scaled / total;
+
+                    shares[i] = (decimal)share;
+                    shortfalls[i] = Int128.Abs(scaled - (share * total));
+                    assigned += share;
+                }
+
+                Distribute(scaledUnits - assigned, shortfalls, shares);
+                return true;
+            }
+        }
+        catch (OverflowException)
+        {
+            // Weights large enough to push the products past Int128 are legitimate — passing raw
+            // amounts as weights is natural — so this is a fallback, not an error.
+            return false;
+        }
+    }
+
+    private static void DistributeBigInteger(
+        decimal units,
+        ReadOnlySpan<decimal> ratios,
+        decimal total,
+        Span<decimal> shares)
+    {
+        int count = ratios.Length;
+
+        // Scaling every weight by the same power of ten leaves the proportions untouched and makes
+        // them whole, which is what the exact arithmetic below needs.
+        int scale = 0;
+
+        foreach (decimal ratio in ratios)
+        {
+            scale = Math.Max(scale, ratio.Scale);
+        }
+
+        System.Numerics.BigInteger multiplier = System.Numerics.BigInteger.Pow(10, scale);
+        System.Numerics.BigInteger scaledTotal = ToBigInteger(total, scale, multiplier);
+        System.Numerics.BigInteger scaledUnits = new(units);
+
+        System.Numerics.BigInteger[] shortfalls = new System.Numerics.BigInteger[count];
+        System.Numerics.BigInteger assigned = System.Numerics.BigInteger.Zero;
+
+        for (int i = 0; i < count; i++)
+        {
+            System.Numerics.BigInteger scaled = scaledUnits * ToBigInteger(ratios[i], scale, multiplier);
+            System.Numerics.BigInteger share = scaled / scaledTotal;
+
+            shares[i] = (decimal)share;
+            shortfalls[i] = System.Numerics.BigInteger.Abs(scaled - (share * scaledTotal));
+            assigned += share;
+        }
+
+        Distribute(scaledUnits - assigned, shortfalls, shares);
+    }
+
+    /// <summary>Multiplies a decimal by <c>10^scale</c> exactly, giving a whole number.</summary>
+    private static System.Numerics.BigInteger ToBigInteger(decimal value, int scale, System.Numerics.BigInteger multiplier)
+    {
+        // Splitting the multiply keeps it exact even when value * 10^scale would exceed decimal's range.
+        decimal whole = decimal.Truncate(value);
+        decimal fraction = value - whole;
+
+        return (new System.Numerics.BigInteger(whole) * multiplier)
+             + new System.Numerics.BigInteger(fraction * (decimal)multiplier);
+    }
+
+    /// <summary>
+    /// Hands the units that truncation left behind to whoever was shortchanged most, one at a time.
+    /// </summary>
+    /// <remarks>
+    /// Ties go to the earlier position because the comparison is a strict <c>&gt;</c>, and the values
+    /// being compared are exact — the whole point of computing them as integers.
+    /// </remarks>
+    private static void Distribute<T>(T remainder, Span<T> shortfalls, Span<decimal> shares)
+        where T : System.Numerics.IBinaryInteger<T>
+    {
+        int count = shares.Length;
+        int step = T.IsNegative(remainder) ? -1 : 1;
+        T outstanding = T.Abs(remainder);
+
+        // Each truncation loses strictly less than one unit, so the outstanding count is always below
+        // the number of recipients — but the loop below marks each winner as spent, and if that ever
+        // stopped being true index 0 would take the surplus repeatedly, breaking the documented
+        // guarantee that parts differ by at most one minor unit. Rather than rest on the reasoning,
+        // hand everyone the whole part of the surplus up front. What remains is provably less than
+        // `count`, which also makes the conversion below safe. In practice this branch is never taken.
+        T recipients = T.CreateChecked(count);
+        T bulk = outstanding / recipients;
+
+        if (bulk > T.Zero)
+        {
+            decimal bulkStep = decimal.CreateChecked(bulk) * step;
+
+            for (int i = 0; i < count; i++)
+            {
+                shares[i] += bulkStep;
+            }
+
+            outstanding -= bulk * recipients;
+        }
+
+        for (int spare = int.CreateChecked(outstanding); spare > 0; spare--)
+        {
+            int best = 0;
+
+            for (int i = 1; i < count; i++)
+            {
+                if (shortfalls[i] > shortfalls[best])
+                {
+                    best = i;
+                }
+            }
+
+            shares[best] += step;
+            shortfalls[best] = -T.One;
         }
     }
 

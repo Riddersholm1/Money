@@ -105,8 +105,33 @@ m.Currency.IsKnown;                          // false
 ```
 
 This is required by round-tripping: text produced from a currency this build does not recognise has to
-read back. It does make the parser permissive — `"100 AND"` yields 100 of currency "AND" — so callers
-who need strictness should check `IsKnown`.
+read back, and ISO adds currencies faster than libraries are rebuilt. It does make the parser
+permissive — `"100 AND"` yields 100 of currency "AND".
+
+### Requiring a currency that exists
+
+At a trust boundary the opposite is wanted, so that a typo'd or hostile code is rejected rather than
+becoming an amount that rounds to a guessed two-decimal precision. Add `RequireKnownCurrency`:
+
+```csharp
+var strict = Money.DefaultStyles | MoneyStyles.RequireKnownCurrency;
+
+Money.TryParse("100.00 DKK", strict, inv, out _);   // true
+Money.TryParse("100.00 ZZZ", strict, inv, out _);   // false — no such currency
+```
+
+The same choice exists for a bare code:
+
+```csharp
+Currency.FromCode("ZZZ");        // succeeds; IsKnown is false
+Currency.FromKnownCode("ZZZ");   // throws ArgumentException
+Currency.TryFromKnownCode("ZZZ", out _);   // false
+```
+
+Reading an inbound payment file wants the strict form. Loading rows this library previously wrote wants
+the permissive one, or a currency added by ISO after the build would fail to load. The flag is opt-in
+rather than default for exactly that reason: rejecting real currencies because they are newer than the
+installed version is its own kind of wrong answer.
 
 Note that `XXX` is a currency someone can write, not the absence of one:
 

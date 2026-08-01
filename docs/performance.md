@@ -118,6 +118,28 @@ untouched.
 A 4.6× improvement on the array overload and 16× on the span one. None of it was guessable in advance —
 the original code looked perfectly reasonable.
 
+### Ratio allocation: exactness that happened to be faster
+
+The largest-remainder method decides who receives the leftover minor units by comparing each
+recipient's shortfall. Those comparisons were done on `decimal`s computed as `units * (weight / total)`,
+where the division rounds to 28 significant digits — so two recipients whose exact shortfalls *tied*
+could be put in the wrong order, and the spare unit went somewhere the documented rule says it should
+not. Splitting 757,197 JPY nineteen ways was one such case; a differential test against an exact
+integer oracle found it.
+
+The fix computes the shortfalls in `Int128`, falling back to `BigInteger` for weights large enough to
+overflow it. Integer arithmetic cannot round, so a tie stays a tie and position breaks it.
+
+| Recipients | before (decimal) | after (Int128) |
+|---|---:|---:|
+| 3 | 486 ns | **247 ns** |
+| 12 | 2,142 ns | **838 ns** |
+| 64 | 20,097 ns | **6,581 ns** |
+
+The correct version is 2–3× faster, which was not the goal and is worth being honest about: `decimal`
+multiplication and division are far more expensive than `Int128`'s, and the original code was paying
+for a rounding step it did not want in the first place. Allocation counts are unchanged.
+
 ## JSON
 
 | Operation | Time | Allocated |

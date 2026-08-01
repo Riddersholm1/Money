@@ -96,6 +96,21 @@ units:
 want the former, tills want the latter, and conflating them produces off-by-a-few-øre errors that are
 tedious to find.
 
+### Cash can be coarser than the minor unit, never finer
+
+CLDR describes cash precision on the assumption that the minor unit is a power of ten. For MRU and MGA
+it is not — the khoum and the iraimbilanja are one **fifth** of the major unit — and the assumption
+breaks: CLDR gives MRU two cash digits, which is an increment of `0.01`, while the smallest amount that
+exists is `0.2`.
+
+Taken literally that made `RoundToCash()` return amounts nobody can hold: `1.37 MRU` rounded to cash
+came back as `1.37 MRU`, which `IsCanonical` correctly reports as false. The sync tool now raises any
+cash increment finer than the currency's own unit up to that unit, so MRU is recorded with a step of
+`20` at two digits — an increment of `0.20` — and refuses to emit a file where the two disagree.
+`Money.RoundToCash()` applies the same floor at runtime, so a hand-registered currency cannot
+reintroduce the problem, and `BankingInvariantTests` asserts across all 166 currencies that a
+cash-rounded amount is always payable.
+
 ## Symbols
 
 `CurrencyInfo.Symbol` is the CLDR **narrow** symbol for `en` (`kr`, `$`, `¥`), falling back to the wide

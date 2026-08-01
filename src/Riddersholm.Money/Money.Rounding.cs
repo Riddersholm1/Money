@@ -108,6 +108,10 @@ public readonly partial record struct Money
     /// Cash precision is coarser than accounting precision wherever small coins have been withdrawn:
     /// Swiss cash rounds to <c>0.05</c>, Danish cash to <c>0.50</c>, Hungarian cash to <c>5</c> forint.
     /// Ledgers want <see cref="Round(System.MidpointRounding)"/>; tills want this.
+    /// <para>
+    /// The result is always <see cref="IsCanonical">canonical</see>: cash rounding can only ever be
+    /// coarser than the currency's own increment, never finer.
+    /// </para>
     /// </remarks>
     /// <exception cref="UnknownCurrencyException">The currency is not recognised.</exception>
     public Money RoundToCash(MidpointRounding mode = MidpointRounding.ToEven)
@@ -117,21 +121,29 @@ public readonly partial record struct Money
             throw new UnknownCurrencyException(Currency);
         }
 
-        if (Currency.MinorUnitsPerMajor == 0)
+        long unitsPerMajor = Currency.MinorUnitsPerMajor;
+
+        if (unitsPerMajor == 0)
         {
+            // XXX and XTS have no minor unit, so there is nothing to snap to.
             return this;
         }
 
-        byte digits = Currency.CashDecimalDigits;
-        byte step = Currency.CashRoundingStep;
+        // The cash increment, counted in minor units: the step is in last-place units of the cash
+        // digit count, so CHF's step of 5 at 2 digits is 0.05, which is 5 rappen.
+        decimal cashUnits = (decimal)Currency.CashRoundingStep * unitsPerMajor / Pow10(Currency.CashDecimalDigits);
 
-        if (step == 1)
+        // A cash increment below one minor unit — or not a whole number of them — would round to an
+        // amount the currency cannot express. MRU is the real case: it declares two cash decimals
+        // while its khoum is one *fifth* of an ouguiya, so the cash rule alone yields 0.01 MRU, which
+        // nobody can hold. Where the two rules disagree the currency's own increment wins, because a
+        // cash amount that is not a valid accounting amount is not payable either.
+        if (cashUnits <= 1m || decimal.Truncate(cashUnits) != cashUnits)
         {
-            return new Money(Math.Round(Amount, digits, mode), Currency);
+            return new Money(RoundToUnits(Amount, unitsPerMajor, Currency.DecimalDigits, mode), Currency);
         }
 
-        // The step is counted in last-place units, so CHF's step of 5 at 2 digits means 0.05.
-        decimal increment = step / Pow10(digits);
+        decimal increment = cashUnits / unitsPerMajor;
         return new Money(Math.Round(Amount / increment, 0, mode) * increment, Currency);
     }
 

@@ -93,6 +93,20 @@ foreach ((string code, Dictionary<string, string> row) in byCode)
     byte cashDigits = ReadByte(fraction, "_cashDigits", ReadByte(fraction, "_digits", defaultDigits));
     byte cashStep = ReadByte(fraction, "_cashRounding", 0);
 
+    if (cashStep == 0)
+    {
+        cashStep = 1;
+    }
+
+    // CLDR describes cash precision on the assumption that the minor unit is a power of ten, which is
+    // where the minorUnitOverrides above break the assumption. For MRU it yields a cash increment of
+    // 0.01 while the khoum is 0.2, so cash rounding would produce amounts nobody can hold. Cash can be
+    // coarser than the currency's own unit but never finer, so the minor unit is the floor.
+    if (minorUnitsPerMajor > 0)
+    {
+        (cashDigits, cashStep) = CoerceCashIncrement(digits, minorUnitsPerMajor, cashDigits, cashStep);
+    }
+
     currencies.Add(new CurrencyRecord
     {
         Code = code,
@@ -103,7 +117,7 @@ foreach ((string code, Dictionary<string, string> row) in byCode)
         MinorUnitsPerMajor = minorUnitsPerMajor,
         // A currency with no minor unit cannot have cash precision finer than whole units either.
         CashDecimalDigits = minorUnitsPerMajor == 0 ? (byte)0 : cashDigits,
-        CashRoundingStep = cashStep == 0 ? (byte)1 : cashStep,
+        CashRoundingStep = cashStep,
     });
 }
 
@@ -188,6 +202,48 @@ static string? ReadSymbol(JsonElement names, string code)
 static string Capitalise(string value) =>
     string.IsNullOrEmpty(value) ? value : CultureInfo.InvariantCulture.TextInfo.ToTitleCase(value.ToLowerInvariant());
 
+/// <summary>
+/// Raises a cash increment that is finer than the currency's own minor unit up to that minor unit.
+/// </summary>
+/// <remarks>
+/// Returns the increment expressed in last-place units of the currency's accounting precision, which is
+/// how <c>CurrencyInfo.CashRoundingStep</c> is defined: MRU has two decimal digits and five minor units
+/// per major, so its minor unit 0.2 becomes a step of 20 at 2 digits. Currencies whose minor unit is a
+/// power of ten are returned untouched, which is all of them but MRU and MGA.
+/// </remarks>
+static (byte Digits, byte Step) CoerceCashIncrement(byte digits, int minorUnitsPerMajor, byte cashDigits, byte cashStep)
+{
+    decimal cashIncrement = cashStep / Pow10Decimal(cashDigits);
+    decimal minorUnit = 1m / minorUnitsPerMajor;
+
+    if (cashIncrement >= minorUnit)
+    {
+        return (cashDigits, cashStep);
+    }
+
+    decimal stepAtAccountingPrecision = Pow10Decimal(digits) / minorUnitsPerMajor;
+
+    if (decimal.Truncate(stepAtAccountingPrecision) != stepAtAccountingPrecision || stepAtAccountingPrecision > byte.MaxValue)
+    {
+        throw new InvalidOperationException(
+            $"A minor unit of 1/{minorUnitsPerMajor} cannot be expressed as a cash step at {digits} decimal digits.");
+    }
+
+    return (digits, (byte)stepAtAccountingPrecision);
+}
+
+static decimal Pow10Decimal(int exponent)
+{
+    decimal result = 1m;
+
+    for (int i = 0; i < exponent; i++)
+    {
+        result *= 10m;
+    }
+
+    return result;
+}
+
 static void Validate(List<CurrencyRecord> currencies)
 {
     HashSet<string> codes = new(StringComparer.Ordinal);
@@ -213,6 +269,19 @@ static void Validate(List<CurrencyRecord> currencies)
         if (c.MinorUnitsPerMajor is not 0 && c.DecimalDigits > 4)
         {
             throw new InvalidOperationException($"'{c.Code}' has implausible precision {c.DecimalDigits}.");
+        }
+
+        if (c.MinorUnitsPerMajor is not 0)
+        {
+            // The check that would have caught the MRU cash increment before it was ever written.
+            decimal cashUnits = (decimal)c.CashRoundingStep * c.MinorUnitsPerMajor / Pow10Decimal(c.CashDecimalDigits);
+
+            if (cashUnits < 1m || decimal.Truncate(cashUnits) != cashUnits)
+            {
+                throw new InvalidOperationException(
+                    $"'{c.Code}' has a cash increment of {c.CashRoundingStep}e-{c.CashDecimalDigits}, which is "
+                  + $"{cashUnits} minor units. Cash cannot be finer than the currency's own unit.");
+            }
         }
     }
 

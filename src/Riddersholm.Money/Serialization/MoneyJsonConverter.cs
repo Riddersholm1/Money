@@ -49,7 +49,13 @@ public sealed class MoneyJsonConverter : JsonConverter<Money>
         switch (reader.TokenType)
         {
             case JsonTokenType.Null:
-                return default;
+                // Deliberately an error rather than default(Money). An absent amount is not zero, and
+                // turning one into the other is the worst failure a money library can have: it is
+                // indistinguishable from an intentional zero and every downstream total is quietly
+                // wrong. Declare the property as Money? when absence is a legitimate value — that
+                // deserialises null as null, which says what it means.
+                throw new JsonException(
+                    "Cannot read null as Money. Use Money? if the value is genuinely optional.");
 
             case JsonTokenType.String:
                 return ReadCompact(ref reader);
@@ -181,7 +187,10 @@ public sealed class MoneyJsonConverter : JsonConverter<Money>
     {
         if (reader.TokenType == JsonTokenType.Null)
         {
-            return Currency.None;
+            // "currency": null would otherwise become XXX, silently relabelling a real amount as
+            // having no currency. If the document means XXX, it can say "XXX".
+            throw new JsonException(
+                "The 'currency' property is null. Write the ISO 4217 code, or \"XXX\" for no currency.");
         }
 
         if (reader.TokenType != JsonTokenType.String)

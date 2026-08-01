@@ -101,10 +101,15 @@ public sealed class MoneyJsonTests
         Assert.ThrowsAny<JsonException>(() => JsonSerializer.Deserialize<Money>(json));
 
     [Fact]
-    public void Null_deserialises_to_the_default()
+    public void Null_is_refused_rather_than_read_as_a_zero_amount()
     {
-        Assert.Equal(default, JsonSerializer.Deserialize<Money>("null"));
-        Assert.Equal(Currency.None, JsonSerializer.Deserialize<Currency>("null"));
+        // This used to return default(Money) — zero in XXX. Turning an absent amount into a definite
+        // zero is the one failure a money library must not have: nothing downstream can distinguish it
+        // from an intentional zero, so a missing figure becomes a wrong total in silence.
+        // BankingHardeningTests covers the surrounding behaviour, including that Money? still reads
+        // null as null, which is how absence should be expressed.
+        Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<Money>("null"));
+        Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<Currency>("null"));
     }
 
     [Fact]

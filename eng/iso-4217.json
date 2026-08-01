@@ -926,7 +926,7 @@
       "decimalDigits": 2,
       "minorUnitsPerMajor": 5,
       "cashDecimalDigits": 2,
-      "cashRoundingStep": 1
+      "cashRoundingStep": 20
     },
     {
       "code": "MUR",

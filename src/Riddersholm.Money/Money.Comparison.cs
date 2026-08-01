@@ -77,7 +77,31 @@ public readonly partial record struct Money
     /// <exception cref="CurrencyMismatchException">The currencies differ.</exception>
     public static bool operator >=(Money left, Money right) => Compare(left, right) >= 0;
 
-    private static int Compare(Money left, Money right) =>
+    /// <summary>
+    /// Orders two amounts that must be in the same currency, throwing when they are not.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>The additive identity gets no exemption here, deliberately, even though <c>operator +</c>
+    /// grants it one.</b> The asymmetry looks like an oversight and is not: making it comparable would
+    /// put the operators into direct contradiction with <see cref="CompareTo(Money)"/>.
+    /// </para>
+    /// <para>
+    /// <see cref="CompareTo(Money)"/> orders by currency code first, so <c>default(Money)</c> — which is
+    /// <c>XXX</c> — sorts <em>after</em> every DKK amount. If <c>&lt;</c> instead compared it by amount,
+    /// then <c>default &lt; 100 DKK</c> would be <see langword="true"/> while sorting placed it last.
+    /// Two orderings that disagree is how binary searches return wrong answers and
+    /// <see cref="SortedSet{T}"/> loses elements, which is a far worse failure than the inconsistency
+    /// it would tidy away.
+    /// </para>
+    /// <para>
+    /// So the rule is drawn where the two views actually agree: addition folds the identity because
+    /// zero adds nothing to any currency, and comparison refuses it because ordering money of unknown
+    /// denomination against money of a known one has no answer that both views share. An uninitialised
+    /// <see cref="Money"/> reaching a threshold check is a bug, and this is where it surfaces.
+    /// </para>
+    /// </remarks>
+    internal static int Compare(Money left, Money right) =>
         left.Currency == right.Currency
             ? left.Amount.CompareTo(right.Amount)
             : throw new CurrencyMismatchException(left.Currency, right.Currency);
