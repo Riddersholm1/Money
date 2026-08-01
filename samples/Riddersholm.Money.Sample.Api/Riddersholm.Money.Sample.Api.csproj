@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <RootNamespace>Riddersholm.Money.Sample.Api</RootNamespace>
+    <AssemblyName>Riddersholm.Money.Sample.Api</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Riddersholm.Money\Riddersholm.Money.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -22,20 +22,23 @@
     <PackageVersion Include="Microsoft.EntityFrameworkCore" Version="10.0.10" />
     <PackageVersion Include="Microsoft.EntityFrameworkCore.Relational" Version="10.0.10" />
     <PackageVersion Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.10" />
+    <!--
+      EF Core's SQLite provider still resolves SQLitePCLRaw 2.1.11, which carries GHSA-2m69-gcr7-jv3q.
+      Transitive pinning lifts it to a patched build. Test-only: no shipped package depends on SQLite.
+    -->
+    <PackageVersion Include="SQLitePCLRaw.bundle_e_sqlite3" Version="3.0.5" />
+    <PackageVersion Include="SQLitePCLRaw.core" Version="3.0.5" />
+    <PackageVersion Include="SQLitePCLRaw.provider.e_sqlite3" Version="3.0.5" />
+    <PackageVersion Include="SQLitePCLRaw.lib.e_sqlite3" Version="3.53.3" />
   </ItemGroup>
 
   <ItemGroup Label="Testing">
     <PackageVersion Include="xunit.v3" Version="3.2.2" />
-    <PackageVersion Include="xunit.runner.visualstudio" Version="3.1.5" />
-    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.8.1" />
     <!--
       FsCheck.Xunit targets xunit.extensibility.execution [2.4.1, 3.0.0) and is therefore xUnit v2
       only. FsCheck.Xunit.v3 is the xUnit v3 integration.
     -->
     <PackageVersion Include="FsCheck.Xunit.v3" Version="3.3.4" />
-    <PackageVersion Include="Verify.XunitV3" Version="31.27.0" />
-    <PackageVersion Include="Verify.SourceGenerators" Version="2.5.0" />
-    <PackageVersion Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="4.14.0" />
   </ItemGroup>
 
   <ItemGroup Label="Benchmarks">

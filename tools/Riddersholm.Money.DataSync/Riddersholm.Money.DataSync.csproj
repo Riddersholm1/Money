@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>Riddersholm.Money.DataSync</RootNamespace>
+    <AssemblyName>Riddersholm.Money.DataSync</AssemblyName>
+    <!--
+      Maintenance tool: it downloads from the network and writes a file. Console output is the UI.
+      CA1869 (cache JsonSerializerOptions) is pointless in a process that serialises once and exits.
+    -->
+    <NoWarn>$(NoWarn);CA1852;CA1869</NoWarn>
+  </PropertyGroup>
+
+</Project>

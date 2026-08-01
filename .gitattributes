@@ -1,0 +1,23 @@
+# Normalise line endings in the repository, so a cross-platform CI matrix does not turn a checkout
+# into a diff and eng/iso-4217.json stays byte-stable across machines.
+* text=auto eol=lf
+
+*.sln       text eol=crlf
+*.slnx      text eol=lf
+*.cs        text diff=csharp
+*.csproj    text
+*.props     text
+*.targets   text
+*.json      text
+*.md        text
+*.yml       text
+*.sh        text eol=lf
+*.cmd       text eol=crlf
+*.ps1       text eol=crlf
+
+*.png       binary
+*.snk       binary
+*.nupkg     binary
+
+# The generated currency table is data under review; keep it diffable rather than collapsed.
+eng/iso-4217.json linguist-generated=false

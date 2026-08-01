@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>Riddersholm.Money.AotTests</RootNamespace>
+    <AssemblyName>Riddersholm.Money.AotTests</AssemblyName>
+    <IsTestProject>false</IsTestProject>
+
+    <!--
+      Published by CI with -p:PublishAot=true -p:TrimMode=full and then executed. Because
+      TreatWarningsAsErrors is on repository-wide, any IL2xxx trim warning or IL3xxx AOT warning fails
+      the build outright — which is what turns "NativeAOT compatible" from a claim into a fact.
+    -->
+    <PublishAot>true</PublishAot>
+    <TrimMode>full</TrimMode>
+    <InvariantGlobalization>false</InvariantGlobalization>
+    <StripSymbols>true</StripSymbols>
+
+    <EnableTrimAnalyzer>true</EnableTrimAnalyzer>
+    <EnableAotAnalyzer>true</EnableAotAnalyzer>
+    <EnableSingleFileAnalyzer>true</EnableSingleFileAnalyzer>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Riddersholm.Money\Riddersholm.Money.csproj" />
+  </ItemGroup>
+
+</Project>

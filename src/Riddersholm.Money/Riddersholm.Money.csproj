@@ -6,8 +6,52 @@
     <AssemblyName>Riddersholm.Money</AssemblyName>
     <PackageId>Riddersholm.Money</PackageId>
     <Description>A modern, immutable Money value object for .NET with complete ISO 4217 currency support, exact decimal arithmetic, sum-preserving allocation, allocation-free formatting and parsing, System.Text.Json support, and full trimming/NativeAOT compatibility.</Description>
+
+    <!--
+      RS0041 (public API uses oblivious reference types) fires only on the JsonTypeInfo properties that
+      System.Text.Json's own generator emits into MoneyJsonSerializerContext. That code is not ours to
+      annotate, and the context has to stay public for consumers to use it under NativeAOT. Every
+      hand-written public member is fully annotated and tracked in PublicAPI.Shipped.txt.
+    -->
+    <NoWarn>$(NoWarn);RS0041</NoWarn>
   </PropertyGroup>
 
   <!-- No PackageReferences: System.Text.Json ships in the net10.0 shared framework. -->
+
+  <PropertyGroup>
+    <!-- Emit Currency members and the metadata table into this assembly rather than extension members. -->
+    <RiddersholmMoneyEmitCore>true</RiddersholmMoneyEmitCore>
+  </PropertyGroup>
+
+  <!--
+    Write the generator's output to disk for inspection:
+      dotnet build src/Riddersholm.Money -p:EmitGeneratedCurrencySource=true
+    Off by default so ordinary builds leave no untracked files behind.
+  -->
+  <PropertyGroup Condition="'$(EmitGeneratedCurrencySource)' == 'true'">
+    <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
+    <CompilerGeneratedFilesOutputPath>$(RepositoryRoot)generated/$(MSBuildProjectName)</CompilerGeneratedFilesOutputPath>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!--
+      PrivateAssets="all" is belt-and-braces. Packing was checked and the generator does not leak into
+      this package's dependency list today, but nothing in the build asserted that, and the README's
+      "no dependencies" claim depends on it. The CI pack job now verifies it; this attribute states the
+      intent so a future NuGet change cannot quietly turn the claim false.
+    -->
+    <ProjectReference Include="..\Riddersholm.Money.Generators\Riddersholm.Money.Generators.csproj"
+                      OutputItemType="Analyzer"
+                      ReferenceOutputAssembly="false"
+                      PrivateAssets="all" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The library dogfoods its own generator: the ISO table comes from the same path consumers use. -->
+    <AdditionalFiles Include="$(RepositoryRoot)eng\iso-4217.json" RiddersholmCurrencies="true" />
+    <CompilerVisibleItemMetadata Include="AdditionalFiles" MetadataName="RiddersholmCurrencies" />
+    <CompilerVisibleProperty Include="RiddersholmMoneyEmitCore" />
+    <CompilerVisibleProperty Include="RootNamespace" />
+  </ItemGroup>
 
 </Project>

@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>Riddersholm.Money.EntityFrameworkCore</RootNamespace>
+    <AssemblyName>Riddersholm.Money.EntityFrameworkCore</AssemblyName>
+    <PackageId>Riddersholm.Money.EntityFrameworkCore</PackageId>
+    <Description>Entity Framework Core integration for Riddersholm.Money: complex-type mapping, value converters and comparers, and precision helpers that stop decimal amounts being silently truncated.</Description>
+    <PackageTags>$(PackageTags);entity-framework-core;efcore;orm</PackageTags>
+
+    <!--
+      EF Core's model building uses reflection, so this package cannot claim AOT compatibility the way
+      the core library does. Saying so honestly is better than an analyzer suppression.
+    -->
+    <IsAotCompatible>false</IsAotCompatible>
+    <IsTrimmable>false</IsTrimmable>
+    <EnableTrimAnalyzer>false</EnableTrimAnalyzer>
+    <EnableAotAnalyzer>false</EnableAotAnalyzer>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Riddersholm.Money\Riddersholm.Money.csproj" />
+  </ItemGroup>
+
+</Project>

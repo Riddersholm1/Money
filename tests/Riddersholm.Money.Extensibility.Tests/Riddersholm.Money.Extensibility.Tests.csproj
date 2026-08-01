@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>Riddersholm.Money.Extensibility.Tests</RootNamespace>
+    <AssemblyName>Riddersholm.Money.Extensibility.Tests</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="xunit.v3" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Riddersholm.Money\Riddersholm.Money.csproj" />
+    <ProjectReference Include="..\..\src\Riddersholm.Money.Generators\Riddersholm.Money.Generators.csproj"
+                      OutputItemType="Analyzer"
+                      ReferenceOutputAssembly="false" />
+  </ItemGroup>
+
+  <!--
+    This is exactly what a consuming application writes: point the generator at a currency file and
+    the currencies appear as members of Currency, with no reflection and no runtime registry code.
+  -->
+  <ItemGroup>
+    <AdditionalFiles Include="crypto-currencies.json" RiddersholmCurrencies="true" />
+    <CompilerVisibleItemMetadata Include="AdditionalFiles" MetadataName="RiddersholmCurrencies" />
+    <CompilerVisibleProperty Include="RiddersholmMoneyEmitCore" />
+    <CompilerVisibleProperty Include="RootNamespace" />
+  </ItemGroup>
+
+</Project>
