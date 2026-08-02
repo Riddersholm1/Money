@@ -7,7 +7,58 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
-Nothing yet.
+A correctness pass aimed at use inside banking software, where a silently wrong answer is worse than a
+crash. Two of the fixes below change behaviour deliberately: each replaces a quiet wrong answer with a
+loud refusal.
+
+### Fixed
+
+- **`RoundToCash()` returned an amount that could not be paid, for MRU.** Cash rounding used the
+  currency's cash *digit count*, which only equals its increment when the minor unit is a power of ten.
+  The Mauritanian khoum is one fifth of an ouguiya, so `1.37 MRU` rounded to cash came back as
+  `1.37 MRU` — not a whole number of khoums. Cash rounding now snaps to the coarser of the cash
+  increment and the currency's own unit, the ISO data records MRU's real cash increment of `0.20`, and
+  the sync tool refuses to emit a file where the two disagree.
+- **Ratio allocation broke ties in the wrong direction.** The largest-remainder method promises that
+  equal shortfalls go to the earlier position, but the shortfalls were compared as `decimal`s computed
+  through a division that rounds to 28 significant digits, so a genuine tie could be ordered
+  arbitrarily. Splitting 757,197 JPY across nineteen weights gave the spare yen to recipient 17 instead
+  of recipient 2. The total was always exact and no part was ever off by more than one unit, so only
+  the identity of the recipient was wrong — which is enough to stop a second implementation of the same
+  rule from reconciling. Shortfalls are now computed in `Int128`, falling back to `BigInteger` for
+  large or fractional weights. As a side effect the exact version is 2-3× faster.
+- **`default(ExchangeRate)` silently zeroed every amount it converted.** The constructor rejects a rate
+  of zero, but the struct's default carries one, and `Convert` multiplied by it. `Convert`,
+  `ConvertBack` and `Invert` now throw `InvalidOperationException`; `ExchangeRate.IsSpecified` reports
+  the state. A same-currency rate other than `1` is also rejected now.
+- **`CurrencyNumericValueConverter` wrote `0` for a currency with no ISO numeric code**, storing a row
+  that identified nothing and only failing on a later read. It now throws at the point of the mistake.
+
+### Changed
+
+- **JSON `null` is no longer read as a zero amount.** `Money` and `Currency` deserialised `null` to
+  `default` — zero in `XXX`. An absent amount is not zero, and the two must not be the same value, so
+  both now throw `JsonException`. Declare the property as `Money?` or `Currency?` when absence is
+  legitimate; those still read `null` as `null`.
+
+### Added
+
+- `MoneyStyles.RequireKnownCurrency`, `Currency.FromKnownCode` and `Currency.TryFromKnownCode`, for
+  validating input at a trust boundary. The default stays permissive so that codes newer than the
+  installed build still round-trip.
+- `ExchangeRate.IsSpecified`.
+- A `NuGet.config` pinning a single package source with package source mapping. Without it, a machine
+  with more than one remote feed — the normal state at a bank — fails restore with `NU1507` on every
+  project, because central package management will not guess between unmapped sources and the
+  repository treats warnings as errors. This is why the solution reported central-package-management
+  errors when opened in Visual Studio while CI stayed green.
+- Vulnerability-audit findings (`NU1900`-`NU1904`) now warn locally and fail in a dedicated CI job,
+  rather than breaking every developer's build the day an advisory is published against a transitive
+  dependency.
+- `BankingInvariantTests`, asserting across all 166 currencies that rounding, cash rounding and
+  allocation always produce payable amounts — the suite that caught the MRU defect.
+- `AllocationOracleTests`, checking allocation and rounding against an independent implementation
+  written in exact `BigInteger` arithmetic — the test that caught the tie-breaking defect.
 
 ## [1.0.0-rc.1] — 2026-08-01
 

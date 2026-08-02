@@ -70,8 +70,26 @@ For every allocation, whatever the amount, count, ratios, or sign:
 4. **Equal allocation parts differ by at most one minor unit.**
 5. **Negation commutes:** `(-m).Allocate(n)` equals `m.Allocate(n)` with every part negated.
 
-All five are property-tested over hundreds of random amounts, counts, and ratios, including negatives.
-Guarantee 1 is the reason this API exists.
+All five are property-tested over hundreds of random amounts, counts, and ratios, including negatives,
+and checked against an independent implementation written in exact `BigInteger` arithmetic
+(`AllocationOracleTests`). Guarantee 1 is the reason this API exists.
+
+### Guarantee 3 needs exact arithmetic, and once did not have it
+
+"Ties go to the earlier position" is only meaningful if a tie can be recognised as one. The shortfalls
+were originally computed as `units * (weight / total)` in `decimal`, where the division rounds to 28
+significant digits — so two genuinely equal shortfalls could come out marginally unequal and the spare
+minor unit went to the wrong recipient. Splitting **757,197 JPY** across nineteen weights did exactly
+that: recipients 2 and 17 both had a shortfall of 4977/8883, and the yen went to 17.
+
+Nothing else noticed. The total was still exact (guarantee 1), every part was still payable
+(guarantee 2), and no two parts differed by more than a unit (guarantee 4). Only the *identity* of the
+recipient was wrong — which matters precisely because a second implementation of the documented rule,
+in SQL or in another system, would produce a different split and the two would not reconcile.
+
+The shortfalls are now computed in `Int128`, or `BigInteger` when weights are large or fractional.
+Integer arithmetic cannot round, so a tie stays a tie. The differential oracle that found this runs on
+every build.
 
 Guarantee 4 holds for ratio allocation because the largest-remainder loop hands each recipient at most
 one extra unit and truncation can never leave more units outstanding than there are recipients. The

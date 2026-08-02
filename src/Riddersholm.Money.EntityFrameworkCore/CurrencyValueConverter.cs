@@ -43,17 +43,37 @@ public sealed class CurrencyValueConverter : ValueConverter<Currency, string>
 /// <remarks>
 /// For schemas that already use numeric codes. Prefer <see cref="CurrencyValueConverter"/> where the
 /// choice is free: numeric codes only resolve for currencies the library knows, so a currency added by
-/// ISO after this version was built would not survive a round trip.
+/// ISO after this version was built cannot be stored at all — this converter refuses to write it rather
+/// than persisting a placeholder.
 /// </remarks>
 public sealed class CurrencyNumericValueConverter : ValueConverter<Currency, short>
 {
     /// <summary>Creates the converter.</summary>
     public CurrencyNumericValueConverter()
         : base(
-            currency => currency.NumericCode,
+            currency => Write(currency),
             code => Convert(code))
     {
     }
+
+    /// <summary>
+    /// Turns a currency into its numeric code, refusing any currency that does not have one.
+    /// </summary>
+    /// <remarks>
+    /// <see cref="Currency.NumericCode"/> returns <c>0</c> for a currency the library does not know,
+    /// and <c>0</c> is not an ISO 4217 numeric code. Writing it would store a row that identifies no
+    /// currency and only fails when something later reads it back — a write that silently loses the
+    /// data it was given. Failing at the point of the mistake is the whole difference between a bug
+    /// found in a test and a corrupt ledger found in an audit.
+    /// </remarks>
+    private static short Write(Currency currency) =>
+        currency.NumericCode != 0
+            ? currency.NumericCode
+            : throw new InvalidOperationException(
+                $"'{currency.Code}' has no ISO 4217 numeric code, so it cannot be stored by "
+              + $"{nameof(CurrencyNumericValueConverter)}. Register it through CurrencyRegistry with a "
+              + $"numeric code, or map the column with {nameof(CurrencyValueConverter)}, which stores "
+              + "the alphabetic code and round-trips any currency.");
 
     private static Currency Convert(short numericCode) =>
         Currency.TryFromNumericCode(numericCode, out Currency currency)

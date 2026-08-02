@@ -56,6 +56,26 @@ public enum MoneyStyles
     /// </summary>
     RequireCurrency = 1 << 9,
 
+    /// <summary>
+    /// Fail unless the currency is one the library has metadata for — see <see cref="Currency.IsKnown"/>.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// By default any three ASCII letters parse, so <c>100.00 ZZZ</c> succeeds and yields a currency
+    /// whose precision is a documented guess. That is deliberate: an ISO code must round-trip
+    /// byte-for-byte even when this build has never heard of it, or storing and reloading a row would
+    /// lose data, and ISO adds currencies faster than libraries are rebuilt.
+    /// </para>
+    /// <para>
+    /// Reading an inbound payment file wants the opposite. There a typo'd or hostile code should be
+    /// rejected at the boundary rather than becoming an amount that rounds to a guessed precision, so
+    /// add this flag to the style. It is not part of <see cref="Currency"/>, because turning it on by
+    /// default would make the library reject currencies that are perfectly real and merely newer than
+    /// the version installed.
+    /// </para>
+    /// </remarks>
+    RequireKnownCurrency = 1 << 10,
+
     /// <summary>Everything needed for a plain number: whitespace, a leading sign, groups, and decimals.</summary>
     Number = AllowLeadingWhite | AllowTrailingWhite | AllowLeadingSign | AllowThousands | AllowDecimalPoint,
 

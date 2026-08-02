@@ -18,7 +18,15 @@ internal static class CurrencyMetadata
     private static Currency[]? _allCurrencies;
     private static FrozenDictionary<short, Currency>? _byNumericCode;
 
-    public static ReadOnlySpan<Currency> AllCurrencies => _allCurrencies ??= BuildAll();
+    /// <remarks>
+    /// Published through <see cref="Interlocked"/> like <see cref="Cache"/> below, rather than with a
+    /// plain <c>??=</c>. A race would only ever build a second, equal table, but this returns a
+    /// <see cref="ReadOnlySpan{T}"/> over the array's interior — so the guarantee that matters is that
+    /// no thread can observe the reference before the elements it points at, and stating that with a
+    /// fence is cheaper than arguing about which runtimes provide it for free.
+    /// </remarks>
+    public static ReadOnlySpan<Currency> AllCurrencies =>
+        Volatile.Read(ref _allCurrencies) ?? Publish(ref _allCurrencies, BuildAll());
 
     public static CurrencyInfo Get(uint packed)
     {
@@ -48,9 +56,22 @@ internal static class CurrencyMetadata
 
     public static bool TryGetByNumericCode(short numericCode, out Currency currency)
     {
-        FrozenDictionary<short, Currency> map = _byNumericCode ??= BuildNumericIndex();
+        FrozenDictionary<short, Currency> map =
+            Volatile.Read(ref _byNumericCode) ?? Publish(ref _byNumericCode, BuildNumericIndex());
+
         return map.TryGetValue(numericCode, out currency);
     }
+
+    /// <summary>
+    /// Publishes a lazily built table, returning whichever instance won if two threads built one.
+    /// </summary>
+    /// <remarks>
+    /// Returning the winner rather than the caller's own instance keeps reference identity stable, so
+    /// two calls never hand back tables that are equal but not the same object.
+    /// </remarks>
+    private static T Publish<T>(ref T? location, T built)
+        where T : class =>
+        Interlocked.CompareExchange(ref location, built, null) ?? built;
 
     private static CurrencyInfo Create(int ordinal) => new(
         code: CurrencyTable.GetCode(ordinal),

@@ -18,7 +18,11 @@ public sealed class CurrencyJsonConverter : JsonConverter<Currency>
     {
         if (reader.TokenType == JsonTokenType.Null)
         {
-            return Currency.None;
+            // Not Currency.None. XXX is a currency someone can write explicitly, so silently reading
+            // null as XXX would make "no value supplied" and "explicitly no currency" the same thing.
+            // Declare the property as Currency? when it is genuinely optional.
+            throw new JsonException(
+                "Cannot read null as Currency. Write \"XXX\" for no currency, or use Currency? if the value is optional.");
         }
 
         if (reader.TokenType != JsonTokenType.String)

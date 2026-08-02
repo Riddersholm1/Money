@@ -134,6 +134,14 @@ public readonly partial record struct Money :
             return false;
         }
 
+        // Checked here rather than inside TakeCurrency so that "found but unknown" stays distinct from
+        // "not found": a caller using RequireKnownCurrency without RequireCurrency still accepts text
+        // with no currency at all, which is what the two flags separately mean.
+        if (found && style.HasFlag(MoneyStyles.RequireKnownCurrency) && !currency.IsKnown)
+        {
+            return false;
+        }
+
         // The provider always governs the *number*, whichever way the currency was identified —
         // "1.234,50 DKK" under da-DK is twelve hundred kroner, not one. Only currency resolution is
         // restricted, because only symbols are ambiguous.

@@ -162,13 +162,9 @@ public readonly partial record struct Money :
         return Min(Max(value, min), max);
     }
 
-    private static int EnsureComparable(Money left, Money right)
-    {
-        if (left.Currency != right.Currency)
-        {
-            throw new CurrencyMismatchException(left.Currency, right.Currency);
-        }
-
-        return left.Amount.CompareTo(right.Amount);
-    }
+    /// <summary>
+    /// Orders two amounts for <see cref="Min"/>, <see cref="Max"/> and <see cref="Clamp"/>, applying the
+    /// same additive-identity rule as the relational operators.
+    /// </summary>
+    private static int EnsureComparable(Money left, Money right) => Compare(left, right);
 }

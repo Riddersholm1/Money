@@ -202,6 +202,52 @@ public readonly partial record struct Currency :
         return packed;
     }
 
+    /// <summary>
+    /// Resolves a currency from its code, refusing any code the library has no metadata for.
+    /// </summary>
+    /// <param name="code">Three ASCII letters; lower case is accepted and normalised.</param>
+    /// <returns>The currency, which is guaranteed to satisfy <see cref="IsKnown"/>.</returns>
+    /// <remarks>
+    /// <see cref="FromCode(ReadOnlySpan{char})"/> accepts any well-formed code so that data round-trips
+    /// even when this build predates the currency. Use this instead at a trust boundary — validating an
+    /// inbound payment file, say — where a code nobody recognises should be rejected rather than
+    /// accepted with a guessed precision.
+    /// </remarks>
+    /// <exception cref="ArgumentException">
+    /// <paramref name="code"/> is not three ASCII letters, or names a currency this library does not
+    /// know.
+    /// </exception>
+    public static Currency FromKnownCode(ReadOnlySpan<char> code) =>
+        TryFromKnownCode(code, out Currency currency)
+            ? currency
+            : throw new ArgumentException(
+                $"'{code}' is not a known ISO 4217 currency. Use {nameof(FromCode)} to accept codes this "
+              + "library has no metadata for.",
+                nameof(code));
+
+    /// <inheritdoc cref="FromKnownCode(ReadOnlySpan{char})" />
+    public static Currency FromKnownCode(string code)
+    {
+        ArgumentNullException.ThrowIfNull(code);
+        return FromKnownCode(code.AsSpan());
+    }
+
+    /// <summary>Resolves a currency from its code, provided the library has metadata for it.</summary>
+    /// <param name="code">Three ASCII letters; lower case is accepted and normalised.</param>
+    /// <param name="currency">The resolved currency, or <see cref="None"/> on failure.</param>
+    /// <returns><see langword="true"/> if the code is well formed <em>and</em> the currency is known.</returns>
+    /// <remarks>See <see cref="FromKnownCode(ReadOnlySpan{char})"/> for when to prefer this.</remarks>
+    public static bool TryFromKnownCode(ReadOnlySpan<char> code, out Currency currency)
+    {
+        if (TryFromCode(code, out currency) && currency.IsKnown)
+        {
+            return true;
+        }
+
+        currency = None;
+        return false;
+    }
+
     /// <summary>Resolves a currency known at compile time from its ISO 4217 numeric code.</summary>
     /// <param name="numericCode">The ISO numeric code, for example <c>208</c> for DKK.</param>
     /// <param name="currency">The resolved currency, or <see cref="None"/> on failure.</param>
