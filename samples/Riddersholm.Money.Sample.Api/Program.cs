@@ -1,4 +1,4 @@
-using System.Globalization;
+﻿using System.Globalization;
 using Riddersholm.Money;
 
 // Shows that Money needs no special plumbing in a minimal API: it binds from route and query
@@ -23,8 +23,8 @@ app.MapGet("/quote/{price}", (Money price) => new
     {
         general = price.ToString("G", CultureInfo.InvariantCulture),
         iso = price.ToString("I", CultureInfo.InvariantCulture),
-        danish = price.ToString("C", new CultureInfo("da-DK")),
-    },
+        danish = price.ToString("C", new CultureInfo("da-DK"))
+    }
 });
 
 // Currency binds the same way.
@@ -38,11 +38,12 @@ app.MapGet("/currencies/{currency}", (Currency currency) =>
             symbol = currency.Symbol,
             decimalDigits = currency.DecimalDigits,
             minorUnitsPerMajor = currency.MinorUnitsPerMajor,
-            smallestAmount = currency.MinorUnit,
+            smallestAmount = currency.MinorUnit
         })
         : Results.NotFound(new { code = currency.Code, message = "Not a currency this build knows about." }));
 
-app.MapGet("/currencies", () => Currency.Known.ToArray().Select(c => new { code = c.Code, name = c.EnglishName }));
+app.MapGet("/currencies", () =>
+    Currency.Known.ToArray().Select(c => new { code = c.Code, name = c.EnglishName }));
 
 // Money round-trips through the request and response body with no converter registration.
 app.MapPost("/orders", (Order order) =>
@@ -56,7 +57,7 @@ app.MapPost("/orders", (Order order) =>
         order.Reference,
         subtotal = subtotal.Round(),
         vat,
-        total,
+        total
     });
 });
 
@@ -73,7 +74,7 @@ app.MapPost("/orders/split", (SplitRequest request) =>
         total,
         shares,
         // Always exactly zero: that is the point of allocating rather than dividing.
-        unallocated = total - shares.Sum(),
+        unallocated = total - shares.Sum()
     });
 });
 

@@ -1,6 +1,4 @@
-using System;
-using System.Collections.Generic;
-using System.Globalization;
+﻿using System.Globalization;
 using System.Text;
 
 namespace Riddersholm.Money.Generators.Json;
@@ -49,7 +47,7 @@ internal static class JsonParser
             't' => ParseLiteral(text, ref index, "true", JsonValue.From(true)),
             'f' => ParseLiteral(text, ref index, "false", JsonValue.From(false)),
             'n' => ParseLiteral(text, ref index, "null", JsonValue.Null),
-            _ => ParseNumber(text, ref index),
+            _ => ParseNumber(text, ref index)
         };
     }
 
@@ -142,14 +140,30 @@ internal static class JsonParser
             char escape = text[index++];
             switch (escape)
             {
-                case '"': builder.Append('"'); break;
-                case '\\': builder.Append('\\'); break;
-                case '/': builder.Append('/'); break;
-                case 'b': builder.Append('\b'); break;
-                case 'f': builder.Append('\f'); break;
-                case 'n': builder.Append('\n'); break;
-                case 'r': builder.Append('\r'); break;
-                case 't': builder.Append('\t'); break;
+                case '"':
+                    builder.Append('"');
+                    break;
+                case '\\':
+                    builder.Append('\\');
+                    break;
+                case '/':
+                    builder.Append('/');
+                    break;
+                case 'b':
+                    builder.Append('\b');
+                    break;
+                case 'f':
+                    builder.Append('\f');
+                    break;
+                case 'n':
+                    builder.Append('\n');
+                    break;
+                case 'r':
+                    builder.Append('\r');
+                    break;
+                case 't':
+                    builder.Append('\t');
+                    break;
                 case 'u':
                     builder.Append((char)ushort.Parse(
                         text.Substring(index, 4), NumberStyles.HexNumber, CultureInfo.InvariantCulture));

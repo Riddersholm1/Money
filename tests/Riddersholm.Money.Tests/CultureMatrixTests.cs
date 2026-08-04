@@ -1,4 +1,4 @@
-using System.Globalization;
+﻿using System.Globalization;
 using Xunit;
 
 namespace Riddersholm.Money.Tests;
@@ -17,7 +17,7 @@ public sealed class CultureMatrixTests
     [
         "en-US", "da-DK", "de-DE", "fr-FR", "fi-FI", "sv-SE", "de-CH", "it-CH",
         "hi-IN", "ja-JP", "ko-KR", "ar-EG", "he-IL", "fa-IR", "ru-RU", "pl-PL",
-        "tr-TR", "el-GR", "pt-BR", "zh-CN", "th-TH", "vi-VN", "cs-CZ", "hu-HU",
+        "tr-TR", "el-GR", "pt-BR", "zh-CN", "th-TH", "vi-VN", "cs-CZ", "hu-HU"
     ];
 
     [Theory]
@@ -140,10 +140,9 @@ public sealed class CultureMatrixTests
         try
         {
             Money value = new(1234.5m, Currency.DKK);
-            string underInvariant;
 
             CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
-            underInvariant = value.ToString("C", new CultureInfo("da-DK"));
+            string underInvariant = value.ToString("C", new CultureInfo("da-DK"));
 
             CultureInfo.CurrentCulture = new CultureInfo("ar-EG");
             Assert.Equal(underInvariant, value.ToString("C", new CultureInfo("da-DK")));
@@ -156,12 +155,12 @@ public sealed class CultureMatrixTests
 
     private static IEnumerable<Money> Representatives() =>
     [
-        new Money(1234.5m, Currency.DKK),
-        new Money(-1234.5m, Currency.DKK),
-        new Money(0m, Currency.EUR),
-        new Money(1234m, Currency.JPY),
-        new Money(1.234m, Currency.KWD),
-        new Money(1_000_000.99m, Currency.USD),
+        new(1234.5m, Currency.DKK),
+        new(-1234.5m, Currency.DKK),
+        new(0m, Currency.EUR),
+        new(1234m, Currency.JPY),
+        new(1.234m, Currency.KWD),
+        new(1_000_000.99m, Currency.USD)
     ];
 
     private static bool TryGetRegionCurrency(CultureInfo culture, out Currency currency)

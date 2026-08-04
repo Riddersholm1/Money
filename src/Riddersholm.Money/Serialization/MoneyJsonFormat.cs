@@ -1,4 +1,4 @@
-namespace Riddersholm.Money.Serialization;
+﻿namespace Riddersholm.Money.Serialization;
 
 /// <summary>How <see cref="Money"/> is written to JSON.</summary>
 /// <remarks>
@@ -25,5 +25,5 @@ public enum MoneyJsonFormat
     /// <summary>
     /// <c>"100.50 DKK"</c> — the compact round-trippable form produced by <c>ToString("R")</c>.
     /// </summary>
-    Compact,
+    Compact
 }

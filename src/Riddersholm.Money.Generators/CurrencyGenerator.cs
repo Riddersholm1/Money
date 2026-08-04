@@ -1,5 +1,3 @@
-using System.Collections.Generic;
-using System.IO;
 using System.Text;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Diagnostics;
@@ -42,7 +40,7 @@ public sealed class CurrencyGenerator : IIncrementalGenerator
                     // every keystroke elsewhere in the project.
                     Content: pair.Left.GetText(cancellationToken)?.ToString() ?? string.Empty,
                     EmitCore: global.TryGetValue(EmitCoreProperty, out string? emitCore)
-                              && string.Equals(emitCore, "true", System.StringComparison.OrdinalIgnoreCase),
+                              && string.Equals(emitCore, "true", StringComparison.OrdinalIgnoreCase),
                     RootNamespace: global.TryGetValue(RootNamespaceProperty, out string? ns) ? ns : string.Empty);
             });
 
@@ -51,7 +49,7 @@ public sealed class CurrencyGenerator : IIncrementalGenerator
 
     private static bool IsOptedIn(AdditionalText text, AnalyzerConfigOptionsProvider options) =>
         options.GetOptions(text).TryGetValue(OptInMetadata, out string? value)
-        && string.Equals(value, "true", System.StringComparison.OrdinalIgnoreCase);
+        && string.Equals(value, "true", StringComparison.OrdinalIgnoreCase);
 
     private static void Execute(SourceProductionContext context, CurrencyFile file)
     {

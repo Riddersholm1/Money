@@ -1,4 +1,4 @@
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using Xunit;
 
 namespace Riddersholm.Money.EntityFrameworkCore.Tests;
@@ -106,7 +106,7 @@ public sealed class MoneyPersistenceTests
             context.Ledgers.Add(new Ledger
             {
                 Balance = new Money(-99.95m, Currency.EUR),
-                Reporting = Currency.USD,
+                Reporting = Currency.USD
             });
             context.SaveChanges();
             context.ChangeTracker.Clear();
@@ -182,7 +182,7 @@ public sealed class MoneyPersistenceTests
             context.SaveChanges();
             context.ChangeTracker.Clear();
 
-            Dictionary<string, Product> loaded = context.Products.ToDictionary(p => p.Name);
+            var loaded = context.Products.ToDictionary(p => p.Name);
 
             foreach (Currency currency in Currency.Known)
             {
@@ -220,13 +220,13 @@ public sealed class MoneyPersistenceTests
         using (connection)
         using (context)
         {
-            context.Products.Add(new Product { Name = "unset", Price = default });
+            context.Products.Add(new Product { Name = "unset", Price = default(Money) });
             context.SaveChanges();
             context.ChangeTracker.Clear();
 
             Product loaded = context.Products.Single();
 
-            Assert.Equal(default, loaded.Price);
+            Assert.Equal(default(Money), loaded.Price);
             Assert.Equal("XXX", loaded.Price.Currency.Code);
         }
     }
@@ -248,7 +248,7 @@ public sealed class MoneyPersistenceTests
             context.SaveChanges();
             context.ChangeTracker.Clear();
 
-            Dictionary<string, Product> loaded = context.Products.ToDictionary(p => p.Name);
+            var loaded = context.Products.ToDictionary(p => p.Name);
 
             Assert.Equal(1.234m, loaded["dinar"].Price.Amount);
             Assert.Equal(1.2345m, loaded["unit"].Price.Amount);

@@ -1,4 +1,4 @@
-using System.Globalization;
+﻿using System.Globalization;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace Riddersholm.Money.EntityFrameworkCore;
@@ -22,8 +22,7 @@ public sealed class MoneyValueConverter : ValueConverter<Money, string>
 {
     /// <summary>Creates the converter.</summary>
     public MoneyValueConverter()
-        : base(
-            money => money.ToString("R", CultureInfo.InvariantCulture),
+        : base(money => money.ToString("R", CultureInfo.InvariantCulture),
             text => Read(text))
     {
     }

@@ -1,4 +1,4 @@
-using System.Globalization;
+﻿using System.Globalization;
 using Xunit;
 
 namespace Riddersholm.Money.Tests;
@@ -50,7 +50,7 @@ public sealed class BankingInvariantTests
         99.995m, -99.995m,
         1234.5678m, -1234.5678m,
         123456789.123456789m, -123456789.123456789m,
-        0.1234567890123456789012345678m,
+        0.1234567890123456789012345678m
     ];
 
     public static readonly MidpointRounding[] Modes =
@@ -59,7 +59,7 @@ public sealed class BankingInvariantTests
         MidpointRounding.AwayFromZero,
         MidpointRounding.ToZero,
         MidpointRounding.ToNegativeInfinity,
-        MidpointRounding.ToPositiveInfinity,
+        MidpointRounding.ToPositiveInfinity
     ];
 
     /// <summary>
@@ -279,7 +279,7 @@ public sealed class BankingInvariantTests
             {
                 Money original = new(amount, currency);
                 string text = original.ToString("R", CultureInfo.InvariantCulture);
-                Money parsed = Money.Parse(text, CultureInfo.InvariantCulture);
+                var parsed = Money.Parse(text, CultureInfo.InvariantCulture);
 
                 Assert.Equal(original, parsed);
                 Assert.Equal(original.Currency.Code, parsed.Currency.Code);
@@ -392,7 +392,7 @@ public sealed class BankingInvariantTests
     [InlineData("MGA", 1.60, 2.0)]
     public void Fifth_unit_currencies_round_cash_to_a_payable_amount(string code, double raw, double expected)
     {
-        Currency currency = Currency.FromCode(code);
+        var currency = Currency.FromCode(code);
         Money rounded = new Money((decimal)raw, currency).RoundToCash();
 
         Assert.Equal((decimal)expected, rounded.Amount);

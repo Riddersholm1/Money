@@ -1,4 +1,4 @@
-namespace Riddersholm.Money;
+﻿namespace Riddersholm.Money;
 
 /// <content>
 /// Comparison, where relational operators and <see cref="IComparable{T}"/> deliberately behave
@@ -34,7 +34,7 @@ public readonly partial record struct Money
     {
         null => 1,
         Money other => CompareTo(other),
-        _ => throw new ArgumentException($"Object must be of type {nameof(Money)}.", nameof(obj)),
+        _ => throw new ArgumentException($"Object must be of type {nameof(Money)}.", nameof(obj))
     };
 
     /// <summary>Compares two amounts of the same currency without throwing.</summary>

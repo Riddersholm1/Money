@@ -1,4 +1,4 @@
-using System.Globalization;
+﻿using System.Globalization;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
@@ -21,8 +21,7 @@ public sealed class CurrencyJsonConverter : JsonConverter<Currency>
             // Not Currency.None. XXX is a currency someone can write explicitly, so silently reading
             // null as XXX would make "no value supplied" and "explicitly no currency" the same thing.
             // Declare the property as Currency? when it is genuinely optional.
-            throw new JsonException(
-                "Cannot read null as Currency. Write \"XXX\" for no currency, or use Currency? if the value is optional.");
+            throw new JsonException("Cannot read null as Currency. Write \"XXX\" for no currency, or use Currency? if the value is optional.");
         }
 
         if (reader.TokenType != JsonTokenType.String)
@@ -67,8 +66,7 @@ public sealed class CurrencyJsonConverter : JsonConverter<Currency>
                 return currency;
             }
 
-            throw new JsonException(
-                $"'{System.Text.Encoding.UTF8.GetString(reader.ValueSpan)}' is not a valid ISO 4217 alphabetic code.");
+            throw new JsonException($"'{System.Text.Encoding.UTF8.GetString(reader.ValueSpan)}' is not a valid ISO 4217 alphabetic code.");
         }
 
         string? text = reader.GetString();

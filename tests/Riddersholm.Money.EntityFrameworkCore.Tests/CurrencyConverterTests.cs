@@ -1,4 +1,4 @@
-using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
+﻿using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Xunit;
 
 namespace Riddersholm.Money.EntityFrameworkCore.Tests;
@@ -16,9 +16,9 @@ public sealed class CurrencyConverterTests
         // Writing it stored a row identifying no currency at all, and the mistake only surfaced when
         // something later read it back — by which point the original code was gone.
         ValueConverter<Currency, short> converter = new CurrencyNumericValueConverter();
-        Func<Currency, short> write = (Func<Currency, short>)converter.ConvertToProviderExpression.Compile();
+        Func<Currency, short> write = converter.ConvertToProviderExpression.Compile();
 
-        Currency unknown = Currency.FromCode("ZZZ");
+        var unknown = Currency.FromCode("ZZZ");
 
         Assert.False(unknown.IsKnown);
 
@@ -32,8 +32,8 @@ public sealed class CurrencyConverterTests
     public void The_numeric_converter_round_trips_every_known_currency()
     {
         ValueConverter<Currency, short> converter = new CurrencyNumericValueConverter();
-        Func<Currency, short> write = (Func<Currency, short>)converter.ConvertToProviderExpression.Compile();
-        Func<short, Currency> read = (Func<short, Currency>)converter.ConvertFromProviderExpression.Compile();
+        Func<Currency, short> write = converter.ConvertToProviderExpression.Compile();
+        Func<short, Currency> read = converter.ConvertFromProviderExpression.Compile();
 
         foreach (Currency currency in Currency.Known)
         {
@@ -47,10 +47,10 @@ public sealed class CurrencyConverterTests
         // The documented reason to prefer it: the alphabetic code is the value, so a currency ISO added
         // after this build survives a round trip untouched.
         ValueConverter<Currency, string> converter = new CurrencyValueConverter();
-        Func<Currency, string> write = (Func<Currency, string>)converter.ConvertToProviderExpression.Compile();
-        Func<string, Currency> read = (Func<string, Currency>)converter.ConvertFromProviderExpression.Compile();
+        Func<Currency, string> write = converter.ConvertToProviderExpression.Compile();
+        Func<string, Currency> read = converter.ConvertFromProviderExpression.Compile();
 
-        Currency unknown = Currency.FromCode("ZZZ");
+        var unknown = Currency.FromCode("ZZZ");
 
         Assert.Equal("ZZZ", write(unknown));
         Assert.Equal(unknown, read("ZZZ"));
@@ -65,7 +65,7 @@ public sealed class CurrencyConverterTests
     public void A_column_holding_something_that_is_not_a_currency_names_the_offending_value()
     {
         ValueConverter<Currency, string> converter = new CurrencyValueConverter();
-        Func<string, Currency> read = (Func<string, Currency>)converter.ConvertFromProviderExpression.Compile();
+        Func<string, Currency> read = converter.ConvertFromProviderExpression.Compile();
 
         InvalidOperationException error = Assert.Throws<InvalidOperationException>(() => read("nope"));
 
@@ -76,8 +76,8 @@ public sealed class CurrencyConverterTests
     public void The_money_text_converter_round_trips_exactly()
     {
         ValueConverter<Money, string> converter = new MoneyValueConverter();
-        Func<Money, string> write = (Func<Money, string>)converter.ConvertToProviderExpression.Compile();
-        Func<string, Money> read = (Func<string, Money>)converter.ConvertFromProviderExpression.Compile();
+        Func<Money, string> write = converter.ConvertToProviderExpression.Compile();
+        Func<string, Money> read = converter.ConvertFromProviderExpression.Compile();
 
         foreach (Currency currency in Currency.Known)
         {

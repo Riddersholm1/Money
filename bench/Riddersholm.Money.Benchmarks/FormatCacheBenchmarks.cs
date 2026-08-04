@@ -1,4 +1,4 @@
-using System.Globalization;
+﻿using System.Globalization;
 using BenchmarkDotNet.Attributes;
 
 namespace Riddersholm.Money.Benchmarks;
@@ -43,9 +43,7 @@ public class FormatCacheBenchmarks
 
         if (cultures.Length < 2 || (long)(cultures.Length - 1) * (currencies.Length - 1) <= CacheCapacity)
         {
-            throw new InvalidOperationException(
-                $"Need more than {CacheCapacity} culture/currency pairs to fill the cache, but this "
-              + $"machine has only {cultures.Length} cultures and {currencies.Length} currencies.");
+            throw new InvalidOperationException($"Need more than {CacheCapacity} culture/currency pairs to fill the cache, but this machine has only {cultures.Length} cultures and {currencies.Length} currencies.");
         }
 
         // The last culture and the last currency are held back from the fill. Once the cache is full it
@@ -69,12 +67,14 @@ public class FormatCacheBenchmarks
 
     /// <summary>The ordinary path: the pair was memoised on its first use.</summary>
     [Benchmark(Baseline = true)]
-    public string CacheHit() => _cachedMoney.ToString("C", _cachedCulture);
+    public string CacheHit() =>
+        _cachedMoney.ToString("C", _cachedCulture);
 
     /// <summary>
     /// The path taken by every format call for a pair that arrived after the cache filled. It derives a
     /// <see cref="NumberFormatInfo"/> each time — and must not do anything worse than that.
     /// </summary>
     [Benchmark]
-    public string CacheMissPastTheCap() => _uncachedMoney.ToString("C", _uncachedCulture);
+    public string CacheMissPastTheCap() =>
+        _uncachedMoney.ToString("C", _uncachedCulture);
 }

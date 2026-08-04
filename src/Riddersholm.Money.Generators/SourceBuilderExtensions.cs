@@ -1,5 +1,4 @@
-using System;
-using System.Text;
+﻿using System.Text;
 
 namespace Riddersholm.Money.Generators;
 
@@ -13,15 +12,18 @@ namespace Riddersholm.Money.Generators;
 /// </remarks>
 internal static class SourceBuilderExtensions
 {
-    public static StringBuilder Line(this StringBuilder builder, FormattableString text) =>
-        builder.AppendLine(FormattableString.Invariant(text));
+    extension(StringBuilder builder)
+    {
+        public StringBuilder Line(FormattableString text) =>
+            builder.AppendLine(FormattableString.Invariant(text));
 
-    public static StringBuilder Line(this StringBuilder builder, string text) =>
-        builder.AppendLine(text);
+        public StringBuilder Line(string text) =>
+            builder.AppendLine(text);
 
-    public static StringBuilder Line(this StringBuilder builder) =>
-        builder.AppendLine();
+        public StringBuilder Line() =>
+            builder.AppendLine();
 
-    public static StringBuilder Text(this StringBuilder builder, FormattableString text) =>
-        builder.Append(FormattableString.Invariant(text));
+        public StringBuilder Text(FormattableString text) =>
+            builder.Append(FormattableString.Invariant(text));
+    }
 }

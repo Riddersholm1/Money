@@ -1,4 +1,4 @@
-using System.Globalization;
+﻿using System.Globalization;
 using FsCheck.Xunit;
 using Xunit;
 
@@ -95,9 +95,9 @@ public sealed class MoneyParsingTests
     [Fact]
     public void A_bare_number_is_accepted_when_the_currency_is_not_required()
     {
-        MoneyStyles styles = Money.DefaultStyles & ~MoneyStyles.RequireCurrency;
+        const MoneyStyles Styles = Money.DefaultStyles & ~MoneyStyles.RequireCurrency;
 
-        Assert.True(Money.TryParse("100", styles, Invariant, out Money result));
+        Assert.True(Money.TryParse("100", Styles, Invariant, out Money result));
         Assert.Equal(100m, result.Amount);
         Assert.Equal(Currency.None, result.Currency);
     }

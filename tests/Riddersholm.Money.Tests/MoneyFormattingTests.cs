@@ -1,4 +1,4 @@
-using System.Globalization;
+﻿using System.Globalization;
 using System.Text;
 using Xunit;
 
@@ -33,7 +33,7 @@ public sealed class MoneyFormattingTests
     }
 
     [Fact]
-    public void Currency_format_uses_the_currencys_precision_not_the_cultures()
+    public void Currency_format_uses_the_currencies_precision_not_the_cultures()
     {
         // The BCL always uses the culture's CurrencyDecimalDigits, so decimal.ToString("C", en-US) is
         // $1,234.00 whatever currency was meant. Yen has no minor unit and dinars have three.

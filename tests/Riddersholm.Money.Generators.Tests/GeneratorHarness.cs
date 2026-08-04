@@ -1,4 +1,4 @@
-using System.Collections.Immutable;
+﻿using System.Collections.Immutable;
 using System.Text;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
@@ -30,7 +30,7 @@ internal static class GeneratorHarness
 {
     public static GeneratorRun Run(string currencyJson, bool emitCore = false, string rootNamespace = "Contoso.Billing")
     {
-        CSharpCompilation compilation = CSharpCompilation.Create(
+        var compilation = CSharpCompilation.Create(
             assemblyName: "GeneratorTests",
             syntaxTrees: [],
             references: [MetadataReference.CreateFromFile(typeof(object).Assembly.Location)],
@@ -57,7 +57,7 @@ internal static class GeneratorHarness
     {
         StubAdditionalText file = new("currencies.json", currencyJson);
 
-        CSharpCompilation compilation = CSharpCompilation.Create(
+        var compilation = CSharpCompilation.Create(
             assemblyName: "GeneratorTests",
             syntaxTrees: [],
             references: [MetadataReference.CreateFromFile(typeof(object).Assembly.Location)],
@@ -93,7 +93,7 @@ internal static class GeneratorHarness
         public override AnalyzerConfigOptions GlobalOptions { get; } = new StubOptions(new Dictionary<string, string>(StringComparer.Ordinal)
         {
             ["build_property.RiddersholmMoneyEmitCore"] = emitCore ? "true" : "false",
-            ["build_property.RootNamespace"] = rootNamespace,
+            ["build_property.RootNamespace"] = rootNamespace
         });
 
         public override AnalyzerConfigOptions GetOptions(SyntaxTree tree) => StubOptions.Empty;
@@ -102,7 +102,7 @@ internal static class GeneratorHarness
         public override AnalyzerConfigOptions GetOptions(AdditionalText textFile) =>
             new StubOptions(new Dictionary<string, string>(StringComparer.Ordinal)
             {
-                ["build_metadata.AdditionalFiles.RiddersholmCurrencies"] = "true",
+                ["build_metadata.AdditionalFiles.RiddersholmCurrencies"] = "true"
             });
     }
 

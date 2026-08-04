@@ -26,22 +26,23 @@ string[] allow = ["XTS", "XXX"];
 Dictionary<string, int> minorUnitOverrides = new(StringComparer.Ordinal)
 {
     ["MRU"] = 5,
-    ["MGA"] = 5,
+    ["MGA"] = 5
 };
 
 string repoRoot = FindRepositoryRoot();
 string outputPath = Path.Combine(repoRoot, "eng", "iso-4217.json");
 
-using HttpClient http = new() { Timeout = TimeSpan.FromMinutes(2) };
+using HttpClient http = new();
+http.Timeout = TimeSpan.FromMinutes(2);
 
 Console.WriteLine("Downloading ISO 4217 register...");
 string csv = await http.GetStringAsync(new Uri(IsoUrl)).ConfigureAwait(false);
 
 Console.WriteLine("Downloading CLDR fraction data...");
-using JsonDocument fractionsDoc = JsonDocument.Parse(await http.GetStringAsync(new Uri(CldrFractionsUrl)).ConfigureAwait(false));
+using var fractionsDoc = JsonDocument.Parse(await http.GetStringAsync(new Uri(CldrFractionsUrl)).ConfigureAwait(false));
 
 Console.WriteLine("Downloading CLDR currency names...");
-using JsonDocument namesDoc = JsonDocument.Parse(await http.GetStringAsync(new Uri(CldrNamesUrl)).ConfigureAwait(false));
+using var namesDoc = JsonDocument.Parse(await http.GetStringAsync(new Uri(CldrNamesUrl)).ConfigureAwait(false));
 
 JsonElement fractions = fractionsDoc.RootElement
     .GetProperty("supplemental").GetProperty("currencyData").GetProperty("fractions");
@@ -117,7 +118,7 @@ foreach ((string code, Dictionary<string, string> row) in byCode)
         MinorUnitsPerMajor = minorUnitsPerMajor,
         // A currency with no minor unit cannot have cash precision finer than whole units either.
         CashDecimalDigits = minorUnitsPerMajor == 0 ? (byte)0 : cashDigits,
-        CashRoundingStep = cashStep,
+        CashRoundingStep = cashStep
     });
 }
 
@@ -133,10 +134,9 @@ CurrencyDataFile file = new()
         CldrFractions = CldrFractionsUrl,
         CldrNames = CldrNamesUrl,
         RetrievedUtc = DateOnly.FromDateTime(DateTime.UtcNow),
-        Filter = "Active ISO 4217 codes with a numeric minor unit (excludes metals, bond units, SDR "
-               + "and other funds), minus XAD (unit of account), plus XTS and XXX.",
+        Filter = "Active ISO 4217 codes with a numeric minor unit (excludes metals, bond units, SDR and other funds), minus XAD (unit of account), plus XTS and XXX."
     },
-    Currencies = currencies,
+    Currencies = currencies
 };
 
 JsonSerializerOptions options = new(JsonSerializerDefaults.Web)
@@ -145,7 +145,7 @@ JsonSerializerOptions options = new(JsonSerializerDefaults.Web)
     DefaultIgnoreCondition = JsonIgnoreCondition.Never,
     // Write '₪' rather than '₪'. This file is reviewed by humans in diffs, and it is data —
     // never interpolated into HTML — so the relaxed encoder carries no injection risk here.
-    Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
+    Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping
 };
 
 Directory.CreateDirectory(Path.GetDirectoryName(outputPath)!);
@@ -165,17 +165,19 @@ static int Pow10(int exponent)
     return result;
 }
 
-static byte ReadByte(JsonElement element, string property, byte fallback) =>
-    element.TryGetProperty(property, out JsonElement value)
-    && byte.TryParse(value.GetString(), CultureInfo.InvariantCulture, out byte parsed)
+static byte ReadByte(JsonElement element, string property, byte fallback)
+{
+    return element.TryGetProperty(property, out JsonElement value) && byte.TryParse(value.GetString(), CultureInfo.InvariantCulture, out byte parsed)
         ? parsed
         : fallback;
+}
 
-static string? ReadName(JsonElement names, string code) =>
-    names.TryGetProperty(code, out JsonElement entry)
-    && entry.TryGetProperty("displayName", out JsonElement displayName)
+static string? ReadName(JsonElement names, string code)
+{
+    return names.TryGetProperty(code, out JsonElement entry) && entry.TryGetProperty("displayName", out JsonElement displayName)
         ? displayName.GetString()
         : null;
+}
 
 static string? ReadSymbol(JsonElement names, string code)
 {
@@ -199,18 +201,11 @@ static string? ReadSymbol(JsonElement names, string code)
     return entry.TryGetProperty("symbol", out JsonElement symbol) ? symbol.GetString() : null;
 }
 
-static string Capitalise(string value) =>
-    string.IsNullOrEmpty(value) ? value : CultureInfo.InvariantCulture.TextInfo.ToTitleCase(value.ToLowerInvariant());
+static string Capitalise(string value)
+{
+    return string.IsNullOrEmpty(value) ? value : CultureInfo.InvariantCulture.TextInfo.ToTitleCase(value.ToLowerInvariant());
+}
 
-/// <summary>
-/// Raises a cash increment that is finer than the currency's own minor unit up to that minor unit.
-/// </summary>
-/// <remarks>
-/// Returns the increment expressed in last-place units of the currency's accounting precision, which is
-/// how <c>CurrencyInfo.CashRoundingStep</c> is defined: MRU has two decimal digits and five minor units
-/// per major, so its minor unit 0.2 becomes a step of 20 at 2 digits. Currencies whose minor unit is a
-/// power of ten are returned untouched, which is all of them but MRU and MGA.
-/// </remarks>
 static (byte Digits, byte Step) CoerceCashIncrement(byte digits, int minorUnitsPerMajor, byte cashDigits, byte cashStep)
 {
     decimal cashIncrement = cashStep / Pow10Decimal(cashDigits);

@@ -1,5 +1,4 @@
 using System.Diagnostics;
-using System.Globalization;
 using System.Numerics;
 
 namespace Riddersholm.Money;
@@ -152,15 +151,10 @@ public readonly partial record struct Money :
     /// <param name="max">The inclusive upper bound.</param>
     /// <exception cref="CurrencyMismatchException">The currencies differ.</exception>
     /// <exception cref="ArgumentException"><paramref name="min"/> is greater than <paramref name="max"/>.</exception>
-    public static Money Clamp(Money value, Money min, Money max)
-    {
-        if (EnsureComparable(min, max) > 0)
-        {
-            throw new ArgumentException($"'{min}' cannot be greater than '{max}'.", nameof(min));
-        }
-
-        return Min(Max(value, min), max);
-    }
+    public static Money Clamp(Money value, Money min, Money max) =>
+        EnsureComparable(min, max) > 0
+            ? throw new ArgumentException($"'{min}' cannot be greater than '{max}'.", nameof(min))
+            : Min(Max(value, min), max);
 
     /// <summary>
     /// Orders two amounts for <see cref="Min"/>, <see cref="Max"/> and <see cref="Clamp"/>, applying the

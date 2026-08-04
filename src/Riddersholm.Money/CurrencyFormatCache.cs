@@ -1,4 +1,4 @@
-using System.Collections.Concurrent;
+﻿using System.Collections.Concurrent;
 using System.Globalization;
 
 namespace Riddersholm.Money;
@@ -33,7 +33,7 @@ internal static class CurrencyFormatCache
     private static readonly ConcurrentDictionary<(string Culture, uint Currency), NumberFormatInfo> Formats = new();
 
     /// <summary>Approximate entry count, maintained so the cap check never has to lock the dictionary.</summary>
-    private static int _count;
+    private static int Count;
 
     /// <summary>ISO currency code per culture name; <see langword="null"/> when the culture has no region.</summary>
     private static readonly ConcurrentDictionary<string, string?> RegionCurrencies = new(StringComparer.Ordinal);
@@ -50,7 +50,7 @@ internal static class CurrencyFormatCache
             CultureInfo specified => specified,
             // A bare NumberFormatInfo names no region, so its symbol cannot be trusted to belong to
             // this currency; the currency's own symbol is used instead.
-            _ => null,
+            _ => null
         };
 
         if (culture is null)
@@ -79,21 +79,19 @@ internal static class CurrencyFormatCache
         // ConcurrentDictionary.Count acquires every bucket lock, and this runs on each miss, so using
         // it would put a lock convoy on the formatting path the moment the cache filled up — a worse
         // failure than the unbounded growth the cap exists to prevent.
-        if (Volatile.Read(ref _count) >= MaximumCachedFormats)
+        if (Volatile.Read(ref Count) >= MaximumCachedFormats)
         {
             return built;
         }
 
         if (Formats.TryAdd((culture.Name, currency.PackedValue), built))
         {
-            Interlocked.Increment(ref _count);
+            Interlocked.Increment(ref Count);
             return built;
         }
 
         // Another thread cached an equivalent instance first; prefer the shared one.
-        return Formats.TryGetValue((culture.Name, currency.PackedValue), out NumberFormatInfo? raced)
-            ? raced
-            : built;
+        return Formats.GetValueOrDefault((culture.Name, currency.PackedValue), built);
     }
 
     private static NumberFormatInfo Build(
@@ -102,7 +100,7 @@ internal static class CurrencyFormatCache
         Currency currency,
         int? decimalDigits)
     {
-        NumberFormatInfo format = (NumberFormatInfo)source.Clone();
+        var format = (NumberFormatInfo)source.Clone();
 
         // Clone() always returns a writable copy, even when the source is a read-only culture format.
         format.CurrencySymbol = UsesCurrency(culture, currency) ? source.CurrencySymbol : currency.Symbol;

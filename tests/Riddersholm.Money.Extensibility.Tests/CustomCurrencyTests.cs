@@ -1,4 +1,3 @@
-using Riddersholm.Money;
 using Xunit;
 
 namespace Riddersholm.Money.Extensibility.Tests;

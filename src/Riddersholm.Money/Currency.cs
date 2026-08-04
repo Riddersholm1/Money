@@ -1,4 +1,4 @@
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Numerics;
@@ -53,12 +53,13 @@ public readonly partial record struct Currency :
 
     private const long FallbackMinorUnitsPerMajor = 100L;
 
-    private readonly uint _packed;
-
-    internal Currency(uint packed) => _packed = packed;
+    internal Currency(uint packed)
+    {
+        PackedValue = packed;
+    }
 
     /// <summary>The packed representation, used by the registry and by serialisation.</summary>
-    internal uint PackedValue => _packed;
+    internal uint PackedValue { get; }
 
     /// <summary>
     /// The absence of a currency — ISO <c>XXX</c>. Identical to <c>default(Currency)</c> and to
@@ -73,12 +74,15 @@ public readonly partial record struct Currency :
     /// on a hot path.
     /// </remarks>
     public string Code =>
-        CurrencyTable.TryGetOrdinal(_packed, out int ordinal) ? CurrencyTable.GetCode(ordinal)
-        : CurrencyRegistry.TryGet(_packed, out CurrencyInfo? info) ? info.Code
-        : CurrencyCodec.Decode(_packed);
+        CurrencyTable.TryGetOrdinal(PackedValue, out int ordinal)
+            ? CurrencyTable.GetCode(ordinal)
+            : CurrencyRegistry.TryGet(PackedValue, out CurrencyInfo info)
+                ? info.Code
+                : CurrencyCodec.Decode(PackedValue);
 
     /// <summary>Whether this is <see cref="None"/> — that is, ISO <c>XXX</c>.</summary>
-    public bool IsNone => _packed == CurrencyCodec.None;
+    public bool IsNone =>
+        PackedValue == CurrencyCodec.None;
 
     /// <summary>
     /// Whether the library has metadata for this currency, either compiled in or registered through
@@ -89,32 +93,39 @@ public readonly partial record struct Currency :
     /// persists correctly. What it lacks is a name, a symbol, and a trustworthy precision — which is
     /// why <see cref="Money.Round(System.MidpointRounding)"/> refuses to round one.
     /// </remarks>
-    public bool IsKnown => CurrencyTable.TryGetOrdinal(_packed, out _) || CurrencyRegistry.TryGet(_packed, out _);
+    public bool IsKnown =>
+        CurrencyTable.TryGetOrdinal(PackedValue, out _) || CurrencyRegistry.TryGet(PackedValue, out _);
 
     /// <summary>The ISO 4217 numeric code, for example <c>208</c>, or <c>0</c> when unknown.</summary>
     public short NumericCode =>
-        CurrencyTable.TryGetOrdinal(_packed, out int ordinal) ? CurrencyTable.GetNumericCode(ordinal)
-        : CurrencyRegistry.TryGet(_packed, out CurrencyInfo? info) ? info.NumericCode
-        : (short)0;
+        CurrencyTable.TryGetOrdinal(PackedValue, out int ordinal)
+            ? CurrencyTable.GetNumericCode(ordinal)
+            : CurrencyRegistry.TryGet(PackedValue, out CurrencyInfo info)
+                ? info.NumericCode
+                : (short)0;
 
     /// <summary>The English display name, for example <c>Danish Krone</c>, falling back to the code.</summary>
     public string EnglishName =>
-        CurrencyTable.TryGetOrdinal(_packed, out int ordinal) ? CurrencyTable.GetName(ordinal)
-        : CurrencyRegistry.TryGet(_packed, out CurrencyInfo? info) ? info.EnglishName
-        : Code;
+        CurrencyTable.TryGetOrdinal(PackedValue, out int ordinal)
+            ? CurrencyTable.GetName(ordinal)
+            : CurrencyRegistry.TryGet(PackedValue, out CurrencyInfo info)
+                ? info.EnglishName
+                : Code;
 
     /// <summary>A display symbol such as <c>kr</c>, falling back to the code.</summary>
     /// <remarks>Symbols are not unique — <c>kr</c> is DKK, NOK, SEK, and ISK. See <see cref="CurrencyInfo.Symbol"/>.</remarks>
     public string Symbol =>
-        CurrencyTable.TryGetOrdinal(_packed, out int ordinal) ? CurrencyTable.GetSymbol(ordinal)
-        : CurrencyRegistry.TryGet(_packed, out CurrencyInfo? info) ? info.Symbol
-        : Code;
+        CurrencyTable.TryGetOrdinal(PackedValue, out int ordinal)
+            ? CurrencyTable.GetSymbol(ordinal)
+            : CurrencyRegistry.TryGet(PackedValue, out CurrencyInfo info)
+                ? info.Symbol
+                : Code;
 
     /// <summary>The number of minor-unit digits, for example <c>2</c> for DKK and <c>0</c> for JPY.</summary>
     /// <remarks>Reading this allocates nothing: the values are static data in the assembly.</remarks>
     public byte DecimalDigits =>
-        CurrencyTable.TryGetOrdinal(_packed, out int ordinal) ? CurrencyTable.DecimalDigits[ordinal]
-        : CurrencyRegistry.TryGet(_packed, out CurrencyInfo? info) ? info.DecimalDigits
+        CurrencyTable.TryGetOrdinal(PackedValue, out int ordinal) ? CurrencyTable.DecimalDigits[ordinal]
+        : CurrencyRegistry.TryGet(PackedValue, out CurrencyInfo info) ? info.DecimalDigits
         : FallbackDecimalDigits;
 
     /// <summary>
@@ -122,27 +133,33 @@ public readonly partial record struct Currency :
     /// <c>5</c> for MRU and MGA, and <c>0</c> for <c>XXX</c> and <c>XTS</c>, which have no minor unit.
     /// </summary>
     public long MinorUnitsPerMajor =>
-        CurrencyTable.TryGetOrdinal(_packed, out int ordinal) ? CurrencyTable.GetMinorUnitsPerMajor(ordinal)
-        : CurrencyRegistry.TryGet(_packed, out CurrencyInfo? info) ? info.MinorUnitsPerMajor
-        : FallbackMinorUnitsPerMajor;
+        CurrencyTable.TryGetOrdinal(PackedValue, out int ordinal)
+            ? CurrencyTable.GetMinorUnitsPerMajor(ordinal)
+            : CurrencyRegistry.TryGet(PackedValue, out CurrencyInfo info)
+                ? info.MinorUnitsPerMajor
+                : FallbackMinorUnitsPerMajor;
 
     /// <summary>Whether this currency has a minor unit. <c>XXX</c> and <c>XTS</c> do not.</summary>
     public bool HasMinorUnit => MinorUnitsPerMajor > 0;
 
     /// <summary>The digit count used for physical cash, which can be coarser than the accounting precision.</summary>
     public byte CashDecimalDigits =>
-        CurrencyTable.TryGetOrdinal(_packed, out int ordinal) ? CurrencyTable.CashDecimalDigits[ordinal]
-        : CurrencyRegistry.TryGet(_packed, out CurrencyInfo? info) ? info.CashDecimalDigits
-        : DecimalDigits;
+        CurrencyTable.TryGetOrdinal(PackedValue, out int ordinal)
+            ? CurrencyTable.CashDecimalDigits[ordinal]
+            : CurrencyRegistry.TryGet(PackedValue, out CurrencyInfo info)
+                ? info.CashDecimalDigits
+                : DecimalDigits;
 
     /// <summary>
     /// The cash rounding step in last-place units of <see cref="CashDecimalDigits"/>: <c>5</c> for the
     /// Swiss 0.05 franc, <c>50</c> for the Danish 0.50 krone, <c>1</c> when cash needs no special rounding.
     /// </summary>
     public byte CashRoundingStep =>
-        CurrencyTable.TryGetOrdinal(_packed, out int ordinal) ? CurrencyTable.CashRoundingSteps[ordinal]
-        : CurrencyRegistry.TryGet(_packed, out CurrencyInfo? info) ? info.CashRoundingStep
-        : (byte)1;
+        CurrencyTable.TryGetOrdinal(PackedValue, out int ordinal)
+            ? CurrencyTable.CashRoundingSteps[ordinal]
+            : CurrencyRegistry.TryGet(PackedValue, out CurrencyInfo info)
+                ? info.CashRoundingStep
+                : (byte)1;
 
     /// <summary>The smallest representable amount, for example <c>0.01</c> for DKK; <c>0</c> when there is no minor unit.</summary>
     public decimal MinorUnit
@@ -160,7 +177,7 @@ public readonly partial record struct Currency :
     /// set to <see langword="false"/> rather than throwing, so loading unfamiliar data never crashes.
     /// The fallback allocates on each call; the scalar properties on <see cref="Currency"/> do not.
     /// </remarks>
-    public CurrencyInfo Info => CurrencyMetadata.Get(_packed);
+    public CurrencyInfo Info => CurrencyMetadata.Get(PackedValue);
 
     /// <summary>Every currency known at compile time, ordered by alphabetic code.</summary>
     /// <remarks>
@@ -171,7 +188,7 @@ public readonly partial record struct Currency :
     /// CLS-compliance problem besides.
     /// </para>
     /// </remarks>
-    public static ReadOnlySpan<Currency> Known => CurrencyMetadata.AllCurrencies;
+    public static ReadOnlySpan<Currency> Known => CurrencyMetadata.AllCurrenciesSpan;
 
     /// <summary>Resolves a currency from its ISO 4217 alphabetic code.</summary>
     /// <param name="code">Three ASCII letters; lower case is accepted and normalised.</param>
@@ -180,9 +197,7 @@ public readonly partial record struct Currency :
     public static Currency FromCode(ReadOnlySpan<char> code) =>
         TryFromCode(code, out Currency currency)
             ? currency
-            : throw new ArgumentException(
-                $"'{code}' is not a valid ISO 4217 alphabetic code; expected three ASCII letters.",
-                nameof(code));
+            : throw new ArgumentException($"'{code}' is not a valid ISO 4217 alphabetic code; expected three ASCII letters.", nameof(code));
 
     /// <inheritdoc cref="FromCode(ReadOnlySpan{char})" />
     public static Currency FromCode(string code)
@@ -194,7 +209,7 @@ public readonly partial record struct Currency :
     /// <summary>Resolves a currency from its ISO 4217 alphabetic code.</summary>
     /// <param name="code">Three ASCII letters; lower case is accepted and normalised.</param>
     /// <param name="currency">The resolved currency, or <see cref="None"/> on failure.</param>
-    /// <returns><see langword="true"/> if <paramref name="code"/> is well formed.</returns>
+    /// <returns><see langword="true"/> if <paramref name="code"/> is well-formed.</returns>
     public static bool TryFromCode(ReadOnlySpan<char> code, out Currency currency)
     {
         bool packed = CurrencyCodec.TryPack(code, out uint value);
@@ -220,10 +235,7 @@ public readonly partial record struct Currency :
     public static Currency FromKnownCode(ReadOnlySpan<char> code) =>
         TryFromKnownCode(code, out Currency currency)
             ? currency
-            : throw new ArgumentException(
-                $"'{code}' is not a known ISO 4217 currency. Use {nameof(FromCode)} to accept codes this "
-              + "library has no metadata for.",
-                nameof(code));
+            : throw new ArgumentException($"'{code}' is not a known ISO 4217 currency. Use {nameof(FromCode)} to accept codes this library has no metadata for.", nameof(code));
 
     /// <inheritdoc cref="FromKnownCode(ReadOnlySpan{char})" />
     public static Currency FromKnownCode(string code)
@@ -235,7 +247,7 @@ public readonly partial record struct Currency :
     /// <summary>Resolves a currency from its code, provided the library has metadata for it.</summary>
     /// <param name="code">Three ASCII letters; lower case is accepted and normalised.</param>
     /// <param name="currency">The resolved currency, or <see cref="None"/> on failure.</param>
-    /// <returns><see langword="true"/> if the code is well formed <em>and</em> the currency is known.</returns>
+    /// <returns><see langword="true"/> if the code is well-formed <em>and</em> the currency is known.</returns>
     /// <remarks>See <see cref="FromKnownCode(ReadOnlySpan{char})"/> for when to prefer this.</remarks>
     public static bool TryFromKnownCode(ReadOnlySpan<char> code, out Currency currency)
     {
@@ -269,7 +281,7 @@ public readonly partial record struct Currency :
     /// </remarks>
     public int CompareTo(Currency other)
     {
-        if (_packed == other._packed)
+        if (PackedValue == other.PackedValue)
         {
             return 0;
         }
@@ -277,8 +289,8 @@ public readonly partial record struct Currency :
         Span<char> left = stackalloc char[3];
         Span<char> right = stackalloc char[3];
 
-        CurrencyCodec.Unpack(_packed, left);
-        CurrencyCodec.Unpack(other._packed, right);
+        CurrencyCodec.Unpack(PackedValue, left);
+        CurrencyCodec.Unpack(other.PackedValue, right);
 
         return left.SequenceCompareTo(right);
     }
@@ -288,7 +300,7 @@ public readonly partial record struct Currency :
     {
         null => 1,
         Currency other => CompareTo(other),
-        _ => throw new ArgumentException($"Object must be of type {nameof(Currency)}.", nameof(obj)),
+        _ => throw new ArgumentException($"Object must be of type {nameof(Currency)}.", nameof(obj))
     };
 
     /// <summary>Orders by alphabetic code.</summary>
@@ -318,7 +330,7 @@ public readonly partial record struct Currency :
         CurrencyFormat.Alphabetic => Code,
         CurrencyFormat.Numeric => NumericCode.ToString("D3", formatProvider ?? CultureInfo.InvariantCulture),
         CurrencyFormat.Symbol => Symbol,
-        _ => EnglishName,
+        _ => EnglishName
     };
 
     /// <inheritdoc cref="ToString(string?, IFormatProvider?)" />
@@ -331,6 +343,7 @@ public readonly partial record struct Currency :
         switch (Select(format))
         {
             case CurrencyFormat.Alphabetic:
+            {
                 // The common case writes straight into the caller's buffer with no string in sight.
                 if (destination.Length < 3)
                 {
@@ -338,18 +351,22 @@ public readonly partial record struct Currency :
                     return false;
                 }
 
-                CurrencyCodec.Unpack(_packed, destination);
+                CurrencyCodec.Unpack(PackedValue, destination);
                 charsWritten = 3;
                 return true;
-
+            }
             case CurrencyFormat.Numeric:
+            {
                 return NumericCode.TryFormat(destination, out charsWritten, "D3", provider ?? CultureInfo.InvariantCulture);
-
+            }
             case CurrencyFormat.Symbol:
+            {
                 return TryCopy(Symbol, destination, out charsWritten);
-
+            }
             default:
+            {
                 return TryCopy(EnglishName, destination, out charsWritten);
+            }
         }
     }
 
@@ -375,24 +392,29 @@ public readonly partial record struct Currency :
         switch (Select(format))
         {
             case CurrencyFormat.Alphabetic:
+            {
                 if (utf8Destination.Length < 3)
                 {
                     bytesWritten = 0;
                     return false;
                 }
 
-                CurrencyCodec.UnpackUtf8(_packed, utf8Destination);
+                CurrencyCodec.UnpackUtf8(PackedValue, utf8Destination);
                 bytesWritten = 3;
                 return true;
-
+            }
             case CurrencyFormat.Numeric:
+            {
                 return NumericCode.TryFormat(utf8Destination, out bytesWritten, "D3", provider ?? CultureInfo.InvariantCulture);
-
+            }
             case CurrencyFormat.Symbol:
+            {
                 return System.Text.Encoding.UTF8.TryGetBytes(Symbol, utf8Destination, out bytesWritten);
-
+            }
             default:
+            {
                 return System.Text.Encoding.UTF8.TryGetBytes(EnglishName, utf8Destination, out bytesWritten);
+            }
         }
     }
 
@@ -466,7 +488,7 @@ public readonly partial record struct Currency :
         ['N' or 'n'] => CurrencyFormat.Numeric,
         ['S' or 's'] => CurrencyFormat.Symbol,
         ['L' or 'l'] => CurrencyFormat.Name,
-        _ => throw new FormatException($"'{format}' is not a supported Currency format string. Use G, A, N, S, or L."),
+        _ => throw new FormatException($"'{format}' is not a supported Currency format string. Use G, A, N, S, or L.")
     };
 
     private enum CurrencyFormat
@@ -474,6 +496,6 @@ public readonly partial record struct Currency :
         Alphabetic,
         Numeric,
         Symbol,
-        Name,
+        Name
     }
 }

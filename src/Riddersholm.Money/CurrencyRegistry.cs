@@ -1,4 +1,4 @@
-using System.Collections.Frozen;
+﻿using System.Collections.Frozen;
 
 namespace Riddersholm.Money;
 
@@ -24,10 +24,10 @@ namespace Riddersholm.Money;
 /// </remarks>
 public static class CurrencyRegistry
 {
-    private static FrozenDictionary<uint, CurrencyInfo> _custom = FrozenDictionary<uint, CurrencyInfo>.Empty;
+    private static FrozenDictionary<uint, CurrencyInfo> CustomCurrencies = FrozenDictionary<uint, CurrencyInfo>.Empty;
 
     /// <summary>Metadata for every currency registered at runtime, in no particular order.</summary>
-    public static IReadOnlyCollection<CurrencyInfo> Custom => _custom.Values;
+    public static IReadOnlyCollection<CurrencyInfo> Custom => CustomCurrencies.Values;
 
     /// <summary>Registers metadata for currencies the library does not know at compile time.</summary>
     /// <param name="currencies">The metadata to publish.</param>
@@ -62,7 +62,7 @@ public static class CurrencyRegistry
         // never see a partially populated dictionary.
         while (true)
         {
-            FrozenDictionary<uint, CurrencyInfo> current = _custom;
+            FrozenDictionary<uint, CurrencyInfo> current = CustomCurrencies;
             Dictionary<uint, CurrencyInfo> updated = new(current.Count + currencies.Length);
 
             foreach (KeyValuePair<uint, CurrencyInfo> entry in current)
@@ -97,9 +97,9 @@ public static class CurrencyRegistry
                 return;
             }
 
-            FrozenDictionary<uint, CurrencyInfo> replacement = updated.ToFrozenDictionary();
+            var replacement = updated.ToFrozenDictionary();
 
-            if (ReferenceEquals(Interlocked.CompareExchange(ref _custom, replacement, current), current))
+            if (ReferenceEquals(Interlocked.CompareExchange(ref CustomCurrencies, replacement, current), current))
             {
                 return;
             }
@@ -109,7 +109,7 @@ public static class CurrencyRegistry
     }
 
     /// <summary>Looks up runtime-registered metadata.</summary>
-    internal static bool TryGet(uint packed, out CurrencyInfo info) => _custom.TryGetValue(packed, out info!);
+    internal static bool TryGet(uint packed, out CurrencyInfo info) => CustomCurrencies.TryGetValue(packed, out info!);
 
     private static bool Matches(CurrencyInfo left, CurrencyInfo right) =>
         left.NumericCode == right.NumericCode

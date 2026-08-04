@@ -1,4 +1,4 @@
-using System.Collections.Concurrent;
+﻿using System.Collections.Concurrent;
 using System.Globalization;
 using Xunit;
 
@@ -22,7 +22,7 @@ public sealed class ThreadSafetyTests
 
         foreach (string code in codes)
         {
-            Currency currency = Currency.FromCode(code);
+            var currency = Currency.FromCode(code);
 
             Assert.True(currency.IsKnown, $"'{code}' was lost by a concurrent registration.");
             Assert.Equal($"Test {code}", currency.EnglishName);
@@ -81,7 +81,7 @@ public sealed class ThreadSafetyTests
 
         // Each culture's expected output is established single-threaded first; the property under test
         // is that racing readers never observe a half-built derived NumberFormatInfo.
-        Dictionary<string, string> expected = cultures.ToDictionary(
+        var expected = cultures.ToDictionary(
             culture => culture.Name,
             culture => value.ToString("C", culture),
             StringComparer.Ordinal);

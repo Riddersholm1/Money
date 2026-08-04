@@ -1,4 +1,4 @@
-using System.Globalization;
+﻿using System.Globalization;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
@@ -38,7 +38,10 @@ public sealed class MoneyJsonConverter : JsonConverter<Money>
 
     /// <summary>Creates a converter that writes the given form.</summary>
     /// <param name="format">How to write amounts. Reading always accepts all supported forms.</param>
-    public MoneyJsonConverter(MoneyJsonFormat format) => Format = format;
+    public MoneyJsonConverter(MoneyJsonFormat format)
+    {
+        Format = format;
+    }
 
     /// <summary>How this converter writes amounts.</summary>
     public MoneyJsonFormat Format { get; }
@@ -46,26 +49,18 @@ public sealed class MoneyJsonConverter : JsonConverter<Money>
     /// <inheritdoc />
     public override Money Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
     {
-        switch (reader.TokenType)
+        return reader.TokenType switch
         {
-            case JsonTokenType.Null:
-                // Deliberately an error rather than default(Money). An absent amount is not zero, and
-                // turning one into the other is the worst failure a money library can have: it is
-                // indistinguishable from an intentional zero and every downstream total is quietly
-                // wrong. Declare the property as Money? when absence is a legitimate value — that
-                // deserialises null as null, which says what it means.
-                throw new JsonException(
-                    "Cannot read null as Money. Use Money? if the value is genuinely optional.");
-
-            case JsonTokenType.String:
-                return ReadCompact(ref reader);
-
-            case JsonTokenType.StartObject:
-                return ReadObject(ref reader);
-
-            default:
-                throw new JsonException($"Expected an object or string for Money but found {reader.TokenType}.");
-        }
+            // Deliberately an error rather than default(Money). An absent amount is not zero, and
+            // turning one into the other is the worst failure a money library can have: it is
+            // indistinguishable from an intentional zero and every downstream total is quietly
+            // wrong. Declare the property as Money? when absence is a legitimate value — that
+            // deserialises null as null, which says what it means.
+            JsonTokenType.Null => throw new JsonException("Cannot read null as Money. Use Money? if the value is genuinely optional."),
+            JsonTokenType.String => ReadCompact(ref reader),
+            JsonTokenType.StartObject => ReadObject(ref reader),
+            _ => throw new JsonException($"Expected an object or string for Money but found {reader.TokenType}.")
+        };
     }
 
     /// <inheritdoc />
@@ -172,16 +167,16 @@ public sealed class MoneyJsonConverter : JsonConverter<Money>
         throw new JsonException("Unexpected end of JSON while reading Money.");
     }
 
-    private static decimal ReadAmount(ref Utf8JsonReader reader) => reader.TokenType switch
-    {
-        JsonTokenType.Number => reader.GetDecimal(),
-        // Accepted whichever format was configured, so a quoted amount never fails to load.
-        JsonTokenType.String => decimal.TryParse(
-            reader.GetString(), NumberStyles.Number, CultureInfo.InvariantCulture, out decimal parsed)
-                ? parsed
-                : throw new JsonException("The 'amount' property is not a number."),
-        _ => throw new JsonException($"Expected a number for 'amount' but found {reader.TokenType}."),
-    };
+    private static decimal ReadAmount(ref Utf8JsonReader reader) =>
+        reader.TokenType switch
+        {
+            JsonTokenType.Number => reader.GetDecimal(),
+            // Accepted whichever format was configured, so a quoted amount never fails to load.
+            JsonTokenType.String => decimal.TryParse(reader.GetString(), NumberStyles.Number, CultureInfo.InvariantCulture, out decimal parsed)
+                    ? parsed
+                    : throw new JsonException("The 'amount' property is not a number."),
+            _ => throw new JsonException($"Expected a number for 'amount' but found {reader.TokenType}.")
+        };
 
     private static Currency ReadCurrency(ref Utf8JsonReader reader)
     {
@@ -189,8 +184,7 @@ public sealed class MoneyJsonConverter : JsonConverter<Money>
         {
             // "currency": null would otherwise become XXX, silently relabelling a real amount as
             // having no currency. If the document means XXX, it can say "XXX".
-            throw new JsonException(
-                "The 'currency' property is null. Write the ISO 4217 code, or \"XXX\" for no currency.");
+            throw new JsonException("The 'currency' property is null. Write the ISO 4217 code, or \"XXX\" for no currency.");
         }
 
         if (reader.TokenType != JsonTokenType.String)

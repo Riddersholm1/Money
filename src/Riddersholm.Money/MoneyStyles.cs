@@ -1,4 +1,4 @@
-using System.Globalization;
+﻿using System.Globalization;
 
 namespace Riddersholm.Money;
 
@@ -83,5 +83,5 @@ public enum MoneyStyles
     /// The default: a number in any of the usual accounting forms, carrying a currency that must be
     /// identifiable.
     /// </summary>
-    Currency = Number | AllowTrailingSign | AllowParentheses | AllowCurrencyCode | AllowCurrencySymbol | RequireCurrency,
+    Currency = Number | AllowTrailingSign | AllowParentheses | AllowCurrencyCode | AllowCurrencySymbol | RequireCurrency
 }

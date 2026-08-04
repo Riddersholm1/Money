@@ -1,4 +1,4 @@
-namespace Riddersholm.Money;
+﻿namespace Riddersholm.Money;
 
 /// <summary>
 /// Thrown when an operation combines two amounts in different currencies.
@@ -11,7 +11,7 @@ namespace Riddersholm.Money;
 /// </para>
 /// <para>
 /// Note that equality never throws: <c>100 DKK == 100 EUR</c> is <see langword="false"/>, because
-/// "are these the same amount of money?" has a correct answer and it is "no". Only operations whose
+/// "are these the same amount of money?" has a correct answer, and it is "no". Only operations whose
 /// result would be meaningless raise this.
 /// </para>
 /// </remarks>

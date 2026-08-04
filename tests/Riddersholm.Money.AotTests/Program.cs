@@ -1,4 +1,4 @@
-using System.Globalization;
+﻿using System.Globalization;
 using System.Text;
 using System.Text.Json;
 using Riddersholm.Money;
@@ -10,18 +10,6 @@ using Riddersholm.Money.Serialization;
 // as a non-zero exit code.
 
 int failures = 0;
-
-void Check(bool condition, string description)
-{
-    if (condition)
-    {
-        Console.WriteLine($"  ok    {description}");
-        return;
-    }
-
-    Console.WriteLine($"  FAIL  {description}");
-    failures++;
-}
 
 Console.WriteLine("Riddersholm.Money — NativeAOT smoke test");
 Console.WriteLine();
@@ -49,7 +37,7 @@ Check(new Money(12.30m, Currency.DKK).RoundToCash().Amount == 12.50m, "cash roun
 Console.WriteLine();
 Console.WriteLine("allocation");
 Money[] parts = new Money(10m, Currency.DKK).Allocate(3);
-Check(parts.Length == 3 && parts[0].Amount == 3.34m && parts[1].Amount == 3.33m, "equal allocation");
+Check(parts is [{ Amount: 3.34m }, { Amount: 3.33m } _, _], "equal allocation");
 Check(parts.Sum() == new Money(10m, Currency.DKK), "allocation preserves the total");
 
 Money[] ratios = new Money(100m, Currency.DKK).Allocate([70, 30]);
@@ -65,7 +53,7 @@ Check(new Money(1234m, Currency.JPY).ToString("C", new CultureInfo("en-US")) == 
 
 Span<char> buffer = stackalloc char[64];
 Check(price.TryFormat(buffer, out int written, "R", CultureInfo.InvariantCulture)
-      && buffer[..written].SequenceEqual("100.00 DKK"), "span formatting");
+      && buffer[..written] is "100.00 DKK", "span formatting");
 
 Span<byte> utf8 = stackalloc byte[64];
 Check(price.TryFormat(utf8, out int utf8Written, "R", CultureInfo.InvariantCulture)
@@ -94,8 +82,8 @@ Check(fromUtf8 == new Money(42.5m, Currency.EUR), "UTF-8 deserialisation");
 Console.WriteLine();
 Console.WriteLine("runtime-registered currencies (module initializer path)");
 CurrencyRegistry.Register(new CurrencyInfo("XBT", 0, "Bitcoin", "₿", 8, 100_000_000L, 8, 1));
-Currency bitcoin = Currency.FromCode("XBT");
-Check(bitcoin.IsKnown && bitcoin.EnglishName == "Bitcoin", "registration works without reflection");
+var bitcoin = Currency.FromCode("XBT");
+Check(bitcoin is { IsKnown: true, EnglishName: "Bitcoin" }, "registration works without reflection");
 Check(bitcoin.DecimalDigits == 8, "registered precision beyond the ISO maximum");
 
 Console.WriteLine();
@@ -113,3 +101,15 @@ if (failures == 0)
 
 Console.WriteLine($"{failures} NativeAOT check(s) failed.");
 return 1;
+
+void Check(bool condition, string description)
+{
+    if (condition)
+    {
+        Console.WriteLine($"  ok    {description}");
+        return;
+    }
+
+    Console.WriteLine($"  FAIL  {description}");
+    failures++;
+}

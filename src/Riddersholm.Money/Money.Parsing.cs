@@ -1,4 +1,4 @@
-using System.Diagnostics.CodeAnalysis;
+﻿using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Text;
 
@@ -23,7 +23,6 @@ namespace Riddersholm.Money;
 /// </para>
 /// </remarks>
 public readonly partial record struct Money :
-    IParsable<Money>,
     ISpanParsable<Money>,
     IUtf8SpanParsable<Money>
 {
@@ -102,7 +101,7 @@ public readonly partial record struct Money :
     {
         if (s is null)
         {
-            result = default;
+            result = default(Money);
             return false;
         }
 
@@ -116,7 +115,7 @@ public readonly partial record struct Money :
     /// <inheritdoc cref="TryParse(string?, MoneyStyles, IFormatProvider?, out Money)" />
     public static bool TryParse(ReadOnlySpan<char> s, MoneyStyles style, IFormatProvider? provider, out Money result)
     {
-        result = default;
+        result = default(Money);
 
         ReadOnlySpan<char> text = s.Trim();
 
@@ -175,7 +174,7 @@ public readonly partial record struct Money :
         IFormatProvider? provider,
         out Money result)
     {
-        result = default;
+        result = default(Money);
 
         // Transcoding once onto the stack keeps a single implementation of the parsing rules. The
         // upper bound is generous: UTF-8 never produces more UTF-16 units than it has bytes.
@@ -264,13 +263,10 @@ public readonly partial record struct Money :
         }
 
         // Leading code: "DKK 100.50".
-        if (IsCodeAt(text, 0) && (text.Length == 3 || !char.IsAsciiLetter(text[3])))
+        if (IsCodeAt(text, 0) && (text.Length == 3 || !char.IsAsciiLetter(text[3])) && Currency.TryFromCode(text[..3], out currency))
         {
-            if (Currency.TryFromCode(text[..3], out currency))
-            {
-                text = text[3..].TrimStart();
-                return true;
-            }
+            text = text[3..].TrimStart();
+            return true;
         }
 
         return false;

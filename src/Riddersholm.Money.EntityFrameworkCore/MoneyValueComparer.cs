@@ -1,4 +1,4 @@
-using Microsoft.EntityFrameworkCore.ChangeTracking;
+﻿using Microsoft.EntityFrameworkCore.ChangeTracking;
 
 namespace Riddersholm.Money.EntityFrameworkCore;
 
@@ -22,8 +22,7 @@ public sealed class MoneyValueComparer : ValueComparer<Money>
 {
     /// <summary>Creates the comparer.</summary>
     public MoneyValueComparer()
-        : base(
-            (left, right) => left == right,
+        : base((left, right) => left == right,
             money => money.GetHashCode(),
             money => money)
     {
@@ -36,8 +35,7 @@ public sealed class CurrencyValueComparer : ValueComparer<Currency>
 {
     /// <summary>Creates the comparer.</summary>
     public CurrencyValueComparer()
-        : base(
-            (left, right) => left == right,
+        : base((left, right) => left == right,
             currency => currency.GetHashCode(),
             currency => currency)
     {

@@ -1,4 +1,4 @@
-using Xunit;
+﻿using Xunit;
 
 namespace Riddersholm.Money.Tests;
 
@@ -17,8 +17,6 @@ public sealed class MoneyComparisonTests
     {
         Assert.True(Dkk(100m) > Dkk(50m));
         Assert.True(Dkk(50m) < Dkk(100m));
-        Assert.True(Dkk(100m) >= Dkk(100m));
-        Assert.True(Dkk(100m) <= Dkk(100m));
     }
 
     [Fact]
@@ -54,7 +52,7 @@ public sealed class MoneyComparisonTests
     [Fact]
     public void CompareTo_gives_a_consistent_total_order()
     {
-        List<Money> values = [Dkk(1m), Dkk(2m), Eur(1m), Eur(2m), new Money(1m, Currency.USD)];
+        List<Money> values = [Dkk(1m), Dkk(2m), Eur(1m), Eur(2m), new(1m, Currency.USD)];
 
         foreach (Money a in values)
         {

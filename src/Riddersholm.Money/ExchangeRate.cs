@@ -1,4 +1,4 @@
-namespace Riddersholm.Money;
+﻿namespace Riddersholm.Money;
 
 /// <summary>
 /// A rate for converting between two currencies.

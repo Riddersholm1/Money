@@ -1,4 +1,4 @@
-using Xunit;
+﻿using Xunit;
 
 namespace Riddersholm.Money.Tests;
 
@@ -67,7 +67,7 @@ public sealed class CurrencyDataTests
     public void Representative_currencies_carry_the_right_precision(
         string code, short numericCode, byte digits, int minorUnitsPerMajor)
     {
-        Currency currency = Currency.FromCode(code);
+        var currency = Currency.FromCode(code);
 
         Assert.Equal(numericCode, currency.NumericCode);
         Assert.Equal(digits, currency.DecimalDigits);
@@ -82,7 +82,7 @@ public sealed class CurrencyDataTests
     {
         // ISO records two decimal digits, but the khoum and the iraimbilanja are one fifth of the
         // major unit. Trusting the digit count alone would let 1.37 MRU look like a valid amount.
-        Currency currency = Currency.FromCode(code);
+        var currency = Currency.FromCode(code);
 
         Assert.Equal(2, currency.DecimalDigits);
         Assert.Equal(5, currency.MinorUnitsPerMajor);
@@ -94,7 +94,7 @@ public sealed class CurrencyDataTests
     [InlineData("XTS")]
     public void Codes_without_a_minor_unit_say_so(string code)
     {
-        Currency currency = Currency.FromCode(code);
+        var currency = Currency.FromCode(code);
 
         Assert.True(currency.IsKnown);
         Assert.False(currency.HasMinorUnit);
@@ -111,7 +111,7 @@ public sealed class CurrencyDataTests
     public void Cash_rounding_is_tracked_separately_from_accounting_precision(
         string code, byte cashDigits, byte cashStep)
     {
-        Currency currency = Currency.FromCode(code);
+        var currency = Currency.FromCode(code);
 
         Assert.Equal(cashDigits, currency.CashDecimalDigits);
         Assert.Equal(cashStep, currency.CashRoundingStep);
@@ -130,7 +130,7 @@ public sealed class CurrencyDataTests
     public void Metals_funds_and_units_of_account_are_not_currencies(string code)
     {
         // These parse — any well-formed code does — but they are deliberately not in the table.
-        Currency currency = Currency.FromCode(code);
+        var currency = Currency.FromCode(code);
 
         Assert.False(currency.IsKnown, $"'{code}' is not money and should not be generated.");
     }
@@ -150,7 +150,7 @@ public sealed class CurrencyDataTests
     [InlineData("ITL")] // Italian lira
     public void Withdrawn_currencies_are_not_generated_but_still_round_trip(string code)
     {
-        Currency currency = Currency.FromCode(code);
+        var currency = Currency.FromCode(code);
 
         Assert.False(currency.IsKnown);
         Assert.Equal(code, currency.Code);

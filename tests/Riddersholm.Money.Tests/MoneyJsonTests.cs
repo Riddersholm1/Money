@@ -1,4 +1,4 @@
-using System.Text.Json;
+﻿using System.Text.Json;
 using Riddersholm.Money.Serialization;
 using Xunit;
 
@@ -118,7 +118,7 @@ public sealed class MoneyJsonTests
         string json = JsonSerializer.Serialize(default(Money));
 
         Assert.Equal("""{"amount":0,"currency":"XXX"}""", json);
-        Assert.Equal(default, JsonSerializer.Deserialize<Money>(json));
+        Assert.Equal(default(Money), JsonSerializer.Deserialize<Money>(json));
     }
 
     [Fact]
@@ -138,7 +138,7 @@ public sealed class MoneyJsonTests
         Dictionary<Currency, Money> balances = new()
         {
             [Currency.DKK] = Dkk(100m),
-            [Currency.EUR] = new Money(50m, Currency.EUR),
+            [Currency.EUR] = new Money(50m, Currency.EUR)
         };
 
         string json = JsonSerializer.Serialize(balances);

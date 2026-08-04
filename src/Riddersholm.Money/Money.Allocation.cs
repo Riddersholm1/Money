@@ -1,4 +1,4 @@
-namespace Riddersholm.Money;
+﻿namespace Riddersholm.Money;
 
 /// <content>
 /// Allocation: splitting an amount so that the parts add back up to exactly the whole.
@@ -30,7 +30,7 @@ public readonly partial record struct Money
     {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(count);
 
-        Money[] result = new Money[count];
+        var result = new Money[count];
         Allocate(result.AsSpan());
         return result;
     }
@@ -95,7 +95,7 @@ public readonly partial record struct Money
     /// <exception cref="InvalidOperationException">The amount is not canonical.</exception>
     public Money[] Allocate(ReadOnlySpan<int> ratios)
     {
-        Money[] result = new Money[ratios.Length];
+        var result = new Money[ratios.Length];
         Allocate(ratios, result.AsSpan());
         return result;
     }
@@ -103,7 +103,7 @@ public readonly partial record struct Money
     /// <inheritdoc cref="Allocate(ReadOnlySpan{int})" />
     public Money[] Allocate(ReadOnlySpan<decimal> ratios)
     {
-        Money[] result = new Money[ratios.Length];
+        var result = new Money[ratios.Length];
         Allocate(ratios, result.AsSpan());
         return result;
     }
@@ -124,6 +124,7 @@ public readonly partial record struct Money
         decimal[] rented = new decimal[ratios.Length];
         Widen(ratios, rented);
         Allocate(rented, destination);
+        return;
 
         static void Widen(ReadOnlySpan<int> source, Span<decimal> target)
         {
@@ -245,7 +246,7 @@ public readonly partial record struct Money
                     total += (Int128)ratio;
                 }
 
-                Int128 scaledUnits = (Int128)units;
+                var scaledUnits = (Int128)units;
                 Int128 assigned = Int128.Zero;
 
                 for (int i = 0; i < count; i++)
@@ -287,11 +288,11 @@ public readonly partial record struct Money
             scale = Math.Max(scale, ratio.Scale);
         }
 
-        System.Numerics.BigInteger multiplier = System.Numerics.BigInteger.Pow(10, scale);
+        var multiplier = System.Numerics.BigInteger.Pow(10, scale);
         System.Numerics.BigInteger scaledTotal = ToBigInteger(total, scale, multiplier);
         System.Numerics.BigInteger scaledUnits = new(units);
 
-        System.Numerics.BigInteger[] shortfalls = new System.Numerics.BigInteger[count];
+        var shortfalls = new System.Numerics.BigInteger[count];
         System.Numerics.BigInteger assigned = System.Numerics.BigInteger.Zero;
 
         for (int i = 0; i < count; i++)
@@ -314,8 +315,7 @@ public readonly partial record struct Money
         decimal whole = decimal.Truncate(value);
         decimal fraction = value - whole;
 
-        return (new System.Numerics.BigInteger(whole) * multiplier)
-             + new System.Numerics.BigInteger(fraction * (decimal)multiplier);
+        return (new System.Numerics.BigInteger(whole) * multiplier) + new System.Numerics.BigInteger(fraction * (decimal)multiplier);
     }
 
     /// <summary>
@@ -386,7 +386,7 @@ public readonly partial record struct Money
         integerUnits = 0;
         scale = 0;
 
-        if (units < long.MinValue || units > long.MaxValue)
+        if (units is < long.MinValue or > long.MaxValue)
         {
             return false;
         }
@@ -437,8 +437,7 @@ public readonly partial record struct Money
             // Not an *unknown* currency: XXX and XTS are perfectly well known, they simply have no
             // indivisible unit to distribute. Conflating the two would mislead anyone reading the
             // exception type rather than the message.
-            throw new InvalidOperationException(
-                $"'{Currency.Code}' has no minor unit, so there is no indivisible amount to allocate in.");
+            throw new InvalidOperationException($"'{Currency.Code}' has no minor unit, so there is no indivisible amount to allocate in.");
         }
 
         decimal units = Amount * unitsPerMajor;

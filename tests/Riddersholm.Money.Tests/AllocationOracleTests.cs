@@ -1,4 +1,4 @@
-using System.Numerics;
+﻿using System.Numerics;
 using FsCheck;
 using FsCheck.Fluent;
 using FsCheck.Xunit;
@@ -33,7 +33,7 @@ public sealed class AllocationOracleTests
         Currency.KWD,   // 1000
         Currency.CLF,   // 10000
         Currency.MRU,   // 5
-        Currency.MGA,   // 5
+        Currency.MGA // 5
     ];
 
     [Property(MaxTest = 500)]
@@ -59,7 +59,7 @@ public sealed class AllocationOracleTests
     {
         return Prop.ForAll(
             MinorUnitAmounts().ToArbitrary(),
-            Gen.NonEmptyListOf(Gen.Choose(0, 1000)).Where(r => r.Sum() > 0).ToArbitrary(),
+            Gen.Choose(0, 1000).NonEmptyListOf().Where(r => r.Sum() > 0).ToArbitrary(),
             (sample, ratios) =>
             {
                 int[] weights = [.. ratios];
@@ -172,7 +172,7 @@ public sealed class AllocationOracleTests
         int extra = (int)BigInteger.Abs(remainder);
         BigInteger step = remainder.Sign;
 
-        BigInteger[] parts = new BigInteger[count];
+        var parts = new BigInteger[count];
 
         for (int i = 0; i < count; i++)
         {
@@ -196,8 +196,8 @@ public sealed class AllocationOracleTests
         BigInteger total = weights.Aggregate(BigInteger.Zero, (sum, w) => sum + w);
         int count = weights.Length;
 
-        BigInteger[] shares = new BigInteger[count];
-        BigInteger[] shortfalls = new BigInteger[count];
+        var shares = new BigInteger[count];
+        var shortfalls = new BigInteger[count];
         BigInteger assigned = BigInteger.Zero;
 
         for (int i = 0; i < count; i++)
@@ -236,7 +236,7 @@ public sealed class AllocationOracleTests
     private static BigInteger RoundHalfAwayFromZero(BigInteger numerator, BigInteger denominator)
     {
         BigInteger sign = numerator.Sign < 0 ? BigInteger.MinusOne : BigInteger.One;
-        BigInteger magnitude = BigInteger.Abs(numerator);
+        var magnitude = BigInteger.Abs(numerator);
 
         // (2n + d) / 2d, floored, is n/d rounded with halves going up.
         BigInteger rounded = ((2 * magnitude) + denominator) / (2 * denominator);

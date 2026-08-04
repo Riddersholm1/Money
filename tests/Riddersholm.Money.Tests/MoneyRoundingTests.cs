@@ -1,4 +1,4 @@
-using Xunit;
+﻿using Xunit;
 
 namespace Riddersholm.Money.Tests;
 
@@ -61,7 +61,7 @@ public sealed class MoneyRoundingTests
     {
         // The khoum is one fifth of an ouguiya, so valid amounts step by 0.2. Rounding to two
         // decimals would leave 1.37, which cannot be paid.
-        Currency currency = Currency.FromCode(code);
+        var currency = Currency.FromCode(code);
 
         Assert.Equal(new Money(1.4m, currency), new Money(1.37m, currency).Round());
         Assert.Equal(new Money(1.2m, currency), new Money(1.24m, currency).Round());
@@ -117,7 +117,7 @@ public sealed class MoneyRoundingTests
     [InlineData("USD", 12.34, 12.34)]  // no special cash rounding
     public void Cash_rounding_uses_the_smallest_payable_amount(string code, double raw, double expected)
     {
-        Currency currency = Currency.FromCode(code);
+        var currency = Currency.FromCode(code);
         Money value = new((decimal)raw, currency);
 
         Assert.Equal((decimal)expected, value.RoundToCash().Amount);

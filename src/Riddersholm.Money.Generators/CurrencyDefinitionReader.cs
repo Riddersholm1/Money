@@ -1,5 +1,4 @@
-using System.Collections.Generic;
-using Microsoft.CodeAnalysis;
+﻿using Microsoft.CodeAnalysis;
 using Riddersholm.Money.Generators.Json;
 
 namespace Riddersholm.Money.Generators;

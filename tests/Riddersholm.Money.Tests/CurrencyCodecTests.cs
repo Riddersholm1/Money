@@ -1,4 +1,4 @@
-using Xunit;
+﻿using Xunit;
 
 namespace Riddersholm.Money.Tests;
 
@@ -48,7 +48,7 @@ public sealed class CurrencyCodecTests
     {
         // The point of packing the code rather than an index: a currency loaded from a database
         // survives intact even when this library has never heard of it.
-        Currency unknown = Currency.FromCode("QQQ");
+        var unknown = Currency.FromCode("QQQ");
 
         Assert.False(unknown.IsKnown);
         Assert.Equal("QQQ", unknown.Code);
@@ -70,7 +70,7 @@ public sealed class CurrencyCodecTests
                     buffer[1] = b;
                     buffer[2] = c;
 
-                    Currency currency = Currency.FromCode(buffer);
+                    var currency = Currency.FromCode(buffer);
                     Assert.Equal(new string(buffer), currency.Code);
                 }
             }
@@ -106,7 +106,7 @@ public sealed class CurrencyCodecTests
     [InlineData("dKK")]
     public void Parsing_accepts_any_case_and_normalises_to_upper(string code)
     {
-        Currency currency = Currency.FromCode(code);
+        var currency = Currency.FromCode(code);
 
         Assert.Equal(Currency.DKK, currency);
         Assert.Equal("DKK", currency.Code);
@@ -132,7 +132,7 @@ public sealed class CurrencyCodecTests
         // cannot reference this assembly. This is the test that stops the two from drifting apart.
         foreach (Currency currency in Currency.Known)
         {
-            Currency viaRuntime = Currency.FromCode(currency.Code);
+            var viaRuntime = Currency.FromCode(currency.Code);
 
             Assert.Equal(currency, viaRuntime);
             Assert.Equal(currency.GetHashCode(), viaRuntime.GetHashCode());

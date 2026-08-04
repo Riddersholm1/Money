@@ -1,4 +1,4 @@
-using System.Globalization;
+﻿using System.Globalization;
 using System.Runtime.CompilerServices;
 using Xunit;
 
@@ -13,7 +13,7 @@ public sealed class AuditRegressionTests
     /// <summary>A registered currency with a deliberately long name, to push formatting past any internal buffer.</summary>
     private static Currency LongNamedCurrency()
     {
-        Currency currency = Currency.FromCode("QLN");
+        var currency = Currency.FromCode("QLN");
 
         if (!currency.IsKnown)
         {
@@ -151,7 +151,7 @@ public sealed class AuditRegressionTests
     public void H5_comparing_currencies_allocates_nothing()
     {
         Currency known = Currency.DKK;
-        Currency unknown = Currency.FromCode("ZQZ");
+        var unknown = Currency.FromCode("ZQZ");
 
         // Warm up anything lazily initialised so the measurement sees only the comparison.
         _ = known.CompareTo(unknown);
@@ -202,13 +202,13 @@ public sealed class AuditRegressionTests
     {
         ReadOnlySpan<Currency> known = Currency.Known;
 
-        for (int i = 0; i < known.Length; i++)
+        foreach (Currency c1 in known)
         {
-            for (int j = 0; j < known.Length; j++)
+            foreach (Currency c2 in known)
             {
                 Assert.Equal(
-                    Math.Sign(string.CompareOrdinal(known[i].Code, known[j].Code)),
-                    Math.Sign(known[i].CompareTo(known[j])));
+                    Math.Sign(string.CompareOrdinal(c1.Code, c2.Code)),
+                    Math.Sign(c1.CompareTo(c2)));
             }
         }
     }
@@ -239,7 +239,7 @@ public sealed class AuditRegressionTests
         Assert.Equal(minorUnits, new CurrencyInfo("QMM", 0, "Fine", "Q", digits, minorUnits, digits, 1).MinorUnitsPerMajor);
 
     [Fact]
-    public void N1_a_precision_above_18_rounds_to_the_currencys_real_increment()
+    public void N1_a_precision_above_18_rounds_to_the_currencies_real_increment()
     {
         // Pow10Long used to saturate at 10^18, so `unitsPerMajor == Pow10Long(digits)` answered true for
         // every digit count past 18. This currency's increment is 10^-18, but it was being rounded to
@@ -308,7 +308,7 @@ public sealed class AuditRegressionTests
     {
         // The pooled fallback was a fixed 1024 characters, so H1's contract violation survived for any
         // name longer than that. The buffer now doubles until the text fits.
-        Currency currency = Currency.FromCode("QVL");
+        var currency = Currency.FromCode("QVL");
 
         if (!currency.IsKnown)
         {
@@ -359,9 +359,13 @@ public sealed class AuditRegressionTests
         // generic-math code could not see them.
         Assert.True(GreaterThan(Currency.USD, Currency.DKK));
         Assert.False(GreaterThan(Currency.DKK, Currency.USD));
+        return;
 
         static bool GreaterThan<T>(T left, T right)
-            where T : System.Numerics.IComparisonOperators<T, T, bool> => left > right;
+            where T : System.Numerics.IComparisonOperators<T, T, bool>
+        {
+            return left > right;
+        }
     }
 
     [Fact]
@@ -380,7 +384,7 @@ public sealed class AuditRegressionTests
     /// </summary>
     private static Currency RegisterWidePrecisionCurrency()
     {
-        Currency currency = Currency.FromCode("QNP");
+        var currency = Currency.FromCode("QNP");
 
         if (!currency.IsKnown)
         {
@@ -400,7 +404,7 @@ public sealed class AuditRegressionTests
 
     private static Currency RegisterHighPrecisionCurrency()
     {
-        Currency currency = Currency.FromCode("QWE");
+        var currency = Currency.FromCode("QWE");
 
         if (!currency.IsKnown)
         {

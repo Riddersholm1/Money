@@ -1,96 +1,508 @@
 root = true
 
+# ---------------------------------------------------------------- all files
 [*]
 charset = utf-8
-end_of_line = lf
+end_of_line = crlf
 indent_style = space
 indent_size = 4
+tab_width = 4
 insert_final_newline = true
 trim_trailing_whitespace = true
 
-[*.{json,yml,yaml,md}]
-indent_size = 2
-
-[*.{csproj,props,targets,slnx,xml}]
-indent_size = 2
-
 [*.md]
+# Two trailing spaces is a hard line break in Markdown.
 trim_trailing_whitespace = false
 
+[*.sh]
+end_of_line = lf
+
+[*.{cmd,bat}]
+end_of_line = crlf
+
+[*.{yml,yaml,json,jsonc,json5}]
+indent_size = 2
+
+# DEVIATION from the original ReSharper export: MSBuild/XML files were set to
+# tabs. Microsoft's own convention is spaces, indent_size 2. Expect a one-time
+# whitespace diff on these files.
+[*.{csproj,vbproj,vcxproj,proj,nativeproj,locproj,builds,props,targets,config,nuspec,xml,stylecop,resx,resw,ruleset,xsd,dtd,sql,appxmanifest}]
+indent_size = 2
+
+# Razor / markup
+[*.{axaml,cshtml,htm,html,paml,razor,xaml,xamlx,xoml}]
+indent_style = space
+indent_size = 4
+tab_width = 4
+
+
+# ============================================================================
+#  C#
+# ============================================================================
 [*.cs]
-# Namespaces / usings
-csharp_style_namespace_declarations = file_scoped:error
+
+# Same as dotnet/docs. Also removes any encoding guesswork for our
+# Danish-language identifiers and string literals (æ/ø/å).
+charset = utf-8-bom
+
+# ---------------------------------------------------------------- analyzers
+dotnet_analyzer_diagnostic.category-Security.severity = error
+
+# The Framework Design Guidelines rules that CANNOT be expressed as
+# dotnet_naming_rule entries (type suffixes, enum plurality, event prefixes,
+# parameter/base-declaration agreement) all live in the Naming category.
+# Turning the category on is what actually enforces them.
+dotnet_analyzer_diagnostic.category-Naming.severity = error
+
+# ...with two exceptions that misfire in this codebase:
+# CA1716 flags identifiers matching reserved words in C#, VB *or* F# —
+# "Type", "Error", "To", "Next", "Step", "Single" are all VB keywords and all
+# plausible domain terms.
+dotnet_diagnostic.CA1716.severity = none
+# CA1724 flags a type whose name matches any namespace, including in
+# referenced assemblies. Common and usually harmless in a layered solution.
+dotnet_diagnostic.CA1724.severity = suggestion
+
+# Note: CA1704 (spelling) and CA1709 (acronym casing) were never ported to the
+# Roslyn analyzers, so no English dictionary will fight the Danish domain
+# vocabulary. The flip side is that two-letter-acronym casing (IOStream /
+# ioStream) is review-only — see the FDG notes at the end of the naming block.
+
+# IDE0051 flags "unused" private members. Every EF Core entity in this
+# codebase has a private parameterless constructor reserved for materialization
+# via reflection; Roslyn has no visibility into that usage and false-positives
+# on all of them. Silencing rather than suppressing per-constructor keeps the
+# domain free of pragma/attribute noise around a known, repo-wide pattern.
+dotnet_diagnostic.IDE0051.severity = silent
+
+# ---------------------------------------------------------------- usings
 dotnet_sort_system_directives_first = true
 dotnet_separate_import_directive_groups = false
+# MS: a using inside a namespace is context-sensitive and can silently
+# re-resolve when a dependency adds a matching namespace.
 csharp_using_directive_placement = outside_namespace:error
 
-# 'var' only when the type is obvious from the right-hand side.
+# ---------------------------------------------------------------- namespaces
+csharp_style_namespace_declarations = file_scoped:error
+# Clean Architecture: the folder tree IS the layering, so keep them in sync.
+dotnet_style_namespace_match_folder = true:error
+
+# ---------------------------------------------------------------- this. qualification
+dotnet_style_qualification_for_field = false:error
+dotnet_style_qualification_for_property = false:error
+dotnet_style_qualification_for_method = false:error
+dotnet_style_qualification_for_event = false:error
+
+# ---------------------------------------------------------------- types
+# MS: use language keywords (string, int, nint), not BCL type names.
+dotnet_style_predefined_type_for_locals_parameters_members = true:error
+dotnet_style_predefined_type_for_member_access = true:error
+
+# ---------------------------------------------------------------- var policy
+# MS: "Use var only when a reader can infer the type from the expression."
+# Roslyn cannot express that exactly, so — like dotnet/docs — we require
+# explicit types where the type is NOT apparent and stay silent where it is.
 csharp_style_var_for_built_in_types = false:suggestion
-csharp_style_var_when_type_is_apparent = true:suggestion
+csharp_style_var_when_type_is_apparent = false:none
 csharp_style_var_elsewhere = false:suggestion
+resharper_for_built_in_types = use_explicit_type
+resharper_for_simple_types = use_var_when_evident
+resharper_for_other_types = use_explicit_type
 
-# Modern expression styles
-csharp_style_expression_bodied_methods = when_on_single_line:suggestion
-csharp_style_expression_bodied_properties = true:suggestion
-csharp_style_expression_bodied_accessors = true:suggestion
-csharp_style_expression_bodied_lambdas = true:suggestion
-csharp_style_prefer_pattern_matching = true:suggestion
+# ---------------------------------------------------------------- modifiers
+# 'closed' is not a C# modifier. An unparsable token makes Roslyn drop the
+# whole preference (VS stops enforcing IDE0036) while Rider keeps enforcing
+# its own order. This is the Roslyn default order, which covers file/required.
+csharp_preferred_modifier_order = public, private, protected, internal, file, new, static, abstract, virtual, sealed, readonly, override, extern, unsafe, volatile, async, required:warning
+dotnet_style_require_accessibility_modifiers = for_non_interface_members:error
+dotnet_style_readonly_field = true:suggestion
+
+# ---------------------------------------------------------------- braces (Allman)
+csharp_new_line_before_open_brace = all
+csharp_new_line_before_else = true
+csharp_new_line_before_catch = true
+csharp_new_line_before_finally = true
+csharp_new_line_before_members_in_object_initializers = true
+csharp_new_line_before_members_in_anonymous_types = true
+csharp_new_line_between_query_expression_clauses = true
+
+# DEVIATION: dotnet/docs uses csharp_prefer_braces = true:refactoring (offered,
+# never enforced). A shared team codebase benefits from this being binary.
+csharp_prefer_braces = true:error
+# 'braces_redundant' removes braces the braces_for_* settings say are not
+# required — so those must be pinned, or Rider strips braces VS wants to add.
+resharper_braces_redundant = true
+resharper_braces_for_ifelse = required
+resharper_braces_for_for = required
+resharper_braces_for_foreach = required
+resharper_braces_for_while = required
+resharper_braces_for_dowhile = required
+resharper_braces_for_using = required
+resharper_braces_for_lock = required
+resharper_braces_for_fixed = required
+
+# MS: one statement per line; keep { get; set; } on a single line.
+csharp_preserve_single_line_blocks = true
+csharp_preserve_single_line_statements = false
+
+# ---------------------------------------------------------------- expression bodies
+# MS ships these as true:refactoring — allowed, offered, never nagged.
+# DEVIATION: we keep the single-line guard so Rider's cleanup cannot fold a
+# multi-line method into a lambda arrow. Severity stays non-nagging.
+csharp_style_expression_bodied_methods = when_on_single_line:silent
+csharp_style_expression_bodied_operators = when_on_single_line:silent
+csharp_style_expression_bodied_local_functions = when_on_single_line:silent
+csharp_style_expression_bodied_constructors = false:silent
+csharp_style_expression_bodied_properties = true:silent
+csharp_style_expression_bodied_indexers = true:silent
+csharp_style_expression_bodied_accessors = true:silent
+csharp_style_expression_bodied_lambdas = true:silent
+resharper_method_or_operator_body = expression_body_when_on_single_line
+resharper_local_function_body = expression_body_when_on_single_line
+resharper_constructor_or_destructor_body = block_body
+resharper_accessor_owner_body = expression_body
+
+# ---------------------------------------------------------------- expression-level
+dotnet_style_object_initializer = true:suggestion
+dotnet_style_collection_initializer = true:suggestion
+# MS: "Use collection expressions to initialize all collection types."
+# 'when_types_exactly_match' is the safe spelling of true — it only rewrites
+# when the target type is an exact match for the initializer's inferred type,
+# so it never introduces a conversion that could change semantics.
+dotnet_style_prefer_collection_expression = when_types_exactly_match:suggestion
+dotnet_style_prefer_auto_properties = true:suggestion
+dotnet_style_coalesce_expression = true:suggestion
+dotnet_style_null_propagation = true:suggestion
+dotnet_style_prefer_is_null_check_over_reference_equality_method = true:suggestion
+dotnet_style_prefer_compound_assignment = true:suggestion
+dotnet_style_prefer_simplified_boolean_expressions = true:suggestion
+dotnet_style_prefer_simplified_interpolation = true:suggestion
+dotnet_style_explicit_tuple_names = true:suggestion
+dotnet_style_prefer_inferred_tuple_names = true:suggestion
+dotnet_style_prefer_inferred_anonymous_type_member_names = true:suggestion
+dotnet_style_prefer_conditional_expression_over_assignment = true:silent
+dotnet_style_prefer_conditional_expression_over_return = true:silent
+# MS: "Line breaks should occur before binary operators, if necessary."
+dotnet_style_operator_placement_when_wrapping = beginning_of_line
+
+csharp_style_throw_expression = true:suggestion
 csharp_style_prefer_switch_expression = true:suggestion
-csharp_style_prefer_range_operator = true:suggestion
-csharp_style_prefer_index_operator = true:suggestion
+csharp_style_prefer_pattern_matching = true:suggestion
+csharp_style_pattern_matching_over_is_with_cast_check = true:suggestion
+csharp_style_pattern_matching_over_as_with_null_check = true:suggestion
+csharp_style_prefer_not_pattern = true:suggestion
+csharp_style_prefer_null_check_over_type_check = true:suggestion
+csharp_style_conditional_delegate_call = true:suggestion
+csharp_style_inlined_variable_declaration = true:suggestion
+csharp_style_deconstructed_variable_declaration = true:suggestion
+csharp_prefer_static_local_function = true:suggestion
+csharp_style_prefer_method_group_conversion = true:silent
+# MS: "Use the C# using statement" / the brace-less using declaration.
+# DEVIATION: dotnet/docs disables this (false:none) because their samples
+# teach both forms. Production code should prefer the simple form.
 csharp_prefer_simple_using_statement = true:suggestion
-csharp_style_prefer_primary_constructors = false:silent
-csharp_style_prefer_collection_expression = when_types_loosely_match:suggestion
+# DEVIATION: dotnet/docs disables index/range (false:none) for the same
+# teaching reason.
+csharp_style_prefer_index_operator = true:suggestion
+csharp_style_prefer_range_operator = true:suggestion
+csharp_style_prefer_utf8_string_literals = true:suggestion
+# MS: "Use one of the concise forms of object instantiation when the variable
+# type matches the object type" -> ExampleClass instance = new();
+csharp_style_implicit_object_creation_when_type_is_apparent = true:suggestion
 
-# Readonly / const correctness matters in a value-object library.
-dotnet_style_readonly_field = true:warning
-csharp_prefer_static_local_function = true:warning
-csharp_style_prefer_readonly_struct = true:warning
-csharp_style_prefer_readonly_struct_member = true:warning
+# MS shows primary constructors as current style. Kept at 'silent' so the fix
+# is offered without nagging; flip to false:silent if the team decides
+# aggregates and EF entities must keep explicit constructors.
+csharp_style_prefer_primary_constructors = true:silent
 
-# Braces are never optional; a missing brace is how bugs hide.
-csharp_prefer_braces = true:warning
+# 'default' vs 'default(T)': ReSharper has a finer-grained rule than Roslyn
+# (literal when the type is evident, default(T) when it is not). Roslyn's is
+# binary, so it is kept silent to stop the two nagging in opposite directions.
+csharp_prefer_simple_default_expression = true:silent
+resharper_default_value_when_type_not_evident = default_expression
 
-# Accessibility must be explicit on every member.
-dotnet_style_require_accessibility_modifiers = for_non_interface_members:warning
+# ---------------------------------------------------------------- parentheses
+# MS: "Use parentheses to make clauses in an expression apparent."
+# The original export had arithmetic/relational as never_if_unnecessary,
+# which is the opposite of both MS guidance and the Roslyn default.
+dotnet_style_parentheses_in_arithmetic_binary_operators = always_for_clarity:silent
+dotnet_style_parentheses_in_relational_binary_operators = always_for_clarity:silent
+dotnet_style_parentheses_in_other_binary_operators = always_for_clarity:silent
+dotnet_style_parentheses_in_other_operators = never_if_unnecessary:silent
 
-# Naming: interfaces IFoo, types/members PascalCase, private fields _camelCase, constants PascalCase.
-dotnet_naming_style.pascal_case.capitalization = pascal_case
-dotnet_naming_style.camel_case_underscore.capitalization = camel_case
-dotnet_naming_style.camel_case_underscore.required_prefix = _
-dotnet_naming_style.interface_prefix.capitalization = pascal_case
-dotnet_naming_style.interface_prefix.required_prefix = I
+# ---------------------------------------------------------------- unused code
+csharp_style_unused_value_assignment_preference = discard_variable:suggestion
+csharp_style_unused_value_expression_statement_preference = discard_variable:silent
+# MS uses non_public: public signatures often carry parameters for interface
+# or delegate conformance.
+dotnet_code_quality_unused_parameters = non_public:suggestion
+dotnet_remove_unnecessary_suppression_exclusions = none
 
-dotnet_naming_symbols.interfaces.applicable_kinds = interface
-dotnet_naming_symbols.private_fields.applicable_kinds = field
-dotnet_naming_symbols.private_fields.applicable_accessibilities = private
-dotnet_naming_symbols.public_members.applicable_kinds = property, method, event, namespace, class, struct, enum, delegate
-dotnet_naming_symbols.public_members.applicable_accessibilities = public, protected, internal
+# ---------------------------------------------------------------- indentation
+csharp_indent_block_contents = true
+csharp_indent_braces = false
+csharp_indent_case_contents = true
+csharp_indent_case_contents_when_block = false
+csharp_indent_switch_labels = true
+csharp_indent_labels = one_less_than_current
 
-dotnet_naming_rule.interfaces_start_with_i.symbols = interfaces
-dotnet_naming_rule.interfaces_start_with_i.style = interface_prefix
-dotnet_naming_rule.interfaces_start_with_i.severity = warning
+# ---------------------------------------------------------------- spacing
+# Same values dotnet/docs ships. They match VS defaults, but pinning them
+# stops ReSharper's formatter from being the tie-breaker.
+csharp_space_after_cast = false
+csharp_space_after_colon_in_inheritance_clause = true
+csharp_space_after_comma = true
+csharp_space_after_dot = false
+csharp_space_after_keywords_in_control_flow_statements = true
+csharp_space_after_semicolon_in_for_statement = true
+csharp_space_around_binary_operators = before_and_after
+csharp_space_around_declaration_statements = do_not_ignore
+csharp_space_before_colon_in_inheritance_clause = true
+csharp_space_before_comma = false
+csharp_space_before_dot = false
+csharp_space_before_open_square_brackets = false
+csharp_space_before_semicolon_in_for_statement = false
+csharp_space_between_empty_square_brackets = false
+csharp_space_between_method_call_empty_parameter_list_parentheses = false
+csharp_space_between_method_call_name_and_opening_parenthesis = false
+csharp_space_between_method_call_parameter_list_parentheses = false
+csharp_space_between_method_declaration_empty_parameter_list_parentheses = false
+csharp_space_between_method_declaration_name_and_open_parenthesis = false
+csharp_space_between_method_declaration_parameter_list_parentheses = false
+csharp_space_between_parentheses = false
+csharp_space_between_square_brackets = false
 
-dotnet_naming_rule.private_fields_underscore.symbols = private_fields
-dotnet_naming_rule.private_fields_underscore.style = camel_case_underscore
-dotnet_naming_rule.private_fields_underscore.severity = warning
+# NOT adopted from the MS docs style: their 65-character line limit. That
+# exists so samples render on the docs site on mobile.
 
-dotnet_naming_rule.public_members_pascal.symbols = public_members
-dotnet_naming_rule.public_members_pascal.style = pascal_case
-dotnet_naming_rule.public_members_pascal.severity = warning
 
-# CA1062: null-argument validation. Nullable reference types already cover this.
-dotnet_diagnostic.CA1062.severity = none
-# CA1305/CA1307: we are explicit about culture everywhere it matters and say so in code.
-dotnet_diagnostic.CA1305.severity = warning
-# IDE0011 conflicts with single-line early-return guards used in hot paths.
-dotnet_diagnostic.IDE0011.severity = suggestion
+# ============================================================================
+#  Naming  (Roslyn format — read by BOTH Visual Studio and ReSharper)
+#  Rules are evaluated top-down, first match wins → most specific first.
+#  Note: const fields are static, so the const rule MUST precede the s_ rule.
+# ============================================================================
 
-# Tests may use magic numbers, long methods, and non-localized strings freely.
-[tests/**/*.cs]
+# --- styles
+dotnet_naming_style.pascal_case_style.capitalization = pascal_case
+
+dotnet_naming_style.camel_case_style.capitalization = camel_case
+
+dotnet_naming_style.i_pascal_case_style.capitalization = pascal_case
+dotnet_naming_style.i_pascal_case_style.required_prefix = I
+
+dotnet_naming_style.t_pascal_case_style.capitalization = pascal_case
+dotnet_naming_style.t_pascal_case_style.required_prefix = T
+
+dotnet_naming_style.underscore_camel_case_style.capitalization = camel_case
+dotnet_naming_style.underscore_camel_case_style.required_prefix = _
+
+dotnet_naming_style.s_camel_case_style.capitalization = camel_case
+dotnet_naming_style.s_camel_case_style.required_prefix = s_
+
+dotnet_naming_style.async_suffix_style.capitalization = pascal_case
+dotnet_naming_style.async_suffix_style.required_suffix = Async
+
+# --- symbol groups
+dotnet_naming_symbols.interfaces_symbols.applicable_kinds = interface
+dotnet_naming_symbols.interfaces_symbols.applicable_accessibilities = *
+
+dotnet_naming_symbols.type_parameters_symbols.applicable_kinds = type_parameter
+dotnet_naming_symbols.type_parameters_symbols.applicable_accessibilities = *
+
+dotnet_naming_symbols.const_fields_symbols.applicable_kinds = field
+dotnet_naming_symbols.const_fields_symbols.applicable_accessibilities = *
+dotnet_naming_symbols.const_fields_symbols.required_modifiers = const
+
+dotnet_naming_symbols.local_constants_symbols.applicable_kinds = local
+dotnet_naming_symbols.local_constants_symbols.applicable_accessibilities = *
+dotnet_naming_symbols.local_constants_symbols.required_modifiers = const
+
+dotnet_naming_symbols.static_fields_symbols.applicable_kinds = field
+dotnet_naming_symbols.static_fields_symbols.applicable_accessibilities = private, internal, private_protected
+dotnet_naming_symbols.static_fields_symbols.required_modifiers = static
+
+dotnet_naming_symbols.private_internal_fields_symbols.applicable_kinds = field
+dotnet_naming_symbols.private_internal_fields_symbols.applicable_accessibilities = private, internal, private_protected
+
+dotnet_naming_symbols.async_methods_symbols.applicable_kinds = method
+dotnet_naming_symbols.async_methods_symbols.applicable_accessibilities = *
+dotnet_naming_symbols.async_methods_symbols.required_modifiers = async
+
+dotnet_naming_symbols.local_functions_symbols.applicable_kinds = local_function
+dotnet_naming_symbols.local_functions_symbols.applicable_accessibilities = *
+
+dotnet_naming_symbols.public_members_symbols.applicable_kinds = namespace, class, struct, enum, delegate, event, property, method, field
+dotnet_naming_symbols.public_members_symbols.applicable_accessibilities = public, internal, protected, protected_internal
+
+dotnet_naming_symbols.locals_and_parameters_symbols.applicable_kinds = parameter, local
+dotnet_naming_symbols.locals_and_parameters_symbols.applicable_accessibilities = *
+
+# --- rules (ORDER MATTERS)
+
+# MS: interface names start with a capital I.
+dotnet_naming_rule.interfaces_rule.symbols = interfaces_symbols
+dotnet_naming_rule.interfaces_rule.style = i_pascal_case_style
+dotnet_naming_rule.interfaces_rule.severity = error
+dotnet_naming_rule.interfaces_rule.import_to_resharper = True
+
+# MS: prefix descriptive type parameter names with T. Overlaps with CA1715.
+dotnet_naming_rule.type_parameters_rule.symbols = type_parameters_symbols
+dotnet_naming_rule.type_parameters_rule.style = t_pascal_case_style
+dotnet_naming_rule.type_parameters_rule.severity = error
+dotnet_naming_rule.type_parameters_rule.import_to_resharper = True
+
+# MS: PascalCase for constant names, both fields and local constants.
+dotnet_naming_rule.const_fields_rule.symbols = const_fields_symbols
+dotnet_naming_rule.const_fields_rule.style = pascal_case_style
+dotnet_naming_rule.const_fields_rule.severity = error
+dotnet_naming_rule.const_fields_rule.import_to_resharper = True
+
+dotnet_naming_rule.local_constants_rule.symbols = local_constants_symbols
+dotnet_naming_rule.local_constants_rule.style = pascal_case_style
+dotnet_naming_rule.local_constants_rule.severity = error
+dotnet_naming_rule.local_constants_rule.import_to_resharper = True
+
+# CONFLICT, resolved in favour of the modern guidance:
+#   Framework Design Guidelines (2008): "DO NOT use a prefix for field names.
+#   For example, do not use g_ or s_ to indicate static fields."
+#   C# identifier-names (2025): "Static fields start with s_."
+# Public/protected static fields fall through to the PascalCase rule below.
+# Private/internal static fields follow the same PascalCase convention as
+# instance fields.
+dotnet_naming_rule.static_fields_rule.symbols = static_fields_symbols
+dotnet_naming_rule.static_fields_rule.style = pascal_case_style
+dotnet_naming_rule.static_fields_rule.severity = suggestion
+dotnet_naming_rule.static_fields_rule.import_to_resharper = True
+
+# MS: private AND internal instance fields are _camelCase.
+dotnet_naming_rule.private_internal_fields_rule.symbols = private_internal_fields_symbols
+dotnet_naming_rule.private_internal_fields_rule.style = underscore_camel_case_style
+dotnet_naming_rule.private_internal_fields_rule.severity = error
+dotnet_naming_rule.private_internal_fields_rule.import_to_resharper = True
+
+# Not a Microsoft rule — the Async suffix is a .NET-wide convention (TAP).
+# Only matches literal `async` methods, not Task-returning wrappers.
+# Delete this block if the team does not want it.
+dotnet_naming_rule.async_methods_rule.symbols = async_methods_symbols
+dotnet_naming_rule.async_methods_rule.style = async_suffix_style
+dotnet_naming_rule.async_methods_rule.severity = suggestion
+dotnet_naming_rule.async_methods_rule.import_to_resharper = True
+
+# MS: "use pascal casing for all methods and local functions."
+dotnet_naming_rule.local_functions_rule.symbols = local_functions_symbols
+dotnet_naming_rule.local_functions_rule.style = pascal_case_style
+dotnet_naming_rule.local_functions_rule.severity = error
+dotnet_naming_rule.local_functions_rule.import_to_resharper = True
+
+# MS: PascalCase for types, namespaces and all public members.
+dotnet_naming_rule.public_members_rule.symbols = public_members_symbols
+dotnet_naming_rule.public_members_rule.style = pascal_case_style
+dotnet_naming_rule.public_members_rule.severity = error
+dotnet_naming_rule.public_members_rule.import_to_resharper = True
+
+# MS: camelCase for method parameters and local variables.
+# Kept at suggestion on purpose: positional record parameters are PascalCase
+# by MS convention, and Roslyn cannot tell them apart from ordinary
+# parameters — at warning every record declaration would light up.
+dotnet_naming_rule.locals_and_parameters_rule.symbols = locals_and_parameters_symbols
+dotnet_naming_rule.locals_and_parameters_rule.style = camel_case_style
+dotnet_naming_rule.locals_and_parameters_rule.severity = suggestion
+dotnet_naming_rule.locals_and_parameters_rule.import_to_resharper = True
+
+# ----------------------------------------------------------------------------
+#  Framework Design Guidelines that are NOT dotnet_naming_rule material.
+#  Enforced by the Naming analyzer category enabled at the top of this file:
+#    no underscores / non-alphanumerics in identifiers        CA1707
+#    names must not differ by case alone                      CA1708
+#    "Attribute" / "EventArgs" / "Exception" / "Collection" /
+#      "Dictionary" / "Stream" / "Permission" suffix on
+#      types derived from the corresponding base type         CA1710
+#    no "Enum", "Flag(s)", "Ex", "Delegate" suffixes          CA1711
+#    enum values not prefixed with the enum type name         CA1712
+#    no "Before"/"After" prefixes on events                   CA1713
+#    [Flags] enums plural, non-flags enums singular           CA1714 / CA1717
+#    type parameters prefixed with T                          CA1715
+#    identifiers should not contain type names (IntValue)     CA1720
+#    property must not duplicate a Get method                 CA1721
+#    override parameter names match the base declaration      CA1725
+#
+#  Review-only — no analyzer checks these:
+#    two-letter acronyms are fully capitalised (IOStream), and fully
+#      lowercase when they start a camelCased name (ioStream); three letters
+#      or more are PascalCased (HtmlTag, XmlNode)
+#    closed-form compound words count as ONE word:
+#      Endpoint  Email  Callback  Metadata  Hashtable  Placeholder  Multiview
+#      Id (not ID)  Ok (not OK)  Canceled (one l)  Writable  Indexes
+#      ...but FileName, UserName and WhiteSpace ARE two words
+#    methods and events are verbs; types and properties are nouns or
+#      adjectives; interfaces lean adjectival (IPersistable)
+#    events use present/past tense for before/after (Closing / Closed)
+#    event handler signatures use the parameter names sender and e
+#    binary operator overloads use left / right; unary uses value
+#    no abbreviations, no Hungarian notation, favour readability over brevity
+#    .resx keys are PascalCase, alphanumeric plus underscore; exception
+#      message keys are <ExceptionType><ShortIdentifier>
+#
+#  On the Danish ubiquitous language: the FDG word-choice guidance assumes
+#  English prose. Keeping domain terms in Danish is a deliberate DDD choice;
+#  everything machine-checkable above (casing, prefixes, suffixes, plurality)
+#  still applies to those terms unchanged.
+# ----------------------------------------------------------------------------
+
+
+# ============================================================================
+#  ReSharper / Rider only  (no Roslyn equivalent exists)
+# ============================================================================
+
+# Do not let Rider reflow long lines: Visual Studio has no equivalent, so
+# every reflow would be a diff a VS user cannot reproduce.
+resharper_csharp_wrap_lines = false
+resharper_place_accessorholder_attribute_on_same_line = false
+resharper_place_accessor_attribute_on_same_line = false
+resharper_place_field_attribute_on_same_line = false
+resharper_show_autodetect_configure_formatting_tip = false
+
+# ReSharper inspection severities (Rider users only)
+resharper_arrange_attributes_highlighting = suggestion
+resharper_arrange_constructor_or_destructor_body_highlighting = suggestion
+resharper_arrange_default_value_when_type_not_evident_highlighting = suggestion
+resharper_arrange_local_function_body_highlighting = suggestion
+resharper_arrange_method_or_operator_body_highlighting = suggestion
+resharper_arrange_namespace_body_highlighting = suggestion
+resharper_arrange_null_checking_pattern_highlighting = suggestion
+resharper_arrange_object_creation_when_type_not_evident_highlighting = suggestion
+resharper_arrange_redundant_parentheses_highlighting = hint
+resharper_arrange_this_qualifier_highlighting = hint
+resharper_arrange_trailing_comma_in_multiline_lists_highlighting = suggestion
+resharper_arrange_trailing_comma_in_singleline_lists_highlighting = suggestion
+resharper_arrange_type_member_modifiers_highlighting = hint
+resharper_arrange_type_modifiers_highlighting = hint
+resharper_built_in_type_reference_style_for_member_access_highlighting = hint
+resharper_built_in_type_reference_style_highlighting = hint
+resharper_redundant_base_qualifier_highlighting = error
+resharper_suggest_var_or_type_elsewhere_highlighting = suggestion
+resharper_suggest_var_or_type_simple_types_highlighting = suggestion
+resharper_use_collection_expression_highlighting = hint
+
+
+# ============================================================================
+#  Generated / scaffolded code
+# ============================================================================
+
+# EF Core migrations are generated and never hand-edited.
+[**/Migrations/*.cs]
+generated_code = true
+
+[*.{Designer.cs,g.cs,generated.cs}]
+generated_code = true
+
+
+# ============================================================================
+#  Tests
+# ============================================================================
+[**/{*Tests,*.Tests,*Test,*.Test}/**/*.cs]
+# Method_Should_Do_X naming is standard in xUnit/NUnit test suites.
 dotnet_diagnostic.CA1707.severity = none
-dotnet_diagnostic.CA1861.severity = none
-dotnet_diagnostic.CA5394.severity = none
-
-[{bench,samples,tools}/**/*.cs]
-dotnet_diagnostic.CA1707.severity = none
+# Async test methods conventionally omit the Async suffix (e.g. xUnit fact
+# names read as scenarios, not TAP method signatures).
+dotnet_naming_rule.async_methods_rule.severity = none

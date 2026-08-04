@@ -41,7 +41,7 @@ public sealed class MoneyArithmeticTests
         Assert.Equal(Dkk(100m), Dkk(100m) + default(Money));
         Assert.Equal(Dkk(-100m), default(Money) - Dkk(100m));
         Assert.Equal(Dkk(100m), Dkk(100m) - default(Money));
-        Assert.Equal(default, Money.AdditiveIdentity);
+        Assert.Equal(default(Money), Money.AdditiveIdentity);
     }
 
     [Fact]

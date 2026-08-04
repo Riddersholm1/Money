@@ -23,14 +23,18 @@ public sealed class UnknownCurrencyException : InvalidOperationException
     public UnknownCurrencyException(Currency currency)
         : base($"'{currency.Code}' is not a known currency, so its precision is unknown. "
              + "Round to an explicit number of decimals, or register the currency with CurrencyRegistry.")
-        => Currency = currency;
+    {
+        Currency = currency;
+    }
 
     /// <summary>Creates an exception with a custom message.</summary>
     /// <param name="message">The message that describes the error.</param>
     /// <param name="currency">The currency whose metadata was missing.</param>
     public UnknownCurrencyException(string message, Currency currency)
         : base(message)
-        => Currency = currency;
+    {
+        Currency = currency;
+    }
 
     /// <summary>Creates an exception with a custom message.</summary>
     /// <param name="message">The message that describes the error.</param>

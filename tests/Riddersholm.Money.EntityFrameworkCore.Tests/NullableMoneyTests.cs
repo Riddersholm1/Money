@@ -1,4 +1,4 @@
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using Xunit;
 
 namespace Riddersholm.Money.EntityFrameworkCore.Tests;
@@ -22,7 +22,7 @@ public sealed class NullableMoneyTests
             {
                 Name = "no discount",
                 Price = new Money(100m, Currency.DKK),
-                Discount = null,
+                Discount = null
             });
             context.SaveChanges();
             context.ChangeTracker.Clear();
@@ -44,7 +44,7 @@ public sealed class NullableMoneyTests
             {
                 Name = "discounted",
                 Price = new Money(100m, Currency.DKK),
-                Discount = new Money(12.50m, Currency.DKK),
+                Discount = new Money(12.50m, Currency.DKK)
             });
             context.SaveChanges();
             context.ChangeTracker.Clear();
@@ -70,7 +70,7 @@ public sealed class NullableMoneyTests
             context.SaveChanges();
             context.ChangeTracker.Clear();
 
-            Dictionary<string, Product> loaded = context.Products.ToDictionary(p => p.Name);
+            var loaded = context.Products.ToDictionary(p => p.Name);
 
             Assert.Null(loaded["absent"].Discount);
             Assert.Equal(default(Money), loaded["zero"].Discount);

@@ -1,5 +1,4 @@
-using System.Collections.Generic;
-using System.Globalization;
+﻿using System.Globalization;
 
 namespace Riddersholm.Money.Generators.Json;
 
@@ -16,7 +15,10 @@ internal sealed class JsonValue
 {
     private readonly object? _value;
 
-    private JsonValue(object? value) => _value = value;
+    private JsonValue(object? value)
+    {
+        _value = value;
+    }
 
     public static JsonValue Null { get; } = new(null);
 
@@ -43,7 +45,7 @@ internal sealed class JsonValue
     {
         double d => (long)d,
         string s when long.TryParse(s, NumberStyles.Integer, CultureInfo.InvariantCulture, out long parsed) => parsed,
-        _ => fallback,
+        _ => fallback
     };
 
     public bool IsNull => _value is null;

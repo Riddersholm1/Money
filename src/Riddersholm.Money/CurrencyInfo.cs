@@ -1,4 +1,4 @@
-namespace Riddersholm.Money;
+﻿namespace Riddersholm.Money;
 
 /// <summary>
 /// Descriptive metadata about a currency: its name, symbol, precision, and cash rounding rules.
@@ -54,16 +54,14 @@ public sealed class CurrencyInfo
 
         if (!CurrencyCodec.TryPack(code, out uint packed))
         {
-            throw new ArgumentException(
-                $"'{code}' is not a valid ISO 4217 alphabetic code; expected three ASCII letters.",
-                nameof(code));
+            throw new ArgumentException($"'{code}' is not a valid ISO 4217 alphabetic code; expected three ASCII letters.", nameof(code));
         }
 
-        ArgumentOutOfRangeException.ThrowIfGreaterThan(decimalDigits, MaximumDecimalDigits, nameof(decimalDigits));
-        ArgumentOutOfRangeException.ThrowIfNegative(minorUnitsPerMajor, nameof(minorUnitsPerMajor));
-        ArgumentOutOfRangeException.ThrowIfGreaterThan(minorUnitsPerMajor, MaximumMinorUnitsPerMajor, nameof(minorUnitsPerMajor));
-        ArgumentOutOfRangeException.ThrowIfGreaterThan(cashDecimalDigits, MaximumDecimalDigits, nameof(cashDecimalDigits));
-        ArgumentOutOfRangeException.ThrowIfZero(cashRoundingStep, nameof(cashRoundingStep));
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(decimalDigits, MaximumDecimalDigits);
+        ArgumentOutOfRangeException.ThrowIfNegative(minorUnitsPerMajor);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(minorUnitsPerMajor, MaximumMinorUnitsPerMajor);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(cashDecimalDigits, MaximumDecimalDigits);
+        ArgumentOutOfRangeException.ThrowIfZero(cashRoundingStep);
 
         // The minor unit has to be expressible in the declared number of decimal places, or rounding
         // would snap to an increment the currency cannot represent. 100/5 is fine — that is MRU's

@@ -1,4 +1,4 @@
-using System.Collections.Frozen;
+﻿using System.Collections.Frozen;
 
 namespace Riddersholm.Money;
 
@@ -15,8 +15,8 @@ internal static class CurrencyMetadata
 {
     private static readonly CurrencyInfo?[] Cache = new CurrencyInfo?[CurrencyTable.Count];
 
-    private static Currency[]? _allCurrencies;
-    private static FrozenDictionary<short, Currency>? _byNumericCode;
+    private static Currency[]? AllCurrencies;
+    private static FrozenDictionary<short, Currency>? ByNumericCode;
 
     /// <remarks>
     /// Published through <see cref="Interlocked"/> like <see cref="Cache"/> below, rather than with a
@@ -25,8 +25,8 @@ internal static class CurrencyMetadata
     /// no thread can observe the reference before the elements it points at, and stating that with a
     /// fence is cheaper than arguing about which runtimes provide it for free.
     /// </remarks>
-    public static ReadOnlySpan<Currency> AllCurrencies =>
-        Volatile.Read(ref _allCurrencies) ?? Publish(ref _allCurrencies, BuildAll());
+    public static ReadOnlySpan<Currency> AllCurrenciesSpan =>
+        Volatile.Read(ref AllCurrencies) ?? Publish(ref AllCurrencies, BuildAll());
 
     public static CurrencyInfo Get(uint packed)
     {
@@ -46,18 +46,14 @@ internal static class CurrencyMetadata
             return Interlocked.CompareExchange(ref Cache[ordinal], created, null) ?? created;
         }
 
-        if (CurrencyRegistry.TryGet(packed, out CurrencyInfo? registered))
-        {
-            return registered;
-        }
-
-        return CreateFallback(packed);
+        return CurrencyRegistry.TryGet(packed, out CurrencyInfo registered)
+            ? registered
+            : CreateFallback(packed);
     }
 
     public static bool TryGetByNumericCode(short numericCode, out Currency currency)
     {
-        FrozenDictionary<short, Currency> map =
-            Volatile.Read(ref _byNumericCode) ?? Publish(ref _byNumericCode, BuildNumericIndex());
+        FrozenDictionary<short, Currency> map = Volatile.Read(ref ByNumericCode) ?? Publish(ref ByNumericCode, BuildNumericIndex());
 
         return map.TryGetValue(numericCode, out currency);
     }
@@ -103,13 +99,13 @@ internal static class CurrencyMetadata
             cashDecimalDigits: 2,
             cashRoundingStep: 1)
         {
-            IsKnown = false,
+            IsKnown = false
         };
     }
 
     private static Currency[] BuildAll()
     {
-        Currency[] all = new Currency[CurrencyTable.Count];
+        var all = new Currency[CurrencyTable.Count];
 
         for (int i = 0; i < all.Length; i++)
         {

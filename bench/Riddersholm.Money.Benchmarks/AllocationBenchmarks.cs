@@ -1,4 +1,4 @@
-using BenchmarkDotNet.Attributes;
+﻿using BenchmarkDotNet.Attributes;
 // NodaMoney exposes its allocation as an extension method on MoneyExtensions.
 using NodaMoney;
 
@@ -24,17 +24,20 @@ public class AllocationBenchmarks
     /// benchmark's three rows identical while appearing to measure how the split scales.
     /// </summary>
     [GlobalSetup]
-    public void Setup() => _ratios = [.. Enumerable.Range(1, Recipients)];
+    public void Setup() =>
+        _ratios = [.. Enumerable.Range(1, Recipients)];
 
     [Benchmark]
-    public Money[] Allocate() => _money.Allocate(Recipients);
+    public Money[] Allocate() =>
+        _money.Allocate(Recipients);
 
     /// <remarks>
     /// NodaMoney returns a lazy sequence, so it is enumerated here to make the comparison fair —
     /// otherwise the benchmark would measure building an iterator rather than splitting an amount.
     /// </remarks>
     [Benchmark]
-    public NodaMoney.Money[] Allocate_NodaMoney() => [.. _nodaMoney.Split(Recipients)];
+    public NodaMoney.Money[] Allocate_NodaMoney() =>
+        [.. _nodaMoney.Split(Recipients)];
 
     /// <summary>The allocation-free overload: results go into a buffer the caller already owns.</summary>
     [Benchmark]
@@ -46,5 +49,6 @@ public class AllocationBenchmarks
     }
 
     [Benchmark]
-    public Money[] AllocateByRatio() => _money.Allocate(_ratios);
+    public Money[] AllocateByRatio() =>
+        _money.Allocate(_ratios);
 }

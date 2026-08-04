@@ -1,4 +1,4 @@
-using System.Buffers;
+﻿using System.Buffers;
 using System.Globalization;
 using System.Text;
 
@@ -109,20 +109,23 @@ public readonly partial record struct Money
         switch (kind)
         {
             case MoneyFormat.General or MoneyFormat.RoundTrip:
+            {
                 if (!TryWriteCode(destination, ref position, separator: false))
                 {
                     return false;
                 }
 
                 break;
-
+            }
             case MoneyFormat.Name:
+            {
                 if (!TryWriteText(Currency.EnglishName, destination, ref position, separator: true))
                 {
                     return false;
                 }
 
                 break;
+            }
         }
 
         charsWritten = position;
@@ -243,7 +246,7 @@ public readonly partial record struct Money
             MoneyFormat.Currency => 'C',
             MoneyFormat.Number => 'N',
             // 'F' rather than 'N': no group separators, so the output stays trivially parseable.
-            _ => 'F',
+            _ => 'F'
         };
 
         specifier[0] = letter;
@@ -339,7 +342,7 @@ public readonly partial record struct Money
             'N' or 'n' => MoneyFormat.Number,
             'L' or 'l' => MoneyFormat.Name,
             _ => throw new FormatException(
-                $"'{format}' is not a supported Money format string. Use G, R, C, I, N, or L, optionally followed by a digit count."),
+                $"'{format}' is not a supported Money format string. Use G, R, C, I, N, or L, optionally followed by a digit count.")
         };
 
         if (format.Length == 1)
@@ -365,6 +368,6 @@ public readonly partial record struct Money
         Currency,
         Iso,
         Number,
-        Name,
+        Name
     }
 }

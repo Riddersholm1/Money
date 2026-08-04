@@ -4,7 +4,7 @@
     "iso": "https://raw.githubusercontent.com/datasets/currency-codes/main/data/codes-all.csv",
     "cldrFractions": "https://raw.githubusercontent.com/unicode-org/cldr-json/main/cldr-json/cldr-core/supplemental/currencyData.json",
     "cldrNames": "https://raw.githubusercontent.com/unicode-org/cldr-json/main/cldr-json/cldr-numbers-full/main/en/currencies.json",
-    "retrievedUtc": "2026-07-31",
+    "retrievedUtc": "2026-08-02",
     "filter": "Active ISO 4217 codes with a numeric minor unit (excludes metals, bond units, SDR and other funds), minus XAD (unit of account), plus XTS and XXX."
   },
   "currencies": [

@@ -1,4 +1,4 @@
-using System.Globalization;
+﻿using System.Globalization;
 using System.Text.Json;
 using Riddersholm.Money;
 
@@ -8,13 +8,6 @@ using Riddersholm.Money;
 CultureInfo invariant = CultureInfo.InvariantCulture;
 CultureInfo danish = new("da-DK");
 CultureInfo american = new("en-US");
-
-static void Section(string title)
-{
-    Console.WriteLine();
-    Console.WriteLine(title);
-    Console.WriteLine(new string('─', title.Length));
-}
 
 Section("Amounts are exact");
 
@@ -39,8 +32,7 @@ catch (CurrencyMismatchException error)
     Console.WriteLine($"  {error.Message}");
 }
 
-Console.WriteLine($"  but equality is fine: 100 DKK == 100 EUR is " +
-                  $"{new Money(100m, Currency.DKK) == new Money(100m, Currency.EUR)}");
+Console.WriteLine($"  but equality is fine: 100 DKK == 100 EUR is {new Money(100m, Currency.DKK) == new Money(100m, Currency.EUR)}");
 
 Section("Splitting money never loses any");
 
@@ -48,7 +40,7 @@ Money bill = new(10m, Currency.DKK);
 Money[] shares = bill.Allocate(3);
 
 Console.WriteLine($"  {bill} across 3    {string.Join(", ", shares.Select(s => s.ToString("R", invariant)))}");
-Console.WriteLine($"  they sum to         {shares.Sum()}          <- exactly the original");
+Console.WriteLine($"  they sum to        {shares.Sum()}          <- exactly the original");
 
 Money[] split = new Money(100m, Currency.DKK).Allocate([70, 30]);
 Console.WriteLine($"  100 DKK at 70:30    {string.Join(", ", split.Select(s => s.ToString("R", invariant)))}");
@@ -57,14 +49,11 @@ Section("Currencies are not all decimal-hundredths");
 
 foreach (Currency currency in (Currency[])[Currency.DKK, Currency.JPY, Currency.KWD, Currency.MRU, Currency.XXX])
 {
-    Console.WriteLine(
-        $"  {currency.Code}  digits={currency.DecimalDigits}  minorUnitsPerMajor={currency.MinorUnitsPerMajor,-6} " +
-        $"minorUnit={currency.MinorUnit}");
+    Console.WriteLine($"  {currency.Code}  digits={currency.DecimalDigits}  minorUnitsPerMajor={currency.MinorUnitsPerMajor,-6} minorUnit={currency.MinorUnit}");
 }
 
 Console.WriteLine();
-Console.WriteLine($"  1.37 MRU rounds to  {new Money(1.37m, Currency.MRU).Round()}          " +
-                  "<- the khoum is a fifth, so amounts step by 0.2");
+Console.WriteLine($"  1.37 MRU rounds to  {new Money(1.37m, Currency.MRU).Round()}          <- the khoum is a fifth, so amounts step by 0.2");
 
 Section("Cash rounds differently from ledgers");
 
@@ -95,8 +84,7 @@ Console.WriteLine($"  \"100.50 DKK\" invariant   {Money.Parse("100.50 DKK", inva
 Console.WriteLine($"  \"DKK 100.50\" invariant   {Money.Parse("DKK 100.50", invariant)}");
 Console.WriteLine($"  \"100,50 kr.\"  da-DK      {Money.Parse("100,50 kr.", danish)}");
 Console.WriteLine($"  \"kr. 100\"     da-DK      {Money.Parse("kr. 100", danish)}");
-Console.WriteLine($"  \"100 kr.\"     invariant  " +
-                  $"{(Money.TryParse("100 kr.", invariant, out Money ambiguous) ? ambiguous.ToString() : "refused — kr is DKK, NOK, SEK and ISK")}");
+Console.WriteLine($"  \"100 kr.\"     invariant  {(Money.TryParse("100 kr.", invariant, out Money ambiguous) ? ambiguous.ToString() : "refused — kr is DKK, NOK, SEK and ISK")}");
 
 Section("Sorting works across currencies; comparing does not");
 
@@ -104,7 +92,7 @@ List<Money> mixed =
 [
     new(50m, Currency.EUR),
     new(100m, Currency.DKK),
-    new(10m, Currency.EUR),
+    new(10m, Currency.EUR)
 ];
 
 mixed.Sort();
@@ -136,7 +124,7 @@ Console.WriteLine($"  100 DKK  ->   {rate.Convert(new Money(100m, Currency.DKK))
 
 Section("Unknown currencies survive intact");
 
-Currency future = Currency.FromCode("QQQ");
+var future = Currency.FromCode("QQQ");
 
 Console.WriteLine($"  code          {future.Code}");
 Console.WriteLine($"  IsKnown       {future.IsKnown}");
@@ -155,3 +143,11 @@ Console.WriteLine($"  Round(2)      {new Money(42.005m, future).Round(2)}       
 
 Console.WriteLine();
 Console.WriteLine($"{Currency.Known.Length} currencies available.");
+return;
+
+static void Section(string title)
+{
+    Console.WriteLine();
+    Console.WriteLine(title);
+    Console.WriteLine(new string('─', title.Length));
+}

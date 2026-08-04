@@ -123,13 +123,8 @@ internal static class CurrencyCodec
     /// generated literal via <see cref="Currency.Code"/>; this allocates and exists for codes the
     /// library has never seen.
     /// </summary>
-    public static string Decode(uint packed)
-    {
-        if (packed == None)
-        {
-            return NoCurrencyCode;
-        }
-
-        return string.Create(3, packed, static (destination, value) => Unpack(value, destination));
-    }
+    public static string Decode(uint packed) =>
+        packed == None
+            ? NoCurrencyCode
+            : string.Create(3, packed, static (destination, value) => Unpack(value, destination));
 }

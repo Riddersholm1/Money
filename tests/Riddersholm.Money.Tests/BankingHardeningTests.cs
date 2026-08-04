@@ -1,4 +1,4 @@
-using System.Globalization;
+﻿using System.Globalization;
 using System.Text.Json;
 using Xunit;
 
@@ -34,7 +34,7 @@ public sealed class BankingHardeningTests
     public void An_unspecified_exchange_rate_is_reachable_the_ordinary_ways()
     {
         // Not a contrived value: this is what an array of them contains before anything is assigned.
-        ExchangeRate[] rates = new ExchangeRate[3];
+        var rates = new ExchangeRate[3];
 
         Assert.All(rates, rate => Assert.False(rate.IsSpecified));
     }
@@ -113,17 +113,17 @@ public sealed class BankingHardeningTests
     [Fact]
     public void An_unrecognised_code_parses_by_default_and_is_refused_on_request()
     {
-        const string text = "100.00 ZZZ";
+        const string Text = "100.00 ZZZ";
 
         // The default stays permissive: an ISO code this build has not heard of must round-trip, or
         // storing and reloading a row would lose data.
-        Assert.True(Money.TryParse(text, MoneyStyles.Currency, CultureInfo.InvariantCulture, out Money loose));
+        Assert.True(Money.TryParse(Text, MoneyStyles.Currency, CultureInfo.InvariantCulture, out Money loose));
         Assert.Equal("ZZZ", loose.Currency.Code);
         Assert.False(loose.Currency.IsKnown);
 
         // At a trust boundary the opposite is wanted.
         Assert.False(Money.TryParse(
-            text,
+            Text,
             MoneyStyles.Currency | MoneyStyles.RequireKnownCurrency,
             CultureInfo.InvariantCulture,
             out _));
@@ -156,7 +156,7 @@ public sealed class BankingHardeningTests
 
         Assert.Throws<ArgumentException>(() => Currency.FromKnownCode("ZZZ"));
         Assert.Throws<ArgumentException>(() => Currency.FromKnownCode("D1"));
-        Assert.Throws<ArgumentNullException>(() => Currency.FromKnownCode((string)null!));
+        Assert.Throws<ArgumentNullException>(() => Currency.FromKnownCode(null!));
 
         Assert.False(Currency.TryFromKnownCode("ZZZ", out Currency none));
         Assert.Equal(Currency.None, none);
@@ -169,7 +169,7 @@ public sealed class BankingHardeningTests
     public void FromCode_stays_permissive_so_unknown_codes_still_round_trip()
     {
         // The whole reason the strict variant is opt-in.
-        Currency unknown = Currency.FromCode("ZZZ");
+        var unknown = Currency.FromCode("ZZZ");
 
         Assert.Equal("ZZZ", unknown.Code);
         Assert.False(unknown.IsKnown);
@@ -192,7 +192,7 @@ public sealed class BankingHardeningTests
         // operator and the sort order would contradict each other, and a SortedSet or a binary search
         // built on the two would disagree about where a value belongs.
         Assert.Throws<CurrencyMismatchException>(() => default(Money) < price);
-        Assert.Throws<CurrencyMismatchException>(() => Money.Min(default, price));
+        Assert.Throws<CurrencyMismatchException>(() => Money.Min(default(Money), price));
 
         // The two views, shown agreeing with themselves.
         Assert.True(default(Money).CompareTo(price) > 0);
@@ -205,6 +205,6 @@ public sealed class BankingHardeningTests
     public void Summing_an_empty_sequence_gives_the_identity_rather_than_throwing()
     {
         Assert.Equal(Money.AdditiveIdentity, Array.Empty<Money>().Sum());
-        Assert.Equal(default, Array.Empty<Money>().Sum());
+        Assert.Equal(default(Money), Array.Empty<Money>().Sum());
     }
 }

@@ -1,4 +1,4 @@
-using Xunit;
+﻿using Xunit;
 
 namespace Riddersholm.Money.Tests;
 
@@ -25,7 +25,7 @@ public sealed class MoneyEnumerableExtensionsTests
     [Fact]
     public void Sum_refuses_a_mixed_sequence()
     {
-        Money[] mixed = [Dkk(10m), new Money(20m, Currency.EUR)];
+        Money[] mixed = [Dkk(10m), new(20m, Currency.EUR)];
 
         Assert.Throws<CurrencyMismatchException>(() => mixed.Sum());
     }
@@ -64,7 +64,7 @@ public sealed class MoneyEnumerableExtensionsTests
     [Fact]
     public void Min_and_max_refuse_mixed_sequences()
     {
-        Money[] mixed = [Dkk(10m), new Money(20m, Currency.EUR)];
+        Money[] mixed = [Dkk(10m), new(20m, Currency.EUR)];
 
         Assert.Throws<CurrencyMismatchException>(() => mixed.Min());
         Assert.Throws<CurrencyMismatchException>(() => mixed.Max());

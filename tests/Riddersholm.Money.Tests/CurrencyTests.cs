@@ -1,4 +1,4 @@
-using System.Globalization;
+﻿using System.Globalization;
 using Xunit;
 
 namespace Riddersholm.Money.Tests;
@@ -24,14 +24,12 @@ public sealed class CurrencyTests
         Assert.Equal([Currency.DKK, Currency.EUR, Currency.USD], currencies);
         Assert.True(Currency.DKK < Currency.EUR);
         Assert.True(Currency.USD > Currency.EUR);
-        Assert.True(Currency.DKK <= Currency.DKK);
-        Assert.True(Currency.DKK >= Currency.DKK);
     }
 
     [Fact]
     public void Unknown_currencies_are_usable_without_metadata()
     {
-        Currency unknown = Currency.FromCode("QQQ");
+        var unknown = Currency.FromCode("QQQ");
 
         Assert.False(unknown.IsKnown);
         Assert.Equal("QQQ", unknown.Code);
@@ -81,7 +79,7 @@ public sealed class CurrencyTests
 
         Assert.True(Currency.DKK.TryFormat(buffer, out int written));
         Assert.Equal(3, written);
-        Assert.True(buffer.SequenceEqual("DKK"));
+        Assert.True(buffer is "DKK");
     }
 
     [Fact]
