@@ -289,7 +289,7 @@ public readonly partial record struct Money
         }
 
         var multiplier = System.Numerics.BigInteger.Pow(10, scale);
-        System.Numerics.BigInteger scaledTotal = ToBigInteger(total, scale, multiplier);
+        System.Numerics.BigInteger scaledTotal = ToBigInteger(total, multiplier);
         System.Numerics.BigInteger scaledUnits = new(units);
 
         var shortfalls = new System.Numerics.BigInteger[count];
@@ -297,7 +297,7 @@ public readonly partial record struct Money
 
         for (int i = 0; i < count; i++)
         {
-            System.Numerics.BigInteger scaled = scaledUnits * ToBigInteger(ratios[i], scale, multiplier);
+            System.Numerics.BigInteger scaled = scaledUnits * ToBigInteger(ratios[i], multiplier);
             System.Numerics.BigInteger share = scaled / scaledTotal;
 
             shares[i] = (decimal)share;
@@ -308,10 +308,22 @@ public readonly partial record struct Money
         Distribute(scaledUnits - assigned, shortfalls, shares);
     }
 
-    /// <summary>Multiplies a decimal by <c>10^scale</c> exactly, giving a whole number.</summary>
-    private static System.Numerics.BigInteger ToBigInteger(decimal value, int scale, System.Numerics.BigInteger multiplier)
+    /// <summary>
+    /// Multiplies <paramref name="value"/> by <paramref name="multiplier"/> exactly, giving a whole
+    /// number.
+    /// </summary>
+    /// <param name="value">The weight to scale. Any decimal, fractional or not.</param>
+    /// <param name="multiplier">
+    /// The power of ten that clears the fractional part of every weight in the split — see the caller.
+    /// </param>
+    /// <remarks>
+    /// The multiply is split into whole and fractional halves so that it stays exact even when
+    /// <c>value * multiplier</c> would exceed <see cref="decimal"/>'s range: the whole half is widened
+    /// to <see cref="System.Numerics.BigInteger"/> before scaling, and the fractional half is below one
+    /// so scaling it can never overflow.
+    /// </remarks>
+    private static System.Numerics.BigInteger ToBigInteger(decimal value, System.Numerics.BigInteger multiplier)
     {
-        // Splitting the multiply keeps it exact even when value * 10^scale would exceed decimal's range.
         decimal whole = decimal.Truncate(value);
         decimal fraction = value - whole;
 

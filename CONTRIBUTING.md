@@ -62,6 +62,40 @@ The filter that decides which currencies ship is documented in
 Explain the reasoning, not just the change. A reader six months from now needs to know why, and the
 diff already tells them what.
 
+## Releasing
+
+Publishing to NuGet happens one way, and only one way:
+
+1. Tag the commit — `git tag v1.2.3 && git push origin v1.2.3`.
+2. **Publish a GitHub Release for that tag.** This is what triggers
+   [`release.yml`](.github/workflows/release.yml); the tag alone does nothing.
+3. Approve the `nuget` environment if reviewers are configured on it.
+
+The workflow re-runs the whole gate — build, tests, the NativeAOT publish-and-execute — before it
+packs anything, so a release cannot ship something CI would have rejected. The version comes from the
+tag with the leading `v` stripped, and a tag that is not a version number fails the run rather than
+silently publishing `1.0.0` from `Directory.Build.props`.
+
+There is **no `NUGET_API_KEY` secret**, deliberately. The workflow authenticates with
+[Trusted Publishing](https://learn.microsoft.com/nuget/nuget-org/trusted-publishing): GitHub mints an
+OIDC token for the run, NuGet exchanges it for an API key that expires in an hour, and the policy is
+bound to this repository's immutable GitHub ID. A long-lived push credential in repository secrets is
+readable by every workflow and every action they call, and stays valid until someone remembers to
+rotate it — which is the wrong shape of risk for a package that ends up inside banking systems.
+
+One-time setup on nuget.org, under **Account → Trusted Publishing**:
+
+| Field | Value |
+|---|---|
+| Repository owner | `Riddersholm1` |
+| Repository | `Money` |
+| Workflow file | `release.yml` |
+| Environment | `nuget` |
+
+Then set the repository variable `NUGET_USER` to the nuget.org account name. Note that a new policy is
+only *temporarily* active for seven days and becomes permanent after the first successful publish, so
+create it shortly before releasing rather than months ahead.
+
 ## Reporting a security issue
 
 Please do not open a public issue — see [SECURITY.md](SECURITY.md).

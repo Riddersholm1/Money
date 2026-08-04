@@ -19,18 +19,24 @@ public class ArithmeticBenchmarks
     private readonly NodaMoney.Money _nodaLeft = new(100.50m, "DKK");
     private readonly NodaMoney.Money _nodaRight = new(50.25m, "DKK");
 
-    private const decimal DecimalLeft = 100.50m;
-    private const decimal DecimalRight = 50.25m;
+    // Instance fields, and deliberately not const. A const operand lets the JIT fold the whole
+    // operation at compile time, so Add_Decimal and Round_Decimal would report the cost of returning
+    // an already-computed answer — and report it as though it were the cost of decimal arithmetic.
+    // These two rows are the baseline that docs/performance.md uses to claim the currency check costs
+    // nothing measurable, so a folded number there is not a slow benchmark, it is a false claim.
+    // Static readonly is not good enough either: the JIT can treat a static readonly primitive as a
+    // constant once the class is initialised. An instance field cannot be folded, because
+    // BenchmarkDotNet constructs the instance at run time.
+    private readonly decimal _decimalLeft = 100.50m;
+    private readonly decimal _decimalRight = 50.25m;
 
     /// <remarks>
-    /// The amount comes from a field rather than a literal. With a constant the JIT folds the whole
-    /// construction away and BenchmarkDotNet reports a duration indistinguishable from an empty
-    /// method — a number that says nothing except that the optimiser works.
+    /// The amount comes from a field rather than a literal, for the reason given above the fields.
     /// </remarks>
     [Benchmark]
     [BenchmarkCategory("Create")]
     public Money Create() =>
-        new(DecimalLeft, Currency.DKK);
+        new(_decimalLeft, Currency.DKK);
 
     [Benchmark]
     [BenchmarkCategory("Create")]
@@ -55,7 +61,7 @@ public class ArithmeticBenchmarks
     [Benchmark]
     [BenchmarkCategory("Add")]
     public decimal Add_Decimal() =>
-        DecimalLeft + DecimalRight;
+        _decimalLeft + _decimalRight;
 
     [Benchmark]
     [BenchmarkCategory("Subtract")]
@@ -105,7 +111,7 @@ public class ArithmeticBenchmarks
     [Benchmark]
     [BenchmarkCategory("Round")]
     public decimal Round_Decimal() =>
-        Math.Round(DecimalLeft, 2, MidpointRounding.ToEven);
+        Math.Round(_decimalLeft, 2, MidpointRounding.ToEven);
 
     /// <summary>
     /// Reading a currency's precision must not allocate or trigger a static constructor: it is on the

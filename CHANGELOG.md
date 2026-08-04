@@ -11,6 +11,48 @@ A correctness pass aimed at use inside banking software, where a silently wrong 
 crash. Two of the fixes below change behaviour deliberately: each replaces a quiet wrong answer with a
 loud refusal.
 
+### Build and tooling
+
+- **The build was broken.** `IsExternalInit` had been moved out of `System.Runtime.CompilerServices`
+  into the project's own namespace — the shape a "namespace must match folder structure" rule
+  suggests. The compiler resolves that type by its exact fully-qualified name and by no other means,
+  so every `init` accessor and record in the netstandard2.0 generator failed with `CS0518`. Moved
+  back, with the constraint written down and a file-scoped `IDE0130` suppression so it cannot be
+  helpfully relocated again.
+- **`Directory.Build.props` no longer sets a repository-wide `TargetFramework`.** It had been added
+  two lines under the comment explaining why it must not be: the generator has to target
+  `netstandard2.0`, and a repo-wide default is silently wrong for exactly that project — wrong in the
+  worst way, since it would still compile and only fail when Roslyn tried to load it.
+- **`Sum`, `Min`, `Max` and `Average` are classic extension methods again.** They had moved into a
+  C# 14 `extension` block, which `Microsoft.CodeAnalysis.PublicApiAnalyzers` only half-models: it
+  reports a new extension member as untracked (RS0016) but stays silent when a tracked one disappears
+  (RS0017). A public surface whose *removals* the API tracker cannot see is not one this library can
+  promise stability on. The `Aggregate`-based rewrites are also reverted to plain loops — `Sum` is the
+  most-called aggregate here and `Aggregate` allocates a delegate per call.
+- **`.editorconfig` and `.gitattributes` no longer disagree about line endings** (LF on both sides),
+  `*.png binary` is restored so the package icon cannot be corrupted by EOL normalisation, and
+  `.gitignore` regained `generated/`, `TestResults/` and `*.trx` — the first of which the csproj
+  documents a build command for.
+- **Unused parameters on private members are now a build error**, which is how
+  `Money.Allocation.ToBigInteger`'s dead `scale` argument had gone unnoticed in the signature of an
+  exactness-critical helper. The parameter is gone.
+- **Benchmark operands are instance fields again, not constants.** `Add_Decimal` and `Round_Decimal`
+  over two `const` values are constant-foldable, and those rows are the bare-`decimal` baseline that
+  `docs/performance.md` uses to claim the currency check costs nothing measurable.
+- **`IDE0051` (unused private member) is enabled in the library again**, scoped off only for the EF
+  Core test fixtures whose private constructors EF calls by reflection. It had been silenced
+  repository-wide with a justification describing EF entities this library does not contain.
+
+### Publishing
+
+- **Releases now require a published GitHub Release, not just a tag.** Pushing a tag no longer
+  publishes anything, and `workflow_dispatch` is gone from the release path. A tag that is not a
+  version number fails the run rather than shipping `1.0.0` by default.
+- **NuGet authentication moved to Trusted Publishing (OIDC).** There is no `NUGET_API_KEY` secret any
+  more: GitHub mints a token per run, NuGet exchanges it for a key that expires in an hour, and the
+  policy is bound to the repository's immutable GitHub ID. Setup is documented in
+  [CONTRIBUTING.md](CONTRIBUTING.md#releasing).
+
 ### Fixed
 
 - **`RoundToCash()` returned an amount that could not be paid, for MRU.** Cash rounding used the

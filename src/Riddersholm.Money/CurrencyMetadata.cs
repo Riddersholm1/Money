@@ -15,8 +15,8 @@ internal static class CurrencyMetadata
 {
     private static readonly CurrencyInfo?[] Cache = new CurrencyInfo?[CurrencyTable.Count];
 
-    private static Currency[]? AllCurrencies;
-    private static FrozenDictionary<short, Currency>? ByNumericCode;
+    private static Currency[]? CachedCurrencies;
+    private static FrozenDictionary<short, Currency>? CachedNumericIndex;
 
     /// <remarks>
     /// Published through <see cref="Interlocked"/> like <see cref="Cache"/> below, rather than with a
@@ -25,8 +25,8 @@ internal static class CurrencyMetadata
     /// no thread can observe the reference before the elements it points at, and stating that with a
     /// fence is cheaper than arguing about which runtimes provide it for free.
     /// </remarks>
-    public static ReadOnlySpan<Currency> AllCurrenciesSpan =>
-        Volatile.Read(ref AllCurrencies) ?? Publish(ref AllCurrencies, BuildAll());
+    public static ReadOnlySpan<Currency> AllCurrencies =>
+        Volatile.Read(ref CachedCurrencies) ?? Publish(ref CachedCurrencies, BuildAll());
 
     public static CurrencyInfo Get(uint packed)
     {
@@ -53,7 +53,7 @@ internal static class CurrencyMetadata
 
     public static bool TryGetByNumericCode(short numericCode, out Currency currency)
     {
-        FrozenDictionary<short, Currency> map = Volatile.Read(ref ByNumericCode) ?? Publish(ref ByNumericCode, BuildNumericIndex());
+        FrozenDictionary<short, Currency> map = Volatile.Read(ref CachedNumericIndex) ?? Publish(ref CachedNumericIndex, BuildNumericIndex());
 
         return map.TryGetValue(numericCode, out currency);
     }

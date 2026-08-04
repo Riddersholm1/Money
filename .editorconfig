@@ -3,7 +3,10 @@ root = true
 # ---------------------------------------------------------------- all files
 [*]
 charset = utf-8
-end_of_line = crlf
+# LF, matching .gitattributes (`* text=auto eol=lf`). These two files must agree
+# or every save on one platform rewrites files checked out on another; .cmd and
+# .bat opt back into CRLF below, and .gitattributes marks them the same way.
+end_of_line = lf
 indent_style = space
 indent_size = 4
 tab_width = 4
@@ -41,8 +44,10 @@ tab_width = 4
 # ============================================================================
 [*.cs]
 
-# Same as dotnet/docs. Also removes any encoding guesswork for our
-# Danish-language identifiers and string literals (æ/ø/å).
+# Same as dotnet/docs. It also removes encoding guesswork for the Danish text
+# that appears throughout this repository — "øre", "kroner", currency names such
+# as "Icelandic Króna" — which is in comments, string literals and the generated
+# currency table rather than in identifiers.
 charset = utf-8-bom
 
 # ---------------------------------------------------------------- analyzers
@@ -68,12 +73,16 @@ dotnet_diagnostic.CA1724.severity = suggestion
 # vocabulary. The flip side is that two-letter-acronym casing (IOStream /
 # ioStream) is review-only — see the FDG notes at the end of the naming block.
 
-# IDE0051 flags "unused" private members. Every EF Core entity in this
-# codebase has a private parameterless constructor reserved for materialization
-# via reflection; Roslyn has no visibility into that usage and false-positives
-# on all of them. Silencing rather than suppressing per-constructor keeps the
-# domain free of pragma/attribute noise around a known, repo-wide pattern.
-dotnet_diagnostic.IDE0051.severity = silent
+# IDE0051 (unused private member) stays ON in the shipped library. This is a
+# money library being certified for use in banking software, and a private
+# method nobody calls is either dead code or a call site someone forgot to
+# write — both are things a reviewer needs told about, not hidden.
+#
+# It is silenced only for EF Core entity types, whose private parameterless
+# constructors exist for reflection-based materialization that Roslyn cannot
+# see. In this repository those live exclusively in the EF test project, so the
+# exemption is scoped there rather than applied repo-wide; see the section at
+# the end of this file.
 
 # ---------------------------------------------------------------- usings
 dotnet_sort_system_directives_first = true
@@ -233,9 +242,14 @@ dotnet_style_parentheses_in_other_operators = never_if_unnecessary:silent
 # ---------------------------------------------------------------- unused code
 csharp_style_unused_value_assignment_preference = discard_variable:suggestion
 csharp_style_unused_value_expression_statement_preference = discard_variable:silent
-# MS uses non_public: public signatures often carry parameters for interface
-# or delegate conformance.
-dotnet_code_quality_unused_parameters = non_public:suggestion
+# Scoped to non_public because public signatures legitimately carry parameters
+# for interface or delegate conformance — but a *warning*, not a suggestion.
+# Warnings are errors here, so a private helper that ignores an argument now
+# fails the build. That is not pedantry: Money.Allocation's ToBigInteger took a
+# 'scale' it never read, sitting in the signature of an exactness-critical
+# helper and implying a relationship between two arguments that did not exist.
+# At suggestion severity nothing said a word; a human found it by reading.
+dotnet_code_quality_unused_parameters = non_public:warning
 dotnet_remove_unnecessary_suppression_exclusions = none
 
 # ---------------------------------------------------------------- indentation
@@ -506,3 +520,25 @@ dotnet_diagnostic.CA1707.severity = none
 # Async test methods conventionally omit the Async suffix (e.g. xUnit fact
 # names read as scenarios, not TAP method signatures).
 dotnet_naming_rule.async_methods_rule.severity = none
+
+# ============================================================================
+#  Entity Framework Core test fixtures
+# ============================================================================
+# The only place in this repository with EF entity types. Their private
+# parameterless constructors are called by EF's materializer through reflection,
+# which Roslyn cannot see, so IDE0051 reports every one of them as unused.
+# Scoped here so the shipped library keeps dead-code detection.
+[tests/Riddersholm.Money.EntityFrameworkCore.Tests/**/*.cs]
+dotnet_diagnostic.IDE0051.severity = silent
+
+# ============================================================================
+#  Benchmarks, samples and tools — built, never shipped
+# ============================================================================
+# None of these end up in a package, so the Framework Design Guidelines that
+# govern the public surface do not apply to them.
+[{bench,samples,tools}/**/*.cs]
+# Benchmark methods are named Subject_Variant (Add_Decimal, Parse_NodaMoney)
+# because BenchmarkDotNet prints the method name verbatim into the results
+# table, and those tables are quoted in docs/performance.md. Renaming them to
+# satisfy CA1707 would make the published figures unreadable.
+dotnet_diagnostic.CA1707.severity = none
