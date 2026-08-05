@@ -68,7 +68,7 @@ Publishing to NuGet happens one way, and only one way:
 
 1. Tag the commit — `git tag v1.2.3 && git push origin v1.2.3`.
 2. **Publish a GitHub Release for that tag.** This is what triggers
-   [`release.yml`](.github/workflows/release.yml); the tag alone does nothing.
+   the publish job in [`pipeline.yml`](.github/workflows/pipeline.yml); the tag alone does nothing.
 3. Approve the `nuget` environment if reviewers are configured on it.
 
 The workflow re-runs the whole gate — build, tests, the NativeAOT publish-and-execute — before it
@@ -89,12 +89,15 @@ One-time setup on nuget.org, under **Account → Trusted Publishing**:
 |---|---|
 | Repository owner | `Riddersholm1` |
 | Repository | `Money` |
-| Workflow file | `release.yml` |
+| Workflow file | `pipeline.yml` |
 | Environment | `nuget` |
 
-Then set the repository variable `NUGET_USER` to the nuget.org account name. Note that a new policy is
-only *temporarily* active for seven days and becomes permanent after the first successful publish, so
-create it shortly before releasing rather than months ahead.
+Then add a repository secret **`NUGET_USER`** holding the nuget.org *profile name* — not the email
+address. It is not really a secret, but keeping it beside the other release settings means there is one
+place to look; a repository variable works identically if you prefer.
+
+Note the activation rule: a new policy is only **temporarily active for seven days** and becomes
+permanent after the first successful publish. Create it shortly before releasing, not months ahead.
 
 ## Reporting a security issue
 

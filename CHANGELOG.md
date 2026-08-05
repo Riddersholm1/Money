@@ -7,9 +7,17 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
-A correctness pass aimed at use inside banking software, where a silently wrong answer is worse than a
-crash. Two of the fixes below change behaviour deliberately: each replaces a quiet wrong answer with a
-loud refusal.
+Nothing yet.
+
+## [1.0.0-rc.1] — 2026-08-05
+
+The first release candidate, and the first version of this library to be published at all. The API is
+complete and the implementation is what 1.0.0 is intended to be; the `rc` marks that nobody outside the
+project has consumed it yet, and that the publishing pipeline has never run. Promote to 1.0.0 unchanged
+if nothing surfaces.
+
+The sections below fold in three rounds of adversarial review. Two of the behavioural changes are
+deliberate: each replaces a quiet wrong answer with a loud refusal.
 
 ### Build and tooling
 
@@ -102,13 +110,7 @@ loud refusal.
 - `AllocationOracleTests`, checking allocation and rounding against an independent implementation
   written in exact `BigInteger` arithmetic — the test that caught the tie-breaking defect.
 
-## [1.0.0-rc.1] — 2026-08-01
-
-First public release candidate. The API is complete and the implementation is what 1.0.0 is intended
-to be; the `rc` marks that no one outside the project has used it yet. It will be promoted to 1.0.0
-unchanged if nothing surfaces.
-
-### Riddersholm.Money
+### Riddersholm.Money — what the package contains
 
 - `Money`, an immutable `readonly record struct` of a `decimal` amount and a `Currency`, 24 bytes and
   allocation-free.

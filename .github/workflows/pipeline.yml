@@ -1,0 +1,200 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  release:
+    types: [published]
+  workflow_dispatch:
+
+permissions:
+  contents: read # default; the publish job overrides with id-token for OIDC
+
+env:
+  DOTNET_VERSION: "10.0.x"
+  DOTNET_QUALITY: "ga"
+  CONFIGURATION: Release
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+
+jobs:
+  build-test-pack:
+    name: Build, Test & Pack
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0 # full history for SourceLink / versioning
+
+      - name: Resolve version
+        id: version
+        run: |
+          set -euo pipefail
+          TAG="${{ github.event.release.tag_name }}"
+          VERSION="${TAG#v}"
+
+          if [ -z "$VERSION" ]; then
+            # Not a release build. 0.0.0-dev makes it obvious that any package produced by a PR or
+            # branch build is not publishable, rather than letting it inherit the real version from
+            # Directory.Build.props and look like the genuine article.
+            VERSION="0.0.0-dev"
+          elif ! printf '%s' "$VERSION" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$'; then
+            # A release *is* being published, so a tag that is not a version number must stop the run.
+            # Falling through would publish 1.0.0 from Directory.Build.props under the wrong name, and
+            # a package pushed to nuget.org can never be deleted, only unlisted.
+            echo "::error::Release tag '$TAG' is not a version. Expected v<major>.<minor>.<patch>[-prerelease], e.g. v1.0.0-rc.1."
+            exit 1
+          fi
+
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+          echo "Building version $VERSION"
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+          dotnet-quality: ${{ env.DOTNET_QUALITY }}
+
+      - name: Restore
+        run: dotnet restore
+
+      - name: Build
+        run: dotnet build --no-restore -c ${{ env.CONFIGURATION }} -warnaserror /p:Version=${{ steps.version.outputs.VERSION }}
+
+      # No --logger or --collect. Both are VSTest options, and these projects run on
+      # Microsoft.Testing.Platform, which ignores them — the build prints MTP0001 saying so and
+      # produces neither a .trx nor a coverage file. A step that uploads nothing while reporting
+      # success is worse than no step at all, so there is no test-results or Codecov upload here.
+      #
+      # It is not a configuration mistake and there is nothing to fix on this side:
+      # Microsoft.Testing.Platform.MSBuild 1.9.1, which xunit.v3 3.2.2 brings in, is compiled against
+      # MTP 1.x, while every Microsoft.Testing.Extensions.* package (TrxReport, CodeCoverage)
+      # upgrades Microsoft.Testing.Platform to 2.3.x, where IDataConsumer no longer exists. Adding
+      # either one makes every test project fail at startup with:
+      #
+      #   System.TypeLoadException: Could not load type
+      #   'Microsoft.Testing.Platform.Extensions.TestHost.IDataConsumer'
+      #
+      # Revisit when xunit.v3 and the extensions agree on a platform version.
+      - name: Test
+        run: dotnet test --no-build -c ${{ env.CONFIGURATION }}
+
+      # The README claims this library is trimming- and NativeAOT-clean, and that CI proves it. This
+      # is the proof: it publishes a native binary with IL2xxx/IL3xxx warnings as errors, then runs
+      # it. A trimmed-away code path fails here rather than in someone's production deployment.
+      - name: NativeAOT & trimming gate
+        run: |
+          dotnet publish tests/Riddersholm.Money.AotTests -c ${{ env.CONFIGURATION }} -r linux-x64
+          ./artifacts/publish/Riddersholm.Money.AotTests/release_linux-x64/Riddersholm.Money.AotTests
+
+      # Packs all three packages: Riddersholm.Money, .Generators and .EntityFrameworkCore. Anything
+      # with IsPackable=false is skipped, so this needs no per-project list to keep in sync.
+      - name: Pack
+        run: dotnet pack --no-build -c ${{ env.CONFIGURATION }} -o ./artifacts/nuget /p:Version=${{ steps.version.outputs.VERSION }}
+
+      # The README and docs/architecture.md both promise the core package has no dependencies, and
+      # it references the source generator as an analyzer. ReferenceOutputAssembly="false" suppresses
+      # the compile-time reference but not the package dependency — only PrivateAssets="all" does
+      # that. This asserts the promise instead of trusting it.
+      - name: Verify the core package declares no dependencies
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          packages=(artifacts/nuget/Riddersholm.Money.[0-9]*.nupkg)
+          if [ ${#packages[@]} -ne 1 ]; then
+            echo "::error::Expected exactly one core package, found ${#packages[@]}: ${packages[*]-none}"
+            exit 1
+          fi
+          unzip -p "${packages[0]}" Riddersholm.Money.nuspec > core.nuspec
+          cat core.nuspec
+          if grep -q '<dependency ' core.nuspec; then
+            echo "::error::Riddersholm.Money declares package dependencies; the README says it has none."
+            exit 1
+          fi
+
+      - name: Upload NuGet package
+        uses: actions/upload-artifact@v4
+        with:
+          name: nuget-packages
+          path: ./artifacts/nuget/*.nupkg
+          if-no-files-found: error
+
+      - name: Upload symbol package
+        uses: actions/upload-artifact@v4
+        with:
+          name: nuget-symbols
+          path: ./artifacts/nuget/*.snupkg
+          if-no-files-found: error
+
+  # Vulnerability findings warn locally so a newly published advisory does not break every
+  # developer's build, and fail here so one cannot be released. See WarningsNotAsErrors in
+  # Directory.Build.props.
+  audit:
+    name: Audit dependencies
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+          dotnet-quality: ${{ env.DOTNET_QUALITY }}
+
+      - name: Restore with vulnerability findings as errors
+        run: dotnet restore -warnaserror:NU1900,NU1901,NU1902,NU1903,NU1904
+
+  publish:
+    name: Publish to NuGet.org
+    needs: [build-test-pack, audit]
+    if: github.event_name == 'release' && github.event.action == 'published'
+    runs-on: ubuntu-latest
+
+    # A second gate. Configure required reviewers on this environment and nothing reaches nuget.org
+    # without a human approving the run; the Trusted Publishing policy is bound to this environment
+    # name too, so a workflow running outside it cannot mint a key.
+    environment: nuget
+
+    permissions:
+      # Required for OIDC → NuGet Trusted Publishing. This is why there is no NUGET_API_KEY secret:
+      # a long-lived push credential in repository secrets is readable by every workflow and every
+      # action they call, and stays valid until someone remembers to rotate it. The key used below is
+      # minted for this run, expires in an hour, and is bound to this repository's immutable GitHub ID.
+      id-token: write
+      contents: read
+
+    steps:
+      - name: Download packages
+        uses: actions/download-artifact@v4
+        with:
+          name: nuget-packages
+          path: ./artifacts
+
+      - name: Download symbols
+        uses: actions/download-artifact@v4
+        with:
+          name: nuget-symbols
+          path: ./artifacts
+
+      - name: NuGet login (OIDC → temp API key)
+        uses: NuGet/login@v1
+        id: nuget-login
+        with:
+          user: ${{ secrets.NUGET_USER }} # nuget.org profile name, not the email address
+
+      # --skip-duplicate makes a re-run after a partial failure safe rather than fatal: three
+      # packages go up, and a network error between the first and the third should not leave the
+      # release unfinishable.
+      - name: Push to NuGet.org
+        run: >
+          dotnet nuget push "./artifacts/*.nupkg"
+          --api-key ${{ steps.nuget-login.outputs.NUGET_API_KEY }}
+          --source https://api.nuget.org/v3/index.json
+          --skip-duplicate

@@ -2,7 +2,7 @@
 
 A money library for .NET 10, designed from scratch around C# 14 and the .NET 10 type system.
 
-[![CI](https://github.com/Riddersholm1/Money/actions/workflows/ci.yml/badge.svg)](https://github.com/Riddersholm1/Money/actions/workflows/ci.yml)
+[![CI](https://github.com/Riddersholm1/Money/actions/workflows/pipeline.yml/badge.svg)](https://github.com/Riddersholm1/Money/actions/workflows/pipeline.yml)
 [![NuGet](https://img.shields.io/nuget/v/Riddersholm.Money.svg)](https://www.nuget.org/packages/Riddersholm.Money)
 [![Downloads](https://img.shields.io/nuget/dt/Riddersholm.Money)](https://www.nuget.org/packages/Riddersholm.Money)
 [![Latest release](https://img.shields.io/github/v/release/Riddersholm1/Money?include_prereleases)](https://github.com/Riddersholm1/Money/releases)
