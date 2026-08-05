@@ -39,16 +39,29 @@ internal static class JsonParser
             throw new FormatException("Unexpected end of input.");
         }
 
-        return text[index] switch
+        // A statement rather than a switch expression so the keyword cases can consume their literal
+        // and then name their value. Threading the value through ExpectLiteral as a parameter would
+        // keep the expression form at the cost of a parameter that only travels in and back out again.
+        switch (text[index])
         {
-            '{' => ParseObject(text, ref index),
-            '[' => ParseArray(text, ref index),
-            '"' => JsonValue.From(ParseString(text, ref index)),
-            't' => ParseLiteral(text, ref index, "true", JsonValue.From(true)),
-            'f' => ParseLiteral(text, ref index, "false", JsonValue.From(false)),
-            'n' => ParseLiteral(text, ref index, "null", JsonValue.Null),
-            _ => ParseNumber(text, ref index)
-        };
+            case '{':
+                return ParseObject(text, ref index);
+            case '[':
+                return ParseArray(text, ref index);
+            case '"':
+                return JsonValue.From(ParseString(text, ref index));
+            case 't':
+                ExpectLiteral(text, ref index, "true");
+                return JsonValue.From(true);
+            case 'f':
+                ExpectLiteral(text, ref index, "false");
+                return JsonValue.From(false);
+            case 'n':
+                ExpectLiteral(text, ref index, "null");
+                return JsonValue.Null;
+            default:
+                return ParseNumber(text, ref index);
+        }
     }
 
     private static JsonValue ParseObject(string text, ref int index)
@@ -191,16 +204,25 @@ internal static class JsonParser
             : throw new FormatException($"'{literal}' is not a number.");
     }
 
-    private static JsonValue ParseLiteral(string text, ref int index, string literal, JsonValue value)
+    /// <summary>
+    /// Consumes an exact keyword, advancing <paramref name="index"/> past it, or throws.
+    /// </summary>
+    /// <remarks>
+    /// The multi-character sibling of <see cref="Expect"/>. Both are guards rather than producers: JSON
+    /// keywords carry no information beyond their own presence, so the caller names the value.
+    /// </remarks>
+    private static void ExpectLiteral(string text, ref int index, string literal)
     {
-        if (index + literal.Length > text.Length ||
+        int available = Math.Min(literal.Length, text.Length - index);
+
+        if (available < literal.Length ||
             string.CompareOrdinal(text, index, literal, 0, literal.Length) != 0)
         {
-            throw new FormatException($"Expected '{literal}'.");
+            throw new FormatException(
+                $"Expected '{literal}' but found '{text.Substring(index, available)}'.");
         }
 
         index += literal.Length;
-        return value;
     }
 
     private static void Expect(string text, ref int index, char expected)

@@ -53,8 +53,8 @@ internal static class CoreEmitter
 
         foreach (CurrencyDefinition currency in currencies)
         {
-            source.Line($"    /// <summary>{EscapeXml(currency.Name)} ({currency.Code}, ISO {currency.NumericCode}).</summary>");
-            source.Line($"    public static Currency {currency.Code} => new({currency.Packed}u);");
+            source.LineInvariant($"    /// <summary>{EscapeXml(currency.Name)} ({currency.Code}, ISO {currency.NumericCode}).</summary>");
+            source.LineInvariant($"    public static Currency {currency.Code} => new({currency.Packed}u);");
             source.Line();
         }
 
@@ -67,7 +67,7 @@ internal static class CoreEmitter
         source.Line("internal static class CurrencyTable");
         source.Line("{");
         source.Line("    /// <summary>The number of currencies known at compile time.</summary>");
-        source.Line($"    public const int Count = {currencies.Count};");
+        source.LineInvariant($"    public const int Count = {currencies.Count};");
         source.Line();
 
         EmitOrdinalLookup(source, currencies);
@@ -103,7 +103,7 @@ internal static class CoreEmitter
 
         for (int i = 0; i < currencies.Count; i++)
         {
-            source.Line($"            case {currencies[i].Packed}u: ordinal = {i}; return true; // {currencies[i].Code}");
+            source.LineInvariant($"            case {currencies[i].Packed}u: ordinal = {i}; return true; // {currencies[i].Code}");
         }
 
         source.Line("""
@@ -120,8 +120,8 @@ internal static class CoreEmitter
         IReadOnlyList<CurrencyDefinition> currencies,
         Func<CurrencyDefinition, byte> selector)
     {
-        source.Line($"    /// <summary>Per-ordinal {summary}, laid out as static data rather than a heap array.</summary>");
-        source.Line($"    public static ReadOnlySpan<byte> {name} =>");
+        source.LineInvariant($"    /// <summary>Per-ordinal {summary}, laid out as static data rather than a heap array.</summary>");
+        source.LineInvariant($"    public static ReadOnlySpan<byte> {name} =>");
         source.Line("    [");
 
         // Wrapped so a currency-data change stays readable in a diff instead of being one huge line.
@@ -130,7 +130,7 @@ internal static class CoreEmitter
             StringBuilder line = new("        ");
             for (int j = i; j < currencies.Count && j < i + 16; j++)
             {
-                line.Text($"{selector(currencies[j])}, ");
+                line.TextInvariant($"{selector(currencies[j])}, ");
             }
 
             source.Line(line.ToString().TrimEnd());
@@ -147,13 +147,13 @@ internal static class CoreEmitter
         IReadOnlyList<CurrencyDefinition> currencies,
         Func<CurrencyDefinition, string> selector)
     {
-        source.Line($"    /// <summary>Per-ordinal {summary}.</summary>");
-        source.Line($"    public static {returnType} {name}(int ordinal) => ordinal switch");
+        source.LineInvariant($"    /// <summary>Per-ordinal {summary}.</summary>");
+        source.LineInvariant($"    public static {returnType} {name}(int ordinal) => ordinal switch");
         source.Line("    {");
 
         for (int i = 0; i < currencies.Count; i++)
         {
-            source.Line($"        {i} => {selector(currencies[i])},");
+            source.LineInvariant($"        {i} => {selector(currencies[i])},");
         }
 
         source.Line("        _ => throw new ArgumentOutOfRangeException(nameof(ordinal)),");
