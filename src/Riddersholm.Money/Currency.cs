@@ -188,7 +188,7 @@ public readonly partial record struct Currency :
     /// CLS-compliance problem besides.
     /// </para>
     /// </remarks>
-    public static ReadOnlySpan<Currency> Known => CurrencyMetadata.AllCurrenciesSpan;
+    public static ReadOnlySpan<Currency> Known => CurrencyMetadata.AllCurrencies;
 
     /// <summary>Resolves a currency from its ISO 4217 alphabetic code.</summary>
     /// <param name="code">Three ASCII letters; lower case is accepted and normalised.</param>

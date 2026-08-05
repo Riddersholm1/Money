@@ -36,10 +36,20 @@ jobs:
       - name: Build
         run: dotnet build -c Release --no-restore
 
-      # Coverage collection is deliberately absent. Microsoft.Testing.Extensions.CodeCoverage does not
-      # currently load under this xUnit v3 / Microsoft.Testing.Platform host — it fails at
-      # AddSelfRegisteredExtensions before any test runs — and a green suite is worth more than a
-      # coverage number. Revisit when the extension supports this host.
+      # Coverage collection is deliberately absent, and this is the specific reason rather than a
+      # shrug. Microsoft.Testing.Extensions.CodeCoverage 18.9.0 is compiled against an older
+      # Microsoft.Testing.Platform than the 2.3.0 that xunit.v3 3.2.2 brings in, so registering it
+      # throws before a single test runs:
+      #
+      #   System.TypeLoadException: Could not load type
+      #   'Microsoft.Testing.Platform.Extensions.TestHost.IDataConsumer' from assembly
+      #   'Microsoft.Testing.Platform, Version=2.3.0.0'
+      #      at Microsoft.Testing.Platform.MSBuild.MSBuildExtensions.AddMSBuild
+      #      at ...SelfRegisteredExtensions.AddSelfRegisteredExtensions
+      #
+      # It is a version incompatibility between the two packages, not a configuration mistake, so
+      # there is nothing to fix on this side. Re-test after either package updates; a green suite is
+      # worth more than a coverage number that requires pinning an old test framework to obtain.
       - name: Test
         run: dotnet test -c Release --no-build
 

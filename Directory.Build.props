@@ -1,12 +1,17 @@
 <Project>
 
   <!--
-    Repository-wide defaults. Deliberately does NOT set TargetFramework: the core packages target
-    net10.0 while the Roslyn generator must target netstandard2.0 to load into the compiler.
+    Repository-wide defaults. Deliberately does NOT set TargetFramework, and this is not an oversight:
+    the shipped packages target net10.0 while Riddersholm.Money.Generators must target netstandard2.0,
+    because that is what the Roslyn compiler can load an analyzer from.
+
+    A repo-wide default would be silently wrong for exactly one project — and wrong in the worst way,
+    since the generator would still compile and only fail when the compiler tried to load it. Every
+    project either states its own framework or inherits one from the src/tests/bench/samples/tools
+    props beside it, so nothing here is missing.
   -->
 
   <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
     <LangVersion>latest</LangVersion>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>

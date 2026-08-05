@@ -498,3 +498,22 @@ $RECYCLE.BIN/
 # Environment specific appsettings files
 appsettings.*.json
 .vscode/settings.json
+
+###############################################################################
+# Riddersholm.Money specific
+#
+# Everything above comes from `dotnet new gitignore`. These are the paths this
+# repository produces that the template does not know about.
+###############################################################################
+
+# Source-generator output, written only by the documented inspection build:
+#   dotnet build src/Riddersholm.Money -p:EmitGeneratedCurrencySource=true
+# The csproj promises that ordinary builds leave no untracked files behind, and
+# this is what keeps that true for the inspection build as well.
+generated/
+
+# Test-run output. Most of it lands under artifacts/ (ignored above) because of
+# the SDK artifacts layout, but `dotnet test --logger trx` and any run outside
+# that layout write here.
+TestResults/
+*.trx
