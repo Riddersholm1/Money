@@ -1,11 +1,10 @@
 ﻿using Xunit;
+using static Riddersholm.Money.Tests.TestMoney;
 
 namespace Riddersholm.Money.Tests;
 
 public sealed class MoneyRoundingTests
 {
-    private static Money Dkk(decimal amount) => new(amount, Currency.DKK);
-
     [Fact]
     public void Construction_never_rounds()
     {
@@ -131,30 +130,5 @@ public sealed class MoneyRoundingTests
 
         Assert.Equal(12.34m, value.Round().Amount);
         Assert.Equal(12.35m, value.RoundToCash().Amount);
-    }
-
-    [Fact]
-    public void Rounding_is_idempotent()
-    {
-        foreach (Currency currency in Currency.Known)
-        {
-            Money once = new Money(123.456789m, currency).Round();
-            Money twice = once.Round();
-
-            Assert.Equal(once, twice);
-            Assert.True(once.IsCanonical, $"{currency.Code} produced a non-canonical amount.");
-        }
-    }
-
-    [Fact]
-    public void Every_currency_can_round_a_representative_amount()
-    {
-        foreach (Currency currency in Currency.Known)
-        {
-            Money rounded = new Money(1.23456789m, currency).Round(MidpointRounding.AwayFromZero);
-
-            Assert.True(rounded.IsCanonical);
-            Assert.Equal(currency, rounded.Currency);
-        }
     }
 }

@@ -42,19 +42,19 @@ internal static class ExtensionEmitter
 
         if (containerNamespace.Length > 0)
         {
-            source.Line($"namespace {containerNamespace};").Line();
+            source.LineInvariant($"namespace {containerNamespace};").Line();
         }
 
         source.Line("/// <summary>Currencies defined by this assembly, surfaced as members of <see cref=\"Currency\"/>.</summary>");
-        source.Line($"public static class {containerName}");
+        source.LineInvariant($"public static class {containerName}");
         source.Line("{");
         source.Line("    extension(Currency)");
         source.Line("    {");
 
         foreach (CurrencyDefinition currency in currencies)
         {
-            source.Line($"        /// <summary>{EscapeXml(currency.Name)} ({currency.Code}).</summary>");
-            source.Line($"        public static Currency {currency.Code} => Values.{currency.Code};");
+            source.LineInvariant($"        /// <summary>{EscapeXml(currency.Name)} ({currency.Code}).</summary>");
+            source.LineInvariant($"        public static Currency {currency.Code} => Values.{currency.Code};");
             source.Line();
         }
 
@@ -66,7 +66,7 @@ internal static class ExtensionEmitter
 
         foreach (CurrencyDefinition currency in currencies)
         {
-            source.Line($"        internal static readonly Currency {currency.Code} = Currency.FromCode(\"{currency.Code}\");");
+            source.LineInvariant($"        internal static readonly Currency {currency.Code} = Currency.FromCode(\"{currency.Code}\");");
         }
 
         source.Line("    }").Line();
@@ -85,14 +85,14 @@ internal static class ExtensionEmitter
         foreach (CurrencyDefinition currency in currencies)
         {
             source.Line("        new CurrencyInfo(");
-            source.Line($"            code: \"{currency.Code}\",");
-            source.Line($"            numericCode: {currency.NumericCode},");
-            source.Line($"            englishName: \"{Escape(currency.Name)}\",");
-            source.Line($"            symbol: \"{Escape(currency.Symbol)}\",");
-            source.Line($"            decimalDigits: {currency.DecimalDigits},");
-            source.Line($"            minorUnitsPerMajor: {currency.MinorUnitsPerMajor},");
-            source.Line($"            cashDecimalDigits: {currency.CashDecimalDigits},");
-            source.Line($"            cashRoundingStep: {currency.CashRoundingStep}),");
+            source.LineInvariant($"            code: \"{currency.Code}\",");
+            source.LineInvariant($"            numericCode: {currency.NumericCode},");
+            source.LineInvariant($"            englishName: \"{Escape(currency.Name)}\",");
+            source.LineInvariant($"            symbol: \"{Escape(currency.Symbol)}\",");
+            source.LineInvariant($"            decimalDigits: {currency.DecimalDigits},");
+            source.LineInvariant($"            minorUnitsPerMajor: {currency.MinorUnitsPerMajor},");
+            source.LineInvariant($"            cashDecimalDigits: {currency.CashDecimalDigits},");
+            source.LineInvariant($"            cashRoundingStep: {currency.CashRoundingStep}),");
         }
 
         source.Line("    ]);");

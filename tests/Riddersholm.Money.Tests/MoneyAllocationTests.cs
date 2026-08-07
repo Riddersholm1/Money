@@ -1,12 +1,11 @@
-using FsCheck.Xunit;
+﻿using FsCheck.Xunit;
 using Xunit;
+using static Riddersholm.Money.Tests.TestMoney;
 
 namespace Riddersholm.Money.Tests;
 
 public sealed class MoneyAllocationTests
 {
-    private static Money Dkk(decimal amount) => new(amount, Currency.DKK);
-
     [Fact]
     public void The_canonical_example_distributes_the_stray_ore()
     {

@@ -1,6 +1,7 @@
 ﻿using System.Globalization;
 using FsCheck.Xunit;
 using Xunit;
+using static Riddersholm.Money.Tests.TestMoney;
 
 namespace Riddersholm.Money.Tests;
 
@@ -11,7 +12,6 @@ public sealed class MoneyParsingTests
     private static readonly CultureInfo American = new("en-US");
     private static readonly CultureInfo German = new("de-DE");
 
-    private static Money Dkk(decimal amount) => new(amount, Currency.DKK);
 
     [Theory]
     [InlineData("100 DKK", 100)]

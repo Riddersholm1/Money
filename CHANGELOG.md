@@ -7,9 +7,17 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
-A correctness pass aimed at use inside banking software, where a silently wrong answer is worse than a
-crash. Two of the fixes below change behaviour deliberately: each replaces a quiet wrong answer with a
-loud refusal.
+Nothing yet.
+
+## [1.0.0-rc.1] — 2026-08-05
+
+The first release candidate, and the first version of this library to be published at all. The API is
+complete and the implementation is what 1.0.0 is intended to be; the `rc` marks that nobody outside the
+project has consumed it yet, and that the publishing pipeline has never run. Promote to 1.0.0 unchanged
+if nothing surfaces.
+
+The sections below fold in three rounds of adversarial review. Two of the behavioural changes are
+deliberate: each replaces a quiet wrong answer with a loud refusal.
 
 ### Build and tooling
 
@@ -42,6 +50,18 @@ loud refusal.
 - **`IDE0051` (unused private member) is enabled in the library again**, scoped off only for the EF
   Core test fixtures whose private constructors EF calls by reflection. It had been silenced
   repository-wide with a justification describing EF entities this library does not contain.
+- **The generator's invariant-culture guard was unreachable.** `SourceBuilderExtensions` offered
+  `Line(FormattableString)`, which routes through `FormattableString.Invariant`, beside a plain
+  `Line(string)` that does not. An interpolated string literal converts better to `string`, so all 23
+  interpolated call sites bound to the culture-sensitive overload and the protection the class exists
+  for did not exist. Nothing had gone wrong yet — every interpolated value is a non-negative integer,
+  and .NET writes those with ASCII digits under every culture — but the first emitted `decimal` would
+  have produced `-1234,5` on a Danish build agent, which is not valid C#. The members are named rather
+  than overloaded now (`Line`, `LineInvariant`, `TextInvariant`), so the compiler cannot pick the wrong
+  one. Generated output is byte-identical.
+- **`Pow10` was implemented twice in the core assembly**, in `CurrencyInfo` and again in
+  `Money.Rounding`, for the same purpose. Both callers now share one helper, so a currency validated at
+  registration and rounded at runtime cannot disagree about which divisors a digit count expresses.
 
 ### Publishing
 
@@ -101,14 +121,13 @@ loud refusal.
   allocation always produce payable amounts — the suite that caught the MRU defect.
 - `AllocationOracleTests`, checking allocation and rounding against an independent implementation
   written in exact `BigInteger` arithmetic — the test that caught the tie-breaking defect.
+- A test pinning that `RoundToCash` floors a hand-registered currency's cash increment at that
+  currency's own minor unit. Both halves of the MRU fix — correcting the shipped data and flooring at
+  runtime — now agree for all 166 currencies, which meant the runtime half could be deleted without
+  breaking a single test. `docs/currency-data.md` promises it protects a currency registered by hand,
+  and nothing asserted it; a currency shaped like MRU before the fix does now.
 
-## [1.0.0-rc.1] — 2026-08-01
-
-First public release candidate. The API is complete and the implementation is what 1.0.0 is intended
-to be; the `rc` marks that no one outside the project has used it yet. It will be promoted to 1.0.0
-unchanged if nothing surfaces.
-
-### Riddersholm.Money
+### Riddersholm.Money — what the package contains
 
 - `Money`, an immutable `readonly record struct` of a `decimal` amount and a `Currency`, 24 bytes and
   allocation-free.

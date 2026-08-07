@@ -1,4 +1,4 @@
-namespace Riddersholm.Money;
+﻿namespace Riddersholm.Money;
 
 /// <summary>
 /// Thrown when an operation needs metadata for a currency the library does not recognise.
@@ -39,9 +39,13 @@ public sealed class UnknownCurrencyException : InvalidOperationException
     /// <summary>Creates an exception with a custom message.</summary>
     /// <param name="message">The message that describes the error.</param>
     /// <remarks>
-    /// Prefer <see cref="UnknownCurrencyException(string, Currency)"/> so that <see cref="Currency"/>
-    /// carries the offending value rather than defaulting.
+    /// Prefer <see cref="UnknownCurrencyException(string, Riddersholm.Money.Currency)"/> so that
+    /// <see cref="Currency"/> carries the offending value rather than defaulting.
     /// </remarks>
+    // The parameter type above is fully qualified because the Currency property shadows the type of the
+    // same name inside this class. Roslyn resolves the short form correctly — the emitted XML names the
+    // constructor overload, not the property — but ReSharper reports CS1580 against it, so the short
+    // form costs a false warning in Rider for no gain.
     public UnknownCurrencyException(string message)
         : base(message)
     {

@@ -1,6 +1,1 @@
 #nullable enable
-Riddersholm.Money.ExchangeRate.IsSpecified.get -> bool
-Riddersholm.Money.MoneyStyles.RequireKnownCurrency = 1024 -> Riddersholm.Money.MoneyStyles
-static Riddersholm.Money.Currency.FromKnownCode(System.ReadOnlySpan<char> code) -> Riddersholm.Money.Currency
-static Riddersholm.Money.Currency.FromKnownCode(string! code) -> Riddersholm.Money.Currency
-static Riddersholm.Money.Currency.TryFromKnownCode(System.ReadOnlySpan<char> code, out Riddersholm.Money.Currency currency) -> bool
