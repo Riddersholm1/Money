@@ -1,4 +1,5 @@
 ﻿using Xunit;
+using static Riddersholm.Money.Tests.TestMoney;
 
 namespace Riddersholm.Money.Tests;
 
@@ -8,8 +9,6 @@ namespace Riddersholm.Money.Tests;
 /// </summary>
 public sealed class MoneyComparisonTests
 {
-    private static Money Dkk(decimal amount) => new(amount, Currency.DKK);
-
     private static Money Eur(decimal amount) => new(amount, Currency.EUR);
 
     [Fact]

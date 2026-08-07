@@ -189,6 +189,10 @@ public sealed class AuditRegressionTests
     [Fact]
     public void H5_currency_ordering_is_still_alphabetical()
     {
+        // Not made redundant by the whole-table test below, which it superficially resembles: that one
+        // iterates Currency.Known, and AAA and ZZZ are *unknown* codes it therefore never reaches.
+        // Ordering has to hold for a currency the build has never heard of too, since one can be read
+        // out of a database and sorted alongside the rest.
         List<Currency> currencies = [Currency.USD, Currency.FromCode("AAA"), Currency.DKK, Currency.FromCode("ZZZ")];
         currencies.Sort();
 

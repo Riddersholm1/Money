@@ -131,7 +131,7 @@ public readonly partial record struct Money
 
         // The cash increment, counted in minor units: the step is in last-place units of the cash
         // digit count, so CHF's step of 5 at 2 digits is 0.05, which is 5 rappen.
-        decimal cashUnits = (decimal)Currency.CashRoundingStep * unitsPerMajor / Pow10(Currency.CashDecimalDigits);
+        decimal cashUnits = (decimal)Currency.CashRoundingStep * unitsPerMajor / CurrencyInfo.Pow10(Currency.CashDecimalDigits);
 
         // A cash increment below one minor unit — or not a whole number of them — would round to an
         // amount the currency cannot express. MRU is the real case: it declares two cash decimals
@@ -170,17 +170,6 @@ public readonly partial record struct Money
 
         // MRU and MGA: a fifth of the major unit. Scale into whole minor units, round, and scale back.
         return Math.Round(amount * unitsPerMajor, 0, mode) / unitsPerMajor;
-    }
-
-    private static decimal Pow10(int exponent)
-    {
-        decimal result = 1m;
-        for (int i = 0; i < exponent; i++)
-        {
-            result *= 10m;
-        }
-
-        return result;
     }
 
     /// <summary>

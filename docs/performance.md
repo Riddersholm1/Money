@@ -170,5 +170,8 @@ NativeAOT and full trimming.
 
 ## Method
 
+This document is the source for the summary table in the README; when a measurement changes, it changes
+here first and the README is updated to match. Two numbers for one fact is how they drift apart.
+
 Every number here came from a run before the corresponding claim was written. Where a measurement
 contradicted a design assumption, the design changed and the old number was kept in the table above.

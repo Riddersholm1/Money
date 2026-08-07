@@ -123,8 +123,13 @@ public sealed class BankingInvariantTests
                 foreach (MidpointRounding mode in Modes)
                 {
                     Money value = new(amount, currency);
+                    Money rounded = value.Round(mode);
 
-                    Assert.True(value.Round(mode).IsCanonical, $"Round({mode}) on {amount} {currency.Code}");
+                    Assert.True(rounded.IsCanonical, $"Round({mode}) on {amount} {currency.Code}");
+
+                    // Rounding changes the amount and nothing else. Cheap to assert, and the only way
+                    // a currency could go missing here is a bug that would otherwise reach a ledger.
+                    Assert.Equal(currency, rounded.Currency);
                 }
 
                 Money original = new(amount, currency);
@@ -397,6 +402,63 @@ public sealed class BankingInvariantTests
 
         Assert.Equal((decimal)expected, rounded.Amount);
         Assert.True(rounded.IsCanonical);
+    }
+
+    /// <summary>
+    /// A currency registered by hand with a cash increment finer than its own minor unit is still
+    /// rounded to something payable.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// This is the case the shipped data no longer contains and therefore no longer exercises. MRU used
+    /// to declare two cash decimals — an increment of 0.01 — against a khoum of 0.2, and
+    /// <c>RoundToCash</c> took it literally. Both halves were fixed: the sync tool now raises the
+    /// recorded increment to 0.20, and <c>RoundToCash</c> floors it at the currency's own unit at
+    /// runtime. Because the data is correct, the two branches now agree for all 166 currencies — so
+    /// deleting the runtime floor breaks no other test in this suite, which is precisely why this one
+    /// exists.
+    /// </para>
+    /// <para>
+    /// <c>CurrencyRegistry</c> accepts the bad shape, as it must: it validates the minor unit against
+    /// the digit count, not the cash increment against the minor unit, and a caller registering a
+    /// currency this library has never heard of is a supported scenario. The runtime floor is the only
+    /// thing standing between that registration and an unpayable amount, and
+    /// <c>docs/currency-data.md</c> says so in prose. Here it says so executably.
+    /// </para>
+    /// </remarks>
+    [Fact]
+    public void A_hand_registered_currency_cannot_reintroduce_an_unpayable_cash_increment()
+    {
+        var currency = Currency.FromCode("QMR");
+
+        if (!currency.IsKnown)
+        {
+            CurrencyRegistry.Register(new CurrencyInfo(
+                code: "QMR",
+                numericCode: 0,
+                englishName: "Fifth-unit currency with MRU's original cash defect",
+                symbol: "QMR",
+                decimalDigits: 2,
+                minorUnitsPerMajor: 5,      // fifths, like the khoum
+                cashDecimalDigits: 2,       // ...but cash claimed to the hundredth
+                cashRoundingStep: 1));
+        }
+
+        foreach (decimal amount in Amounts)
+        {
+            foreach (MidpointRounding mode in Modes)
+            {
+                Money rounded = new Money(amount, currency).RoundToCash(mode);
+
+                Assert.True(
+                    rounded.IsCanonical,
+                    $"{amount} QMR rounded to cash ({mode}) gave {rounded.Amount}, which is not a whole "
+                  + "number of fifths and therefore cannot be paid.");
+            }
+        }
+
+        // The floor lands on the currency's own increment, not somewhere coarser.
+        Assert.Equal(1.4m, new Money(1.37m, currency).RoundToCash().Amount);
     }
 
     /// <summary>

@@ -86,6 +86,21 @@ throw on their own seed, and every caller writes a currency-specific fold instea
 The exception is narrow and principled: only the *zero* of `Currency.None` behaves this way. A non-zero
 amount in XXX still refuses to mix, because five of nothing is not five kroner.
 
+**The rule stops at addition. Ordering does not extend it:**
+
+```csharp
+default(Money) + new Money(100m, Currency.DKK);   // 100.00 DKK
+default(Money) < new Money(100m, Currency.DKK);   // throws CurrencyMismatchException
+```
+
+That asymmetry is deliberate, and it is the half people trip over. `CompareTo` orders by currency and
+then by amount, so `default(Money)` has a definite position in a sorted list — under `XXX`, away from
+the kroner. If `<` quietly treated it as "zero of whatever you are comparing against", the operator and
+the sort order would disagree about the same pair, and a `SortedSet` or a binary search built on the one
+would give wrong answers when questioned with the other. Zero adds nothing to any currency, so addition
+can fold it; ordering money of no denomination against money of a known one has no answer both views
+share. An uninitialised `Money` reaching a threshold check is a bug, and this is where it surfaces.
+
 ---
 
 ## `Round()` refuses unknown currencies, but `Info` does not

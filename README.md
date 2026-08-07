@@ -185,15 +185,16 @@ Nothing in the arithmetic path allocates, and parsing allocates nothing at all.
 
 | | Riddersholm.Money | NodaMoney 2.7.0 |
 |---|---:|---:|
-| Add | 4.6 ns / 0 B | 21.6 ns / 0 B |
-| Multiply | 2.5 ns / 0 B | 30.6 ns / 0 B |
+| Add | 4.7 ns / 0 B | 22.8 ns / 0 B |
+| Multiply | 2.1 ns / 0 B | 31.1 ns / 0 B |
 | Parse | 57 ns / **0 B** | 165 ns / 168 B |
 | Format | 86 ns / 48 B | 163 ns / 392 B |
 | Allocate across 64 | 903 ns | 2744 ns |
 | Allocate into a span | **148 ns / 0 B** | — |
 
-[docs/performance.md](docs/performance.md) has the full tables, the method, and the one row where this
-library is *slower* — along with why that trade was made on purpose.
+Every figure is quoted from [docs/performance.md](docs/performance.md), which is where they are
+measured and where they should be changed — it has the full tables, the method, and the one row where
+this library is *slower*, along with why that trade was made on purpose.
 
 ---
 

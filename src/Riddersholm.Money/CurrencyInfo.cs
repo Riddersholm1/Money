@@ -169,7 +169,14 @@ public sealed class CurrencyInfo
     public override string ToString() => Code;
 
     /// <summary>Ten to the power of <paramref name="exponent"/>, in decimal so the full 0..28 range fits.</summary>
-    private static decimal Pow10(int exponent)
+    /// <remarks>
+    /// Shared with <see cref="Money"/>'s rounding, which needs the same power for the same reason: a
+    /// currency's minor-unit divisor can exceed what a <see cref="long"/> holds, and the two must agree
+    /// about which divisors a digit count can express or a registration validated here would round
+    /// differently there. <c>Money.Pow10Long</c> is the separate, deliberately narrower helper — it
+    /// answers whether the divisor <em>is</em> a power of ten and returns a sentinel when it cannot.
+    /// </remarks>
+    internal static decimal Pow10(int exponent)
     {
         decimal result = 1m;
 
