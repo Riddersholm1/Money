@@ -133,7 +133,8 @@ internal static class CurrencyDefinitionReader
         out long minorUnitsPerMajor)
     {
         // A missing minorUnitsPerMajor means "the usual power of ten", which keeps hand-written
-        // definition files terse: only MRU/MGA and the no-minor-unit codes need to say anything.
+        // definition files terse: only a currency divided otherwise (into fifths, say) and the
+        // no-minor-unit codes need to say anything.
         if (entry["minorUnitsPerMajor"].IsNull)
         {
             if (digits > 18)

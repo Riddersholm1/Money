@@ -53,14 +53,12 @@ public sealed class MoneyRoundingTests
         Assert.Equal(new Money(1.235m, Currency.KWD), new Money(1.2345m, Currency.KWD).Round(MidpointRounding.AwayFromZero));
     }
 
-    [Theory]
-    [InlineData("MRU")]
-    [InlineData("MGA")]
-    public void Rounding_snaps_to_the_increment_not_the_digit_count(string code)
+    [Fact]
+    public void Rounding_snaps_to_the_increment_not_the_digit_count()
     {
-        // The khoum is one fifth of an ouguiya, so valid amounts step by 0.2. Rounding to two
-        // decimals would leave 1.37, which cannot be paid.
-        var currency = Currency.FromCode(code);
+        // A currency divided into fifths steps by 0.2. Rounding to two decimals would leave 1.37, which
+        // cannot be paid.
+        Currency currency = TestMoney.Fifths;
 
         Assert.Equal(new Money(1.4m, currency), new Money(1.37m, currency).Round());
         Assert.Equal(new Money(1.2m, currency), new Money(1.24m, currency).Round());

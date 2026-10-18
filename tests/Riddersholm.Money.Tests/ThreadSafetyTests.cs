@@ -58,7 +58,7 @@ public sealed class ThreadSafetyTests
 
         Parallel.For(0, 128, _ => lengths.Add(Currency.Known.Length));
 
-        Assert.Equal(166, Assert.Single(lengths.Distinct()));
+        Assert.Equal(176, Assert.Single(lengths.Distinct()));
     }
 
     [Fact]

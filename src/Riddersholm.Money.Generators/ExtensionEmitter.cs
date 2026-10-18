@@ -111,7 +111,8 @@ internal static class ExtensionEmitter
             source.LineInvariant($"            decimalDigits: {currency.DecimalDigits},");
             source.LineInvariant($"            minorUnitsPerMajor: {currency.MinorUnitsPerMajor},");
             source.LineInvariant($"            cashDecimalDigits: {currency.CashDecimalDigits},");
-            source.LineInvariant($"            cashRoundingStep: {currency.CashRoundingStep}),");
+            source.LineInvariant($"            cashRoundingStep: {currency.CashRoundingStep})");
+            source.LineInvariant($"        {{ IsWithdrawn = {(currency.Withdrawn is null ? "false" : "true")} }},");
         }
 
         source.Line("    ]);");

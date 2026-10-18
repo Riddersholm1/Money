@@ -131,6 +131,7 @@ public static class CurrencyRegistry
         && left.MinorUnitsPerMajor == right.MinorUnitsPerMajor
         && left.CashDecimalDigits == right.CashDecimalDigits
         && left.CashRoundingStep == right.CashRoundingStep
+        && left.IsWithdrawn == right.IsWithdrawn
         && string.Equals(left.EnglishName, right.EnglishName, StringComparison.Ordinal)
         && string.Equals(left.Symbol, right.Symbol, StringComparison.Ordinal);
 }

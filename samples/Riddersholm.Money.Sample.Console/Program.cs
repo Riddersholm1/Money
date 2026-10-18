@@ -47,13 +47,17 @@ Console.WriteLine($"  100 DKK at 70:30    {string.Join(", ", split.Select(s => s
 
 Section("Currencies are not all decimal-hundredths");
 
-foreach (Currency currency in (Currency[])[Currency.DKK, Currency.JPY, Currency.KWD, Currency.MRU, Currency.XXX])
+foreach (Currency currency in (Currency[])[Currency.DKK, Currency.JPY, Currency.KWD, Currency.CLF, Currency.XXX])
 {
     Console.WriteLine($"  {currency.Code}  digits={currency.DecimalDigits}  minorUnitsPerMajor={currency.MinorUnitsPerMajor,-6} minorUnit={currency.MinorUnit}");
 }
 
 Console.WriteLine();
-Console.WriteLine($"  1.37 MRU rounds to  {new Money(1.37m, Currency.MRU).Round()}          <- the khoum is a fifth, so amounts step by 0.2");
+Console.WriteLine($"  1.2345 KWD rounds to {new Money(1.2345m, Currency.KWD).Round()}       <- three decimals, not two");
+
+// Withdrawn currencies stay known, so stored amounts keep their precision; new money should not use them.
+Currency lev = Currency.FromCode("BGN");
+Console.WriteLine($"  {lev.Code} withdrawn={lev.IsWithdrawn}  12.345 rounds to {new Money(12.345m, lev).Round()}  <- historical amounts still round");
 
 Section("Cash rounds differently from ledgers");
 

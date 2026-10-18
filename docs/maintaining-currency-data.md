@@ -41,7 +41,7 @@ and tests pass against it. Dependabot does the same for package dependencies.
    | `decimalDigits` or `minorUnitsPerMajor` changed | **major** | `Round()`, `IsCanonical`, `Allocate` and minor-unit conversion change for stored amounts. |
 
 3. **Fix the pinned counts** if a currency was added. The suite pins the number on purpose, so an
-   accidental drop cannot pass. Search for the old count (today `166`):
+   accidental drop cannot pass. Search for the old count (today `176` in total, `166` in circulation):
    `tests/Riddersholm.Money.Tests/CurrencyDataTests.cs`, `ThreadSafetyTests.cs`,
    `tests/Riddersholm.Money.Generators.Tests/IsoCurrencyTableTests.cs`,
    `tests/Riddersholm.Money.AotTests/Program.cs`, and the counts quoted in `docs/`.
@@ -67,8 +67,12 @@ These live as short lists at the top of `tools/Riddersholm.Money.DataSync/Progra
 
 - **New `X`-codes.** ISO's minor-unit column filters out metals and fund units automatically, but a new
   *unit of account* with a numeric minor unit (as `XAD` was) has to be added to `deny` by hand.
-- **Fifth-unit currencies.** MRU and MGA are overridden to five minor units per major unit. Check that a
-  new currency is not subdivided the same way.
+- **Minor units always follow ISO.** MRU and MGA are physically divided into fifths but ISO counts them
+  in hundredths, and so does this library, because every counterparty does. Do not override a currency's
+  minor unit away from ISO's.
+- **Historic currencies.** The `historic` list seeds currencies withdrawn before they ever shipped
+  (everything since 2017). Extend it only to support older ledgers, with the minor unit from ISO's
+  list three — the mirror does not carry it for withdrawn rows.
 - **Withdrawn currencies** are never deleted. If ISO ever reuses a withdrawn *alphabetic* code, both
   cannot coexist — that needs a deliberate decision and a major version.
 

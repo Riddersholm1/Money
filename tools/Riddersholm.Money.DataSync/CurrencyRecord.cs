@@ -47,8 +47,9 @@ internal sealed record CurrencyRecord
     public required byte DecimalDigits { get; init; }
 
     /// <summary>
-    /// How many minor units make one major unit. Usually 10^<see cref="DecimalDigits"/>, but 5 for MRU
-    /// and MGA, and <c>0</c> for currencies with no minor unit at all (XTS, XXX).
+    /// How many minor units make one major unit: 10^<see cref="DecimalDigits"/> for every ISO currency
+    /// (MRU and MGA included — ISO counts them in hundredths), and <c>0</c> for currencies with no minor
+    /// unit at all (XTS, XXX).
     /// </summary>
     public required int MinorUnitsPerMajor { get; init; }
 

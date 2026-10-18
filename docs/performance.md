@@ -104,7 +104,8 @@ convert minor units back into an amount, at roughly 30 ns each.
 
 The fix was to do the split in `long` arithmetic and construct the result decimal directly from an
 integer and a scale, with no division at all. That path applies whenever the minor-unit divisor is a
-power of ten — every currency except MRU and MGA — and whenever the amount fits in a `long` of minor
+power of ten — every ISO currency, and any registered one that is not divided into fifths or similar —
+and whenever the amount fits in a `long` of minor
 units, which for DKK means anything under about 9×10¹⁶. The `decimal` path is still there for
 everything else, so behaviour is unchanged and the property tests that assert the sum is preserved pass
 untouched.

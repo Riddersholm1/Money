@@ -77,7 +77,10 @@ internal static class CurrencyMetadata
         decimalDigits: CurrencyTable.DecimalDigits[ordinal],
         minorUnitsPerMajor: CurrencyTable.GetMinorUnitsPerMajor(ordinal),
         cashDecimalDigits: CurrencyTable.CashDecimalDigits[ordinal],
-        cashRoundingStep: CurrencyTable.CashRoundingSteps[ordinal]);
+        cashRoundingStep: CurrencyTable.CashRoundingSteps[ordinal])
+    {
+        IsWithdrawn = CurrencyTable.Withdrawn[ordinal] != 0
+    };
 
     /// <summary>
     /// Describes a currency the library has never seen, so that loading unfamiliar data reads its

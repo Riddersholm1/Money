@@ -209,9 +209,10 @@ public sealed class ProductionReadinessTests
     [Fact]
     public void P5_fifth_unit_rounding_is_exact_at_full_precision()
     {
-        // Multiplying by five needs a 30th digit, so decimal rounded the product to 20 khoums before
-        // Floor ever saw it — and Floor returned 4.0, above its input.
-        Money amount = new(JustUnderFour, Currency.MRU);
+        // Multiplying by five needs a 30th digit, so decimal rounded the product to 20 fifths before
+        // Floor ever saw it — and Floor returned 4.0, above its input. (Found on MRU, when the table
+        // still modelled it in fifths; a registered fifth-unit currency takes the same path today.)
+        Money amount = new(JustUnderFour, TestMoney.Fifths);
 
         Assert.Equal(3.8m, amount.Floor().Amount);
         Assert.Equal(3.8m, amount.Truncate().Amount);
@@ -225,7 +226,7 @@ public sealed class ProductionReadinessTests
     {
         // The same rounded product passed allocation's whole-units check, and the parts summed to 4.0
         // rather than to the amount allocated.
-        Money amount = new(JustUnderFour, Currency.MRU);
+        Money amount = new(JustUnderFour, TestMoney.Fifths);
 
         Assert.Throws<InvalidOperationException>(() => amount.Allocate(2));
         Assert.Throws<InvalidOperationException>(() => amount.Allocate([1, 1]));
@@ -248,7 +249,9 @@ public sealed class ProductionReadinessTests
     {
         TheoryData<string, MidpointRounding> data = [];
 
-        foreach (string code in (string[])["DKK", "CHF", "CAD", "HUF", "MRU", "MGA", "SEK", "EUR"])
+        _ = TestMoney.Fifths;
+
+        foreach (string code in (string[])["DKK", "CHF", "CAD", "HUF", "MRU", "MGA", "SEK", "EUR", "QFI"])
         {
             foreach (MidpointRounding mode in Enum.GetValues<MidpointRounding>())
             {
@@ -288,7 +291,7 @@ public sealed class ProductionReadinessTests
     [Fact]
     public void P5_rounding_never_leaves_a_negative_zero()
     {
-        Money tiny = new(-0.01m, Currency.MRU);
+        Money tiny = new(-0.01m, TestMoney.Fifths);
 
         Money rounded = tiny.Round(MidpointRounding.ToZero);
 
@@ -301,8 +304,8 @@ public sealed class ProductionReadinessTests
     {
         const MidpointRounding invalid = (MidpointRounding)42;
 
-        Assert.Throws<ArgumentException>(() => new Money(1.37m, Currency.MRU).Round(invalid));
-        Assert.Throws<ArgumentException>(() => new Money(1.4m, Currency.MRU).Round(invalid));
+        Assert.Throws<ArgumentException>(() => new Money(1.37m, TestMoney.Fifths).Round(invalid));
+        Assert.Throws<ArgumentException>(() => new Money(1.4m, TestMoney.Fifths).Round(invalid));
         Assert.Throws<ArgumentException>(() => new Money(1.37m, Currency.DKK).Round(invalid));
         Assert.Throws<ArgumentException>(() => new Money(1.37m, Currency.DKK).RoundToCash(invalid));
     }
@@ -386,6 +389,7 @@ public sealed class ProductionReadinessTests
     [InlineData(1050L, "KWD", "1.050")]
     [InlineData(-1L, "EUR", "-0.01")]
     [InlineData(137L, "MRU", "1.37")]   // ISO hundredths, as every payment system counts them
+    [InlineData(5L, "BYR", "5")]        // a withdrawn currency keeps its exponent for stored amounts
     [InlineData(5L, "XXX", "5")]
     public void P6_amounts_convert_from_minor_units_at_the_iso_exponent(long minorUnits, string code, string expected)
     {
@@ -468,6 +472,72 @@ public sealed class ProductionReadinessTests
         // Round() would have trusted the guessed two decimals it exists to refuse.
         Assert.False(unknown.IsKnown);
         Assert.Throws<UnknownCurrencyException>(() => new Money(1.005m, unknown).Round());
+    }
+
+    // ---- P8: withdrawn currencies are shipped for historical amounts --------------------------------
+
+    [Theory]
+    [InlineData("BGN", 2)]
+    [InlineData("HRK", 2)]
+    [InlineData("ANG", 2)]
+    [InlineData("ZWL", 2)]
+    [InlineData("SLL", 2)]
+    [InlineData("CUC", 2)]
+    [InlineData("VEF", 2)]
+    [InlineData("MRO", 2)]
+    [InlineData("STD", 2)]
+    [InlineData("BYR", 0)]
+    public void P8_a_withdrawn_currency_is_known_withdrawn_and_still_rounds(string code, byte digits)
+    {
+        // Ledgers are full of these. Unknown, they could not be rounded at all; known, a stored amount
+        // keeps working exactly as it did before ISO withdrew the currency.
+        Currency currency = Currency.FromCode(code);
+
+        Assert.True(currency.IsKnown);
+        Assert.True(currency.IsWithdrawn);
+        Assert.True(currency.Info.IsWithdrawn);
+        Assert.Equal(digits, currency.DecimalDigits);
+        Assert.Equal(new Money(1234m, currency), new Money(1234.004m, currency).Round());
+        Assert.True(Currency.TryFromKnownCode(code, out _));
+    }
+
+    [Fact]
+    public void P8_active_currencies_are_not_withdrawn()
+    {
+        Assert.False(Currency.EUR.IsWithdrawn);
+        Assert.False(Currency.DKK.Info.IsWithdrawn);
+        Assert.False(Currency.FromCode("QQQ").IsWithdrawn);
+        Assert.False(TestMoney.Fifths.IsWithdrawn);
+    }
+
+    [Fact]
+    public void P8_a_reused_numeric_code_resolves_to_the_active_currency()
+    {
+        // ISO gave ANG's number to its successor XCG. A numeric lookup must return the money in use today.
+        Assert.Equal(532, Currency.FromCode("ANG").NumericCode);
+        Assert.True(Currency.TryFromNumericCode(532, out Currency current));
+        Assert.Equal(Currency.XCG, current);
+
+        // A number nothing else uses still finds the withdrawn currency.
+        Assert.True(Currency.TryFromNumericCode(975, out Currency lev));
+        Assert.Equal(Currency.FromCode("BGN"), lev);
+    }
+
+    [Fact]
+    public void P8_a_withdrawn_currencys_member_is_obsolete_and_an_active_ones_is_not()
+    {
+        // New code naming Currency.BGN is warned; Currency.FromCode("BGN") reads stored data without one.
+        Assert.NotNull(typeof(Currency).GetProperty("BGN")!.GetCustomAttributes(typeof(ObsoleteAttribute), inherit: false).SingleOrDefault());
+        Assert.Empty(typeof(Currency).GetProperty("EUR")!.GetCustomAttributes(typeof(ObsoleteAttribute), inherit: false));
+    }
+
+    [Fact]
+    public void P8_filtering_known_currencies_on_withdrawal_leaves_the_money_in_circulation()
+    {
+        Currency[] active = [.. Currency.Known.ToArray().Where(static c => !c.IsWithdrawn)];
+
+        Assert.Contains(Currency.EUR, active);
+        Assert.DoesNotContain(Currency.FromCode("BGN"), active);
     }
 
     private static decimal Pow10(int exponent)

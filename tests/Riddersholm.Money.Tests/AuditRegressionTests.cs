@@ -71,7 +71,7 @@ public sealed class AuditRegressionTests
         _ = new Money(decimal.MaxValue, wei).IsCanonical;
         _ = new Money(decimal.MinValue, wei).IsCanonical;
         _ = new Money(decimal.MaxValue, Currency.DKK).IsCanonical;
-        _ = new Money(decimal.MaxValue, Currency.MRU).IsCanonical;
+        _ = new Money(decimal.MaxValue, TestMoney.Fifths).IsCanonical;
     }
 
     [Fact]
@@ -79,8 +79,8 @@ public sealed class AuditRegressionTests
     {
         Assert.True(new Money(100.00m, Currency.DKK).IsCanonical);
         Assert.False(new Money(100.005m, Currency.DKK).IsCanonical);
-        Assert.True(new Money(1.4m, Currency.MRU).IsCanonical);
-        Assert.False(new Money(1.37m, Currency.MRU).IsCanonical);
+        Assert.True(new Money(1.4m, TestMoney.Fifths).IsCanonical);
+        Assert.False(new Money(1.37m, TestMoney.Fifths).IsCanonical);
         Assert.True(new Money(1.23456789m, Currency.XXX).IsCanonical);
     }
 
@@ -233,7 +233,7 @@ public sealed class AuditRegressionTests
 
     [Theory]
     [InlineData(2, 100L)]   // the ordinary case
-    [InlineData(2, 5L)]     // MRU and MGA: a fifth of the major unit
+    [InlineData(2, 5L)]     // a fifth of the major unit, as MRU and MGA are physically divided
     [InlineData(2, 20L)]    // a twentieth is expressible in two places
     [InlineData(0, 1L)]     // JPY
     [InlineData(3, 1000L)]  // KWD

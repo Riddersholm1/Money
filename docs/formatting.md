@@ -53,8 +53,8 @@ new Money(100.5m, Currency.DKK).ToString("C", daDK);   // 100,50 kr.   ← Danis
 new Money(100.5m, Currency.DKK).ToString("C", enUS);   // kr100.50     ← CLDR narrow form
 ```
 
-Sixty-seven of the 166 currencies have no distinct symbol and use their code, which is the honest
-answer rather than an invented glyph.
+Sixty-seven of the 166 currencies in circulation have no distinct symbol and use their code, which is
+the honest answer rather than an invented glyph.
 
 ## Precision is never hidden
 
@@ -116,7 +116,7 @@ customised clone of `da-DK` change how the real `da-DK` formatted.)
 Money.Parse(value.ToString("R", CultureInfo.InvariantCulture), CultureInfo.InvariantCulture) == value
 ```
 
-This is property-tested across all 166 currencies. `G` and `I` also round-trip under the invariant
+This is property-tested across every shipped currency. `G` and `I` also round-trip under the invariant
 culture. `N` does not — it has no currency.
 
 **`C` is display-oriented, and only round-trips for a culture's own currency.** The asymmetry is

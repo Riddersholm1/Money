@@ -37,10 +37,10 @@ public readonly partial record struct Money
                 return Math.Round(Amount, places, MidpointRounding.ToZero) == Amount;
             }
 
-            // MRU and MGA divide by five, which no digit count expresses, so the increment has to be
-            // applied directly — and exactly. Multiplying in decimal is not enough: 3.9999999999999999999999999999
-            // times five needs a 30th digit, decimal rounds the product to a whole 20, and the amount
-            // would be reported as a whole number of khoums when it is not.
+            // A registered currency divided into fifths has an increment no digit count expresses, so
+            // it is applied directly — and exactly. Multiplying in decimal is not enough:
+            // 3.9999999999999999999999999999 times five needs a 30th digit, decimal rounds the product
+            // to a whole 20, and the amount would be reported as a whole number of fifths when it is not.
             return IsWholeMultiple(Amount, 1, units);
         }
     }
@@ -53,9 +53,9 @@ public readonly partial record struct Money
     /// <see cref="MidpointRounding.AwayFromZero"/>.
     /// </param>
     /// <remarks>
-    /// Rounds to the currency's <em>increment</em>, not merely to a digit count, so MRU and MGA snap to
-    /// multiples of <c>0.2</c> rather than <c>0.01</c>. Currencies with no minor unit are returned
-    /// unchanged.
+    /// Rounds to the currency's <em>increment</em>, not merely to a digit count, so a registered currency
+    /// divided into fifths snaps to multiples of <c>0.2</c> rather than <c>0.01</c>. Currencies with no
+    /// minor unit are returned unchanged.
     /// </remarks>
     /// <exception cref="UnknownCurrencyException">
     /// The currency is not recognised, so its precision is a guess. Rounding to a guessed precision
@@ -124,10 +124,10 @@ public readonly partial record struct Money
         decimal cashUnits = (decimal)Currency.CashRoundingStep * unitsPerMajor / CurrencyInfo.Pow10(Currency.CashDecimalDigits);
 
         // A cash increment below one minor unit — or not a whole number of them — would round to an
-        // amount the currency cannot express. MRU is the real case: it declares two cash decimals
-        // while its khoum is one *fifth* of an ouguiya, so the cash rule alone yields 0.01 MRU, which
-        // nobody can hold. Where the two rules disagree the currency's own increment wins, because a
-        // cash amount that is not a valid accounting amount is not payable either.
+        // amount the currency cannot express — a currency registered in fifths with two cash decimals
+        // would yield 0.01, which nobody can hold. Where the two rules disagree the currency's own
+        // increment wins, because a cash amount that is not a valid accounting amount is not payable
+        // either.
         if (cashUnits <= 1m || decimal.Truncate(cashUnits) != cashUnits)
         {
             return new Money(RoundToUnits(Amount, unitsPerMajor, mode), Currency);
@@ -167,7 +167,7 @@ public readonly partial record struct Money
             return Math.Round(amount, places, mode);
         }
 
-        // MRU and MGA: a fifth of the major unit.
+        // A divisor that is not a power of ten — a registered currency divided into fifths, say.
         return RoundToIncrement(amount, UInt128.One, (UInt128)unitsPerMajor, mode);
     }
 
@@ -206,7 +206,7 @@ public readonly partial record struct Money
     /// <c>Math.Round(amount * 5) / 5</c> — rounds twice: once when the product needs more digits than
     /// decimal carries, and only then by the requested mode. For an ordinary amount the first rounding
     /// never happens, but for one carrying 28 significant digits it does, and it can run the wrong way:
-    /// <c>Floor</c> of <c>3.9999999999999999999999999999 MRU</c> came back as <c>4.0</c>, above the
+    /// <c>Floor</c> of <c>3.9999999999999999999999999999</c> in fifths came back as <c>4.0</c>, above the
     /// input. It also overflowed outright for amounts near the top of decimal's range.
     /// </para>
     /// <para>

@@ -30,13 +30,30 @@ string[] deny = ["XAD"];
 // required: XXX backs Currency.None / default(Currency), and XTS exists for test doubles.
 string[] allow = ["XTS", "XXX"];
 
-// ISO records MinorUnit 2 for both, but the khoum and the iraimbilanja are one fifth of the major
-// unit, not one hundredth: valid MRU amounts step by 0.2. See docs/currency-data.md.
-Dictionary<string, int> minorUnitOverrides = new(StringComparer.Ordinal)
+// Withdrawn currencies shipped for the historical amounts still sitting in ledgers: everything ISO
+// withdrew from 2017 on, which covers the euro adoptions (HRK, BGN), the replacements (ANG, ZWL, CUC)
+// and the redenominations (MRO, STD, VEF, BYR, SLL). The mirror carries no minor unit for withdrawn
+// rows, so the digit counts here are ISO 4217 list three's. Once shipped they are retained like any
+// other currency, so this list only ever needs to grow if an older currency is wanted.
+Dictionary<string, byte> historic = new(StringComparer.Ordinal)
 {
-    ["MRU"] = 5,
-    ["MGA"] = 5
+    ["ANG"] = 2,
+    ["BGN"] = 2,
+    ["BYR"] = 0,
+    ["CUC"] = 2,
+    ["HRK"] = 2,
+    ["MRO"] = 2,
+    ["SLL"] = 2,
+    ["STD"] = 2,
+    ["VEF"] = 2,
+    ["ZWL"] = 2
 };
+
+// MRU and MGA are physically divided into fifths (the khoum, the iraimbilanja), but ISO 4217 records two
+// decimal places for both, and every bank, card scheme and ISO 20022 message counts them in hundredths.
+// They follow ISO like every other currency: a library that rounded a valid 1234.56 MGA from a bank to
+// 1234.6 would be changing money. The runtime still supports non-power-of-ten minor units for
+// currencies a consumer registers.
 
 JsonSerializerOptions options = new(JsonSerializerDefaults.Web)
 {
@@ -114,6 +131,40 @@ foreach (Dictionary<string, string> row in Csv.Parse(csv))
 
 List<CurrencyRecord> currencies = [];
 
+// Names, symbols and cash rounding come from CLDR whatever the currency's status.
+CurrencyRecord Build(string code, string numericCode, string isoName, byte digits, int minorUnitsPerMajor)
+{
+    JsonElement fraction = fractions.TryGetProperty(code, out JsonElement f) ? f : defaultFraction;
+    byte cashDigits = ReadByte(fraction, "_cashDigits", ReadByte(fraction, "_digits", defaultDigits));
+    byte cashStep = ReadByte(fraction, "_cashRounding", 0);
+
+    if (cashStep == 0)
+    {
+        cashStep = 1;
+    }
+
+    // Cash can be coarser than the currency's own unit but never finer: CLDR sometimes records more cash
+    // digits than ISO records accounting digits, and a cash amount the currency cannot express is not
+    // payable either. The minor unit is the floor.
+    if (minorUnitsPerMajor > 0)
+    {
+        (cashDigits, cashStep) = CoerceCashIncrement(digits, minorUnitsPerMajor, cashDigits, cashStep);
+    }
+
+    return new CurrencyRecord
+    {
+        Code = code,
+        NumericCode = short.Parse(numericCode, CultureInfo.InvariantCulture),
+        Name = ReadName(names, code) ?? Capitalise(isoName),
+        Symbol = ReadSymbol(names, code) ?? code,
+        DecimalDigits = digits,
+        MinorUnitsPerMajor = minorUnitsPerMajor,
+        // A currency with no minor unit cannot have cash precision finer than whole units either.
+        CashDecimalDigits = minorUnitsPerMajor == 0 ? (byte)0 : cashDigits,
+        CashRoundingStep = cashStep
+    };
+}
+
 foreach ((string code, Dictionary<string, string> row) in byCode)
 {
     bool isAllowListed = allow.Contains(code, StringComparer.Ordinal);
@@ -126,40 +177,10 @@ foreach ((string code, Dictionary<string, string> row) in byCode)
 
     byte digits = isAllowListed && !hasMinorUnit ? (byte)0 : isoDigits;
 
-    int minorUnitsPerMajor = isAllowListed && !hasMinorUnit
-        ? 0 // XTS/XXX have no minor unit at all; rounding to one is meaningless.
-        : minorUnitOverrides.TryGetValue(code, out int over) ? over : Pow10(digits);
+    // XTS/XXX have no minor unit at all; rounding to one is meaningless.
+    int minorUnitsPerMajor = isAllowListed && !hasMinorUnit ? 0 : Pow10(digits);
 
-    JsonElement fraction = fractions.TryGetProperty(code, out JsonElement f) ? f : defaultFraction;
-    byte cashDigits = ReadByte(fraction, "_cashDigits", ReadByte(fraction, "_digits", defaultDigits));
-    byte cashStep = ReadByte(fraction, "_cashRounding", 0);
-
-    if (cashStep == 0)
-    {
-        cashStep = 1;
-    }
-
-    // CLDR describes cash precision on the assumption that the minor unit is a power of ten, which is
-    // where the minorUnitOverrides above break the assumption. For MRU it yields a cash increment of
-    // 0.01 while the khoum is 0.2, so cash rounding would produce amounts nobody can hold. Cash can be
-    // coarser than the currency's own unit but never finer, so the minor unit is the floor.
-    if (minorUnitsPerMajor > 0)
-    {
-        (cashDigits, cashStep) = CoerceCashIncrement(digits, minorUnitsPerMajor, cashDigits, cashStep);
-    }
-
-    currencies.Add(new CurrencyRecord
-    {
-        Code = code,
-        NumericCode = short.Parse(row["NumericCode"], CultureInfo.InvariantCulture),
-        Name = ReadName(names, code) ?? Capitalise(row["Currency"]),
-        Symbol = ReadSymbol(names, code) ?? code,
-        DecimalDigits = digits,
-        MinorUnitsPerMajor = minorUnitsPerMajor,
-        // A currency with no minor unit cannot have cash precision finer than whole units either.
-        CashDecimalDigits = minorUnitsPerMajor == 0 ? (byte)0 : cashDigits,
-        CashRoundingStep = cashStep
-    });
+    currencies.Add(Build(code, row["NumericCode"], row["Currency"], digits, minorUnitsPerMajor));
 }
 
 // A currency that has been shipped is never dropped. Deleting Currency.BGN when Bulgaria adopted the
@@ -179,6 +200,30 @@ foreach (CurrencyRecord shipped in previous?.Currencies ?? [])
         : FindWithdrawal(shipped.Code, withdrawals, activeCodesByEntity, active);
 
     currencies.Add(shipped with { Withdrawn = withdrawn, ReplacedBy = replacedBy });
+}
+
+// Seed the historic currencies that have not shipped yet. Ones already in the file were kept above,
+// with their recorded metadata, and one that ISO has reinstated is simply active again.
+foreach ((string code, byte digits) in historic)
+{
+    if (currencies.Any(c => string.Equals(c.Code, code, StringComparison.Ordinal)))
+    {
+        continue;
+    }
+
+    if (!withdrawals.TryGetValue(code, out List<Dictionary<string, string>>? rows))
+    {
+        throw new InvalidOperationException($"'{code}' is listed as historic, but the ISO register has no withdrawn currency with that code.");
+    }
+
+    (string withdrawn, string? replacedBy) = FindWithdrawal(code, withdrawals, activeCodesByEntity, active);
+    Dictionary<string, string> row = rows.FirstOrDefault(r => string.Equals(r["WithdrawalDate"], withdrawn, StringComparison.Ordinal)) ?? rows[^1];
+
+    currencies.Add(Build(code, row["NumericCode"], row["Currency"], digits, Pow10(digits)) with
+    {
+        Withdrawn = withdrawn,
+        ReplacedBy = replacedBy
+    });
 }
 
 currencies.Sort(static (a, b) => string.CompareOrdinal(a.Code, b.Code));
@@ -214,7 +259,7 @@ CurrencyDataFile file = new()
         CldrFractions = CldrFractionsUrl,
         CldrNames = CldrNamesUrl,
         RetrievedUtc = DateOnly.FromDateTime(DateTime.UtcNow),
-        Filter = "Active ISO 4217 codes with a numeric minor unit (excludes metals, bond units, SDR and other funds), minus XAD (unit of account), plus XTS and XXX. Currencies withdrawn after they shipped are kept and marked withdrawn."
+        Filter = "Active ISO 4217 codes with a numeric minor unit (excludes metals, bond units, SDR and other funds), minus XAD (unit of account), plus XTS and XXX, plus currencies withdrawn since 2017, which are marked withdrawn. A currency is never removed once shipped."
     },
     Currencies = currencies
 };
@@ -289,7 +334,8 @@ static List<string> Describe(IReadOnlyList<CurrencyRecord> before, List<Currency
     {
         if (!old.Remove(current.Code, out CurrencyRecord? was))
         {
-            changes.Add($"+ {current.Code} added: {current.Name}, numeric {current.NumericCode}, {current.DecimalDigits} decimal digits");
+            changes.Add($"+ {current.Code} added: {current.Name}, numeric {current.NumericCode}, {current.DecimalDigits} decimal digits"
+                      + (current.Withdrawn is null ? string.Empty : $", withdrawn {current.Withdrawn} (historical; marked [Obsolete])"));
             continue;
         }
 
@@ -451,7 +497,7 @@ static void Validate(List<CurrencyRecord> currencies)
 
         if (c.MinorUnitsPerMajor is not 0)
         {
-            // The check that would have caught the MRU cash increment before it was ever written.
+            // Cash finer than the minor unit is unpayable; this is the check that caught it once, for MRU.
             decimal cashUnits = (decimal)c.CashRoundingStep * c.MinorUnitsPerMajor / Pow10Decimal(c.CashDecimalDigits);
 
             if (cashUnits < 1m || decimal.Truncate(cashUnits) != cashUnits)

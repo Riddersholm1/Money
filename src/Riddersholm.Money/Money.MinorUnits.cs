@@ -1,4 +1,4 @@
-namespace Riddersholm.Money;
+﻿namespace Riddersholm.Money;
 
 /// <content>
 /// Conversion to and from a whole number of minor units — the integer form in which payment processors,
@@ -11,10 +11,9 @@ namespace Riddersholm.Money;
 /// so it is what these methods mean too.
 /// </para>
 /// <para>
-/// <b>MRU and MGA are the two currencies where that differs from <see cref="Currency.MinorUnit"/>.</b>
-/// Their physical subdivision — the khoum, the iraimbilanja — is a fifth of the major unit, but ISO, and
-/// so every payment system, still counts them in hundredths. <c>1.20 MRU</c> is therefore <c>120</c>
-/// here, not <c>6</c>. Sending a processor the count of khoums would move a twentieth of the money.
+/// For every ISO currency that is also <see cref="Currency.MinorUnit"/>. A currency registered with a
+/// divisor that is not a power of ten — fifths, say — still converts at its digit count, because that
+/// is the only scale an external system can agree on: <c>1.20</c> is <c>120</c>, not <c>6</c>.
 /// </para>
 /// </remarks>
 public readonly partial record struct Money
@@ -23,7 +22,6 @@ public readonly partial record struct Money
     /// <param name="minorUnits">The amount in minor units, for example <c>1050</c> for 10.50 DKK.</param>
     /// <param name="currency">The currency, whose <see cref="Currency.DecimalDigits"/> sets the scale.</param>
     /// <returns>The exact amount, carrying the currency's own number of decimal places.</returns>
-    /// <remarks>See the type-level remarks for MRU and MGA, which count hundredths here.</remarks>
     /// <example>
     /// <code>
     /// Money.FromMinorUnits(1050, Currency.DKK);   // 10.50 DKK
@@ -50,7 +48,7 @@ public readonly partial record struct Money
     /// <remarks>
     /// Never rounds. An amount with more decimal places than the currency has — <c>10.505 DKK</c> — is
     /// refused rather than quietly cut to <c>1050</c>; call <see cref="Round(System.MidpointRounding)"/> first, so
-    /// that the rounding is a decision rather than an accident. See the type-level remarks for MRU and MGA.
+    /// that the rounding is a decision rather than an accident.
     /// </remarks>
     /// <exception cref="UnknownCurrencyException">The currency is not recognised, so its exponent is unknown.</exception>
     /// <exception cref="InvalidOperationException">The amount has more decimal places than the currency.</exception>

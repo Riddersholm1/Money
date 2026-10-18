@@ -125,7 +125,7 @@ public sealed class CurrencyGeneratorOutputTests
     [Fact]
     public void An_explicit_minor_unit_overrides_the_power_of_ten()
     {
-        // MRU and MGA divide by five despite recording two decimal digits.
+        // A currency divided into fifths, as MRU and MGA physically are, records two decimal digits.
         string source = GeneratorHarness.Run("""
             { "currencies": [ { "code": "MRU", "numericCode": 929, "name": "Ouguiya", "symbol": "M", "decimalDigits": 2, "minorUnitsPerMajor": 5 } ] }
             """, emitCore: true).Source("Currency.Generated.g.cs")!;

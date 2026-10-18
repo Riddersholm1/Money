@@ -12,13 +12,14 @@ namespace Riddersholm.Money.Tests;
 /// Three of the serious defects found in review shared one shape: a guarantee written in a doc comment
 /// and never asserted anywhere. Reading more carefully does not close that gap; executing the
 /// guarantees does. Each test here takes a property the documentation states unconditionally and runs
-/// it over the full cross product of the 166 generated currencies and a set of awkward amounts.
+/// it over the full cross product of every generated currency and a set of awkward amounts.
 /// </para>
 /// <para>
 /// The cash-rounding test is why this file exists. Cash precision is documented as being coarser than
-/// accounting precision, never finer, and for MRU it was finer — so
+/// accounting precision, never finer, and for MRU — then modelled in fifths — it was finer, so
 /// <c>new Money(1.37m, Currency.MRU).RoundToCash()</c> returned an amount nobody can pay. Four
-/// hand-picked currencies were tested; the one that mattered was not among them.
+/// hand-picked currencies were tested; the one that mattered was not among them. MRU now follows ISO's
+/// hundredths, and the invariants hold for every currency regardless.
 /// </para>
 /// </remarks>
 public sealed class BankingInvariantTests
@@ -66,10 +67,10 @@ public sealed class BankingInvariantTests
     /// Every currency's declared cash increment must be a whole number of its minor units.
     /// </summary>
     /// <remarks>
-    /// This is the invariant that failed. MRU declares two cash decimals — an increment of 0.01 — while
-    /// its khoum is one <em>fifth</em> of an ouguiya, so 0.01 MRU is not an amount that exists. The
-    /// check is on the data rather than on behaviour, so a bad currency refresh fails here with a clear
-    /// message instead of silently producing unpayable amounts later.
+    /// This is the invariant that failed, when MRU was modelled in fifths: it declared two cash decimals —
+    /// an increment of 0.01 — against a minor unit of 0.2, so 0.01 MRU was not an amount that existed.
+    /// The check is on the data rather than on behaviour, so a bad currency refresh fails here with a
+    /// clear message instead of silently producing unpayable amounts later.
     /// </remarks>
     [Fact]
     public void The_cash_increment_is_a_whole_number_of_minor_units()
@@ -147,7 +148,7 @@ public sealed class BankingInvariantTests
     /// <remarks>
     /// Stated as: a cash-rounded amount is unchanged by a subsequent accounting round. If cash were the
     /// finer of the two, accounting rounding would have something left to remove — which is exactly
-    /// what MRU did.
+    /// what MRU, modelled in fifths, once did.
     /// </remarks>
     [Fact]
     public void Cash_rounding_is_never_finer_than_accounting_rounding()
@@ -384,19 +385,21 @@ public sealed class BankingInvariantTests
     }
 
     /// <summary>
-    /// The fifth-unit currencies, called out by name because they are the ones every implementation
-    /// gets wrong and the ones the hand-written tests missed.
+    /// Fifth-unit cash rounding, called out by name because it is what every implementation gets wrong
+    /// and what the hand-written tests missed. QFI is divided into fifths with a 0.20 cash step, the
+    /// shape MRU had before the table moved to ISO's hundredths; MGA's cash is whole ariary.
     /// </summary>
     [Theory]
-    [InlineData("MRU", 1.37, 1.4)]   // 1.37 is not a whole khoum; the payable amount is 1.4
-    [InlineData("MRU", 1.30, 1.2)]   // 6.5 khoums, exactly between — banker's rounding takes the even 6
-    [InlineData("MRU", 1.50, 1.6)]   // 7.5 khoums — ToEven takes 8, so the tie breaks the other way
-    [InlineData("MRU", 0.05, 0.0)]
-    [InlineData("MRU", 2.00, 2.0)]
+    [InlineData("QFI", 1.37, 1.4)]   // 1.37 is not a whole fifth; the payable amount is 1.4
+    [InlineData("QFI", 1.30, 1.2)]   // 6.5 fifths, exactly between — banker's rounding takes the even 6
+    [InlineData("QFI", 1.50, 1.6)]   // 7.5 fifths — ToEven takes 8, so the tie breaks the other way
+    [InlineData("QFI", 0.05, 0.0)]
+    [InlineData("QFI", 2.00, 2.0)]
     [InlineData("MGA", 1.37, 1.0)]   // MGA cash is whole ariary
     [InlineData("MGA", 1.60, 2.0)]
     public void Fifth_unit_currencies_round_cash_to_a_payable_amount(string code, double raw, double expected)
     {
+        _ = TestMoney.Fifths;
         var currency = Currency.FromCode(code);
         Money rounded = new Money((decimal)raw, currency).RoundToCash();
 
@@ -410,13 +413,12 @@ public sealed class BankingInvariantTests
     /// </summary>
     /// <remarks>
     /// <para>
-    /// This is the case the shipped data no longer contains and therefore no longer exercises. MRU used
-    /// to declare two cash decimals — an increment of 0.01 — against a khoum of 0.2, and
-    /// <c>RoundToCash</c> took it literally. Both halves were fixed: the sync tool now raises the
-    /// recorded increment to 0.20, and <c>RoundToCash</c> floors it at the currency's own unit at
-    /// runtime. Because the data is correct, the two branches now agree for all 166 currencies — so
-    /// deleting the runtime floor breaks no other test in this suite, which is precisely why this one
-    /// exists.
+    /// This is the case the shipped data does not contain and therefore does not exercise. MRU, when it
+    /// was modelled in fifths, declared two cash decimals — an increment of 0.01 — against a minor unit of
+    /// 0.2, and <c>RoundToCash</c> took it literally. Both halves were fixed: the sync tool raises such an
+    /// increment to the minor unit, and <c>RoundToCash</c> floors it at runtime. Because the data is
+    /// correct, the two branches agree for every shipped currency — so deleting the runtime floor breaks
+    /// no other test in this suite, which is precisely why this one exists.
     /// </para>
     /// <para>
     /// <c>CurrencyRegistry</c> accepts the bad shape, as it must: it validates the minor unit against
@@ -474,7 +476,7 @@ public sealed class BankingInvariantTests
     [Fact]
     public void Rounding_at_the_top_of_the_range_is_exact_rather_than_overflowing()
     {
-        Money enormous = new(decimal.MaxValue, Currency.MRU);
+        Money enormous = new(decimal.MaxValue, TestMoney.Fifths);
 
         Assert.True(enormous.IsCanonical);
         Assert.Equal(enormous, enormous.Round());

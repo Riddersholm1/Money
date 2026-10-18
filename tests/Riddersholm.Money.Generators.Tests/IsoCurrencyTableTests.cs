@@ -1,4 +1,4 @@
-using System.Text.RegularExpressions;
+﻿using System.Text.RegularExpressions;
 using Xunit;
 
 namespace Riddersholm.Money.Generators.Tests;
@@ -26,11 +26,20 @@ public sealed partial class IsoCurrencyTableTests
 
     [Fact]
     public void The_table_holds_exactly_the_expected_number_of_currencies() =>
-        Assert.Contains("public const int Count = 166;", Generated, StringComparison.Ordinal);
+        Assert.Contains("public const int Count = 176;", Generated, StringComparison.Ordinal);
 
     [Fact]
     public void One_constant_is_emitted_per_currency() =>
-        Assert.Equal(166, CurrencyConstant().Count(Generated));
+        Assert.Equal(176, CurrencyConstant().Count(Generated));
+
+    [Theory]
+    [InlineData("BGN")]
+    [InlineData("HRK")]
+    [InlineData("ANG")]
+    [InlineData("ZWL")]
+    [InlineData("BYR")]
+    public void Withdrawn_currencies_are_present_and_obsolete(string code) =>
+        Assert.Matches($@"\[global::System\.Obsolete\(""{code} was withdrawn[^\n]*\)\]\s*\r?\n\s*public static Currency {code} =>", Generated);
 
     [Theory]
     [InlineData("DKK")]
@@ -62,10 +71,11 @@ public sealed partial class IsoCurrencyTableTests
         Assert.Contains("public static Currency XXX => new(0u);", Generated, StringComparison.Ordinal);
 
     [Fact]
-    public void The_fifth_minor_unit_currencies_keep_their_divisor()
+    public void Every_shipped_minor_unit_is_iso_s_power_of_ten()
     {
-        // Regenerating from ISO alone would quietly reset these to 100 and make 1.37 MRU look payable.
-        Assert.Contains("5L,", Generated, StringComparison.Ordinal);
+        // MRU and MGA are physically divided into fifths but follow ISO's two decimals, so no shipped
+        // currency has a divisor other than 10^digits — or none at all, for XXX and XTS.
+        Assert.DoesNotContain("=> 5L,", Generated, StringComparison.Ordinal);
         Assert.Contains("public static Currency MRU =>", Generated, StringComparison.Ordinal);
         Assert.Contains("public static Currency MGA =>", Generated, StringComparison.Ordinal);
     }
@@ -90,6 +100,6 @@ public sealed partial class IsoCurrencyTableTests
     [GeneratedRegex(@"public static Currency [A-Z]{3} => new\(\d+u\);")]
     private static partial Regex CurrencyConstant();
 
-    [GeneratedRegex(@"/// <summary>[^<]*\([A-Z]{3}, ISO \d+\)\.</summary>\s*\r?\n\s*public static Currency")]
+    [GeneratedRegex(@"/// <summary>[^<]*\([A-Z]{3}, ISO \d+\)\.( Withdrawn from ISO 4217 in [0-9-]+(; replaced by [A-Z]{3})?\.)?</summary>\s*\r?\n(\s*\[global::System\.Obsolete\([^\n]*\)\]\s*\r?\n)?\s*public static Currency")]
     private static partial Regex DocumentedConstant();
 }

@@ -177,5 +177,5 @@ For any `Money`, in any currency:
 Money.Parse(value.ToString("R", inv), inv) == value
 ```
 
-Property-tested across all 166 currencies. See [formatting.md](formatting.md) for which other formats
+Property-tested across every shipped currency. See [formatting.md](formatting.md) for which other formats
 round-trip.

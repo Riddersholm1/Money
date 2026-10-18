@@ -71,11 +71,17 @@ Most libraries assume every currency has 100 minor units. ISO 4217 disagrees:
 ```csharp
 Currency.JPY.DecimalDigits;         // 0
 Currency.KWD.DecimalDigits;         // 3
-Currency.MRU.MinorUnitsPerMajor;    // 5 — the khoum is a *fifth* of an ouguiya
+Currency.CLF.DecimalDigits;         // 4
 Currency.XXX.HasMinorUnit;          // false
 
-new Money(1.37m, Currency.MRU).Round();  // 1.4 MRU, not 1.37
+new Money(1.2345m, Currency.KWD).Round();  // 1.234 KWD, not 1.23
 ```
+
+Precision follows ISO 4217 exactly, so amounts agree with every bank, card scheme and ISO 20022 message.
+
+Withdrawn currencies stay usable, because ledgers are full of them. `Currency.FromCode("BGN")` still
+rounds and formats lev amounts after Bulgaria's move to the euro; `IsWithdrawn` tells you not to
+accept it for new money, and naming `Currency.BGN` in new code produces an `[Obsolete]` warning.
 
 Cash precision is tracked separately from accounting precision, because small coins get withdrawn:
 

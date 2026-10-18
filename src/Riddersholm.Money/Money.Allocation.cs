@@ -389,7 +389,7 @@ public readonly partial record struct Money
     /// <remarks>
     /// Benchmarks drove this: dividing each share by the minor-unit divisor cost roughly 30ns per
     /// recipient and made a 64-way split slower than it needed to be. The integer path applies
-    /// whenever the divisor is a power of ten — every currency except MRU and MGA — and whenever the
+    /// whenever the divisor is a power of ten — every ISO currency, and most registered ones — and whenever the
     /// amount fits in a <see cref="long"/> of minor units, which for DKK means anything below about
     /// 9×10¹⁶. The decimal path remains for the cases it does not cover, so behaviour is unchanged.
     /// </remarks>
@@ -414,7 +414,7 @@ public readonly partial record struct Money
 
         if (power != unitsPerMajor)
         {
-            // MRU and MGA divide by five, which is not a scale a decimal can carry directly.
+            // A divisor such as five is not a scale a decimal can carry directly.
             return false;
         }
 
@@ -454,8 +454,8 @@ public readonly partial record struct Money
 
         // Checked exactly before multiplying, not by inspecting the product. For a fifth-unit currency
         // the product of a 28-digit amount needs a digit decimal does not have, so it can round to a
-        // whole number: 3.9999999999999999999999999999 MRU times five came back as exactly 20 khoums,
-        // passed the check, and was allocated as 4.0 MRU — parts that no longer summed to the amount.
+        // whole number: 3.9999999999999999999999999999 in fifths, times five, came back as exactly 20,
+        // passed the check, and was allocated as 4.0 — parts that no longer summed to the amount.
         if (!IsCanonical)
         {
             throw new InvalidOperationException(

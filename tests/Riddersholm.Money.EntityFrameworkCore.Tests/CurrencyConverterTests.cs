@@ -37,8 +37,27 @@ public sealed class CurrencyConverterTests
 
         foreach (Currency currency in Currency.Known)
         {
-            Assert.Equal(currency, read(write(currency)));
+            // A withdrawn currency whose number ISO reused is refused instead; see the next test.
+            if (Currency.TryFromNumericCode(currency.NumericCode, out Currency owner) && owner == currency)
+            {
+                Assert.Equal(currency, read(write(currency)));
+            }
         }
+    }
+
+    [Fact]
+    public void The_numeric_converter_refuses_a_currency_whose_number_now_belongs_to_another()
+    {
+        // ISO gave ANG's 532 to XCG. Stored as 532, ANG would come back as XCG — a different currency
+        // on the next read, with nothing to say it happened.
+        Func<Currency, short> write = new CurrencyNumericValueConverter().ConvertToProviderExpression.Compile();
+
+        InvalidOperationException error = Assert.Throws<InvalidOperationException>(() => write(Currency.FromCode("ANG")));
+
+        Assert.Contains("XCG", error.Message, StringComparison.Ordinal);
+
+        // A withdrawn currency whose number nobody reused still stores fine.
+        Assert.Equal((short)975, write(Currency.FromCode("BGN")));
     }
 
     [Fact]

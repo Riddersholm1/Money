@@ -92,7 +92,7 @@ detail.
 
 ## What the source generator is actually for
 
-Generating 166 ISO currencies barely justifies a Roslyn component. The list changes about once a year;
+Generating the ISO currency table barely justifies a Roslyn component. The list changes about once a year;
 a checked-in `.g.cs` would serve, and would be easier to debug.
 
 The generator earns its place by giving a *consumer's* currencies the same treatment. C# 14 static

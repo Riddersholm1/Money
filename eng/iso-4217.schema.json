@@ -49,7 +49,7 @@
           "maximum": 28
         },
         "minorUnitsPerMajor": {
-          "description": "Minor units per major unit. Defaults to 10^decimalDigits, and must be given explicitly above 18 digits. 5 for MRU and MGA, 0 for currencies with no minor unit (XXX, XTS). When non-zero it must divide 10^decimalDigits.",
+          "description": "Minor units per major unit. Defaults to 10^decimalDigits, and must be given explicitly above 18 digits. 0 for currencies with no minor unit (XXX, XTS); a registered currency divided into fifths uses 5. When non-zero it must divide 10^decimalDigits.",
           "type": "integer",
           "minimum": 0,
           "maximum": 1000000000000000000

@@ -15,4 +15,14 @@ public sealed class OutsideTheRootNamespaceTests
         Assert.Equal(8, Riddersholm.Money.Currency.XBT.DecimalDigits);
         Assert.True(Riddersholm.Money.Currency.ETH.IsKnown);
     }
+
+    [Fact]
+    public void A_withdrawn_custom_currency_is_registered_as_withdrawn()
+    {
+        Riddersholm.Money.Currency legacy = Riddersholm.Money.Currency.FromCode("QLG");
+
+        Assert.True(legacy.IsKnown);
+        Assert.True(legacy.IsWithdrawn);
+        Assert.False(Riddersholm.Money.Currency.XBT.IsWithdrawn);
+    }
 }

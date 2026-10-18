@@ -40,11 +40,11 @@ Every item below returned a plausible, wrong answer before its fix, and each has
   formatted first won: after any code formatted with the clone, every caller of the real culture got
   its separators (`1_234#50 kr.`). The cache is now keyed by the read-only `NumberFormatInfo` instance;
   a writable one is derived per call.
-- **Fifth-unit and cash rounding could round the wrong way.** MRU/MGA rounding and cash rounding scaled
-  the amount in `decimal` and then rounded, but the scaling itself rounds when an amount carries 28
-  significant digits: `Floor()` of `3.9999999999999999999999999999 MRU` returned `4.0`, above its
-  input, and CHF cash rounding did the same. `Allocate` passed its whole-units check on that rounded
-  product and allocated `4.0 MRU` from an amount that was not 4. Both paths now use exact 128-bit
+- **Fifth-unit and cash rounding could round the wrong way.** Fifth-unit rounding (MRU at the time)
+  and cash rounding scaled the amount in `decimal` and then rounded, but the scaling itself rounds when
+  an amount carries 28 significant digits: `Floor()` of `3.9999999999999999999999999999 MRU` returned
+  `4.0`, above its input, and CHF cash rounding did the same. `Allocate` passed its whole-units check on
+  that rounded product and allocated `4.0` from an amount that was not 4. Both paths now use exact 128-bit
   integer arithmetic (with a `BigInteger` fallback), which also removes the overflow they had near
   `decimal`'s limits.
 - **A registered currency finer than 18 places overflowed when rounding** any amount above about
@@ -66,8 +66,24 @@ Every item below returned a plausible, wrong answer before its fix, and each has
   the first place a consumer of the NuGet package tries it. The generated file now carries a
   `global using static` for that one class. Found by installing the packed packages into a new app.
 
+**Changed**
+
+- **MRU and MGA follow ISO 4217's two decimal places.** They had been modelled in fifths — the khoum
+  and the iraimbilanja — so valid amounts stepped by `0.2`, and `Round()` turned a valid `1234.56 MGA`
+  from a bank into `1234.6`. ISO, and every bank, card scheme and ISO 20022 message, counts both in
+  hundredths, so this library now does too. Non-power-of-ten minor units remain supported, exactly,
+  for registered currencies.
+- **Ten withdrawn currencies now ship** — `ANG` `BGN` `BYR` `CUC` `HRK` `MRO` `SLL` `STD` `VEF` `ZWL`,
+  everything ISO withdrew from 2017 on — so ledgers holding historical amounts in them keep their
+  precision. Their members are `[Obsolete]`, and the table holds 176 currencies, 166 of them in
+  circulation.
+
 **Added**
 
+- `Currency.IsWithdrawn` and `CurrencyInfo.IsWithdrawn`, so new money can be kept out of withdrawn
+  currencies. A numeric code ISO has reused resolves to the active currency (`532` is `XCG`, not `ANG`),
+  and `CurrencyNumericValueConverter` refuses to store a currency whose number now identifies another,
+  which would otherwise read back as a different currency.
 - `Money.FromMinorUnits`, `Money.ToMinorUnits` and `Money.TryToMinorUnits` — integer minor units at the
   ISO 4217 exponent, the form payment processors and ISO 8583 exchange (`1050` for `10.50 DKK`). They
   never round; an amount finer than the currency is refused.
@@ -156,12 +172,11 @@ Every item below returned a plausible, wrong answer before its fix, and each has
 
 ### Fixed
 
-- **`RoundToCash()` returned an amount that could not be paid, for MRU.** Cash rounding used the
+- **`RoundToCash()` could return an amount that could not be paid.** Cash rounding used the
   currency's cash *digit count*, which only equals its increment when the minor unit is a power of ten.
-  The Mauritanian khoum is one fifth of an ouguiya, so `1.37 MRU` rounded to cash came back as
-  `1.37 MRU` — not a whole number of khoums. Cash rounding now snaps to the coarser of the cash
-  increment and the currency's own unit, the ISO data records MRU's real cash increment of `0.20`, and
-  the sync tool refuses to emit a file where the two disagree.
+  For a currency divided into fifths (MRU, as it was then modelled), `1.37` rounded to cash came back as
+  `1.37` — not a whole number of fifths. Cash rounding now snaps to the coarser of the cash increment and
+  the currency's own unit, and the sync tool refuses to emit a file where the two disagree.
 - **Ratio allocation broke ties in the wrong direction.** The largest-remainder method promises that
   equal shortfalls go to the earlier position, but the shortfalls were compared as `decimal`s computed
   through a division that rounds to 28 significant digits, so a genuine tie could be ordered
@@ -198,15 +213,13 @@ Every item below returned a plausible, wrong answer before its fix, and each has
 - Vulnerability-audit findings (`NU1900`-`NU1904`) now warn locally and fail in a dedicated CI job,
   rather than breaking every developer's build the day an advisory is published against a transitive
   dependency.
-- `BankingInvariantTests`, asserting across all 166 currencies that rounding, cash rounding and
-  allocation always produce payable amounts — the suite that caught the MRU defect.
+- `BankingInvariantTests`, asserting across every shipped currency that rounding, cash rounding and
+  allocation always produce payable amounts — the suite that caught the cash-rounding defect.
 - `AllocationOracleTests`, checking allocation and rounding against an independent implementation
   written in exact `BigInteger` arithmetic — the test that caught the tie-breaking defect.
 - A test pinning that `RoundToCash` floors a hand-registered currency's cash increment at that
-  currency's own minor unit. Both halves of the MRU fix — correcting the shipped data and flooring at
-  runtime — now agree for all 166 currencies, which meant the runtime half could be deleted without
-  breaking a single test. `docs/currency-data.md` promises it protects a currency registered by hand,
-  and nothing asserted it; a currency shaped like MRU before the fix does now.
+  currency's own minor unit. With the shipped data correct, nothing else exercises that floor, so a
+  registered fifth-unit currency with a too-fine cash step does.
 
 ### Riddersholm.Money — what the package contains
 
@@ -222,13 +235,14 @@ Every item below returned a plausible, wrong answer before its fix, and each has
   `List.Sort` calls and a comparer that throws corrupts the sort rather than merely failing.
 - **Sum-preserving allocation.** `Allocate` splits an amount so the parts always add back to exactly
   the whole, by count or by weight, with span overloads that allocate nothing.
-- Rounding to the currency's *increment* rather than a digit count, so MRU and MGA snap to multiples of
-  0.2. Separate cash rounding for currencies whose small coins were withdrawn — CHF to 0.05, DKK to
+- Rounding to the currency's *increment* rather than a digit count, so a registered currency divided
+  into fifths snaps to multiples of 0.2. Separate cash rounding for currencies whose small coins were withdrawn — CHF to 0.05, DKK to
   0.50, HUF to 5.
 - `Currency`, a four-byte identity packing the ISO code itself, so any well-formed currency round-trips
   exactly — including codes this build has never heard of.
-- 166 ISO 4217 currencies, generated at compile time from reviewable data. Metals, fund codes and
-  units of account are deliberately excluded; `XXX` and `XTS` are deliberately included.
+- 166 ISO 4217 currencies in circulation plus 10 recently withdrawn ones, generated at compile time
+  from reviewable data. Metals, fund codes and units of account are deliberately excluded; `XXX` and
+  `XTS` are deliberately included.
 - Formatting through `ISpanFormattable` and `IUtf8SpanFormattable`, using the *currency's* precision
   rather than the culture's — the BCL renders 1234 yen as `¥1,234.00`, which is two decimal places yen
   does not have.
