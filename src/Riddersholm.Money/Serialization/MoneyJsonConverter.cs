@@ -30,6 +30,17 @@ public sealed class MoneyJsonConverter : JsonConverter<Money>
     private static readonly JsonEncodedText AmountName = JsonEncodedText.Encode("amount");
     private static readonly JsonEncodedText CurrencyName = JsonEncodedText.Encode("currency");
 
+    /// <summary>
+    /// The number forms a quoted amount may take: an optional leading minus and a decimal point —
+    /// exactly what <see cref="decimal.ToString(IFormatProvider)"/> writes under the invariant culture.
+    /// </summary>
+    /// <remarks>
+    /// Narrower than <see cref="NumberStyles.Number"/> on purpose. That style allows group separators,
+    /// and under the invariant culture it reads <c>"1,5"</c> as fifteen. No exponent either: decimal
+    /// parsing turns <c>"1e-30"</c> into zero without complaint.
+    /// </remarks>
+    private const NumberStyles QuotedAmountStyles = NumberStyles.AllowLeadingSign | NumberStyles.AllowDecimalPoint;
+
     /// <summary>Creates a converter that writes the default object form.</summary>
     public MoneyJsonConverter()
         : this(MoneyJsonFormat.NumericAmount)
@@ -117,9 +128,12 @@ public sealed class MoneyJsonConverter : JsonConverter<Money>
     {
         string? text = reader.GetString();
 
-        return Money.TryParse(text, CultureInfo.InvariantCulture, out Money value)
+        // Only the exact shape the 'R' format writes. The general parser accepts group separators, and
+        // under the invariant culture that reads "1,5 DKK" — a European writing one and a half — as
+        // fifteen kroner. A document is not a place to guess what someone meant.
+        return Money.TryParse(text, Money.RoundTripStyles, CultureInfo.InvariantCulture, out Money value)
             ? value
-            : throw new JsonException($"'{text}' is not a recognisable amount of money.");
+            : throw new JsonException($"'{text}' is not a Money in the round-trip form, such as '100.50 DKK'.");
     }
 
     private static Money ReadObject(ref Utf8JsonReader reader)
@@ -146,13 +160,27 @@ public sealed class MoneyJsonConverter : JsonConverter<Money>
 
             // Property names are matched case-insensitively so that documents from camelCase and
             // PascalCase producers both read, whatever the options say.
-            if (reader.ValueTextEquals(AmountName.EncodedUtf8Bytes) || reader.ValueTextEquals("Amount"u8))
+            //
+            // A repeated name is refused rather than resolved. Parsers disagree about which duplicate
+            // wins — this one used to take the last — so {"amount":1,"amount":1000000} means different
+            // amounts to different systems, which is exactly the ambiguity a forged payment relies on.
+            if (NameEquals(ref reader, AmountName.EncodedUtf8Bytes))
             {
+                if (amount is not null)
+                {
+                    throw new JsonException("Money has more than one 'amount' property.");
+                }
+
                 reader.Read();
                 amount = ReadAmount(ref reader);
             }
-            else if (reader.ValueTextEquals(CurrencyName.EncodedUtf8Bytes) || reader.ValueTextEquals("Currency"u8))
+            else if (NameEquals(ref reader, CurrencyName.EncodedUtf8Bytes))
             {
+                if (currencySeen)
+                {
+                    throw new JsonException("Money has more than one 'currency' property.");
+                }
+
                 reader.Read();
                 currency = ReadCurrency(ref reader);
                 currencySeen = true;
@@ -167,14 +195,37 @@ public sealed class MoneyJsonConverter : JsonConverter<Money>
         throw new JsonException("Unexpected end of JSON while reading Money.");
     }
 
+    /// <summary>Compares the current property name to a lower-case ASCII name, ignoring case.</summary>
+    private static bool NameEquals(ref Utf8JsonReader reader, ReadOnlySpan<byte> lowerCaseName)
+    {
+        if (!reader.HasValueSequence && !reader.ValueIsEscaped)
+        {
+            return System.Text.Ascii.EqualsIgnoreCase(reader.ValueSpan, lowerCaseName);
+        }
+
+        // An escaped name is at most six bytes per character, so anything longer cannot be a match and
+        // the stack buffer below always suffices for one that might be.
+        long length = reader.HasValueSequence ? reader.ValueSequence.Length : reader.ValueSpan.Length;
+
+        if (length > lowerCaseName.Length * 6)
+        {
+            return false;
+        }
+
+        Span<byte> unescaped = stackalloc byte[64];
+        int written = reader.CopyString(unescaped);
+
+        return System.Text.Ascii.EqualsIgnoreCase(unescaped[..written], lowerCaseName);
+    }
+
     private static decimal ReadAmount(ref Utf8JsonReader reader) =>
         reader.TokenType switch
         {
             JsonTokenType.Number => reader.GetDecimal(),
             // Accepted whichever format was configured, so a quoted amount never fails to load.
-            JsonTokenType.String => decimal.TryParse(reader.GetString(), NumberStyles.Number, CultureInfo.InvariantCulture, out decimal parsed)
+            JsonTokenType.String => decimal.TryParse(reader.GetString(), QuotedAmountStyles, CultureInfo.InvariantCulture, out decimal parsed)
                     ? parsed
-                    : throw new JsonException("The 'amount' property is not a number."),
+                    : throw new JsonException("The 'amount' property is not a plain decimal number such as \"100.50\"."),
             _ => throw new JsonException($"Expected a number for 'amount' but found {reader.TokenType}.")
         };
 

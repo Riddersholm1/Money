@@ -20,6 +20,9 @@ namespace Riddersholm.Money.EntityFrameworkCore;
 /// </remarks>
 public sealed class MoneyValueConverter : ValueConverter<Money, string>
 {
+    private const MoneyStyles StoredStyles =
+        Money.RoundTripStyles | MoneyStyles.AllowLeadingWhite | MoneyStyles.AllowTrailingWhite;
+
     /// <summary>Creates the converter.</summary>
     public MoneyValueConverter()
         : base(money => money.ToString("R", CultureInfo.InvariantCulture),
@@ -35,7 +38,11 @@ public sealed class MoneyValueConverter : ValueConverter<Money, string>
     /// EF's materialisation, with no indication of which row or value was at fault.
     /// </remarks>
     private static Money Read(string text) =>
-        Money.TryParse(text, CultureInfo.InvariantCulture, out Money money)
+        // Read back with the shape the 'R' format writes. The general styles accept group separators,
+        // which under the invariant culture would read a hand-edited "1,5 DKK" as fifteen kroner rather
+        // than refusing it. Surrounding whitespace stays acceptable because it is unambiguous, and a
+        // column someone has mapped as fixed-length char comes back padded with it.
+        Money.TryParse(text, StoredStyles, CultureInfo.InvariantCulture, out Money money)
             ? money
             : throw new InvalidOperationException(
                 $"Cannot read a Money from the stored value '{text}': the expected form is an amount "

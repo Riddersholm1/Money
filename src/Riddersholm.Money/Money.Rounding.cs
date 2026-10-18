@@ -1,4 +1,4 @@
-namespace Riddersholm.Money;
+﻿namespace Riddersholm.Money;
 
 /// <content>
 /// Rounding. Nothing else in the library rounds; every rounding decision is made here, by an explicit
@@ -30,28 +30,18 @@ public readonly partial record struct Money
                 return true;
             }
 
-            byte digits = Currency.DecimalDigits;
-
             // The common case never multiplies, so it cannot overflow: an amount is representable
-            // exactly when rounding it to the currency's digit count leaves it unchanged.
-            if (units == Pow10Long(digits))
+            // exactly when rounding it to the minor unit's decimal places leaves it unchanged.
+            if (TryGetDecimalPlaces(units, out int places))
             {
-                return Math.Round(Amount, digits, MidpointRounding.ToZero) == Amount;
+                return Math.Round(Amount, places, MidpointRounding.ToZero) == Amount;
             }
 
             // MRU and MGA divide by five, which no digit count expresses, so the increment has to be
-            // applied directly. Overflow is possible in principle for an astronomically large amount;
-            // a property must answer rather than throw, and an amount that cannot even be scaled is
-            // certainly not a whole number of minor units.
-            try
-            {
-                decimal minorUnits = Amount * units;
-                return decimal.Truncate(minorUnits) == minorUnits;
-            }
-            catch (OverflowException)
-            {
-                return false;
-            }
+            // applied directly — and exactly. Multiplying in decimal is not enough: 3.9999999999999999999999999999
+            // times five needs a 30th digit, decimal rounds the product to a whole 20, and the amount
+            // would be reported as a whole number of khoums when it is not.
+            return IsWholeMultiple(Amount, 1, units);
         }
     }
 
@@ -86,7 +76,7 @@ public readonly partial record struct Money
             return this;
         }
 
-        return new Money(RoundToUnits(Amount, units, Currency.DecimalDigits, mode), Currency);
+        return new Money(RoundToUnits(Amount, units, mode), Currency);
     }
 
     /// <summary>Rounds to an explicit number of decimal places, regardless of the currency.</summary>
@@ -140,11 +130,18 @@ public readonly partial record struct Money
         // cash amount that is not a valid accounting amount is not payable either.
         if (cashUnits <= 1m || decimal.Truncate(cashUnits) != cashUnits)
         {
-            return new Money(RoundToUnits(Amount, unitsPerMajor, Currency.DecimalDigits, mode), Currency);
+            return new Money(RoundToUnits(Amount, unitsPerMajor, mode), Currency);
         }
 
-        decimal increment = cashUnits / unitsPerMajor;
-        return new Money(Math.Round(Amount / increment, 0, mode) * increment, Currency);
+        // The increment in major units is cashUnits / unitsPerMajor. Reduced to lowest terms it is
+        // small on both sides — ½ for DKK, ¹⁄₂₀ for CHF, 5 for HUF — which keeps the exact arithmetic
+        // below in 128-bit integers.
+        var numerator = (UInt128)cashUnits;
+        UInt128 divisor = GreatestCommonDivisor(numerator, (UInt128)unitsPerMajor);
+
+        return new Money(
+            RoundToIncrement(Amount, numerator / divisor, (UInt128)unitsPerMajor / divisor, mode),
+            Currency);
     }
 
     /// <summary>Rounds toward negative infinity, to the currency's minor unit.</summary>
@@ -159,43 +156,208 @@ public readonly partial record struct Money
     /// <exception cref="UnknownCurrencyException">The currency is not recognised.</exception>
     public Money Truncate() => Round(MidpointRounding.ToZero);
 
-    private static decimal RoundToUnits(decimal amount, long unitsPerMajor, byte digits, MidpointRounding mode)
+    private static decimal RoundToUnits(decimal amount, long unitsPerMajor, MidpointRounding mode)
     {
-        // The overwhelmingly common case is a power of ten, where decimal.Round is both exact and
-        // cheaper than scaling by hand — and cannot overflow the way a multiply by 10^18 could.
-        if (unitsPerMajor == Pow10Long(digits))
+        // The overwhelmingly common case is a power of ten, where decimal.Round is exact, cheap, and
+        // cannot overflow. The exponent comes from the divisor itself rather than from DecimalDigits:
+        // a currency registered with 28 digits and a 10^18 divisor steps by 10^-18, and asking
+        // decimal.Round for 18 places is what keeps a large amount from overflowing on the way.
+        if (TryGetDecimalPlaces(unitsPerMajor, out int places))
         {
-            return Math.Round(amount, digits, mode);
+            return Math.Round(amount, places, mode);
         }
 
-        // MRU and MGA: a fifth of the major unit. Scale into whole minor units, round, and scale back.
-        return Math.Round(amount * unitsPerMajor, 0, mode) / unitsPerMajor;
+        // MRU and MGA: a fifth of the major unit.
+        return RoundToIncrement(amount, UInt128.One, (UInt128)unitsPerMajor, mode);
+    }
+
+    /// <summary>Whether <paramref name="unitsPerMajor"/> is ten to some power, and which.</summary>
+    /// <remarks>
+    /// Asked of the divisor rather than derived from the digit count, which is what lets a single test
+    /// cover every currency correctly. An earlier version compared the divisor against a power of ten
+    /// computed from <see cref="Currency.DecimalDigits"/>, and that power saturated at 10^18, so every
+    /// precision above 18 looked like a match and was rounded to the wrong number of places.
+    /// </remarks>
+    internal static bool TryGetDecimalPlaces(long unitsPerMajor, out int places)
+    {
+        places = 0;
+
+        if (unitsPerMajor <= 0)
+        {
+            return false;
+        }
+
+        while (unitsPerMajor % 10 == 0)
+        {
+            unitsPerMajor /= 10;
+            places++;
+        }
+
+        return unitsPerMajor == 1;
     }
 
     /// <summary>
-    /// Ten to the power of <paramref name="exponent"/>, or <c>-1</c> when that does not fit a
-    /// <see cref="long"/>.
+    /// Rounds <paramref name="amount"/> to a whole multiple of
+    /// <paramref name="incrementNumerator"/> ⁄ <paramref name="incrementDenominator"/>, exactly.
     /// </summary>
     /// <remarks>
-    /// Returning a sentinel rather than saturating at 10^18 matters. Callers use this to decide whether
-    /// the minor-unit divisor is a power of ten, and a saturating version answered "yes" for every
-    /// precision above 18 — so a currency registered with 28 digits and a 10^18 divisor was rounded to
-    /// 28 decimal places when its real increment is 10⁻¹⁸. An impossible value can never compare equal
-    /// to a real divisor, so the general path is taken instead, which is correct for any divisor.
+    /// <para>
+    /// Done in integers because decimal cannot do it reliably. The obvious form —
+    /// <c>Math.Round(amount * 5) / 5</c> — rounds twice: once when the product needs more digits than
+    /// decimal carries, and only then by the requested mode. For an ordinary amount the first rounding
+    /// never happens, but for one carrying 28 significant digits it does, and it can run the wrong way:
+    /// <c>Floor</c> of <c>3.9999999999999999999999999999 MRU</c> came back as <c>4.0</c>, above the
+    /// input. It also overflowed outright for amounts near the top of decimal's range.
+    /// </para>
+    /// <para>
+    /// An amount is <c>±mantissa / 10^scale</c>, so the number of increments it holds is the fraction
+    /// <c>mantissa·d / (10^scale·n)</c>. Its integer part and remainder are exact, and the remainder alone
+    /// decides the rounding, the same way <see cref="Math.Round(decimal, int, MidpointRounding)"/> does
+    /// for a power of ten.
+    /// </para>
     /// </remarks>
-    internal static long Pow10Long(int exponent)
+    private static decimal RoundToIncrement(decimal amount, UInt128 incrementNumerator, UInt128 incrementDenominator, MidpointRounding mode)
     {
-        if (exponent is < 0 or > 18)
+        (UInt128 mantissa, UInt128 power, bool negative) = Decompose(amount);
+
+        // Both products fit 128 bits when the increment's terms fit 32: the mantissa is below 2^96 and
+        // the power of ten below 2^94. Every currency the library ships, and any sane registration,
+        // takes this path; BigInteger is the fallback that makes the rest correct too.
+        if (incrementNumerator > uint.MaxValue || incrementDenominator > uint.MaxValue)
         {
-            return -1;
+            return RoundToIncrementWide(mantissa, power, negative, incrementNumerator, incrementDenominator, mode);
         }
 
-        long result = 1;
-        for (int i = 0; i < exponent; i++)
+        UInt128 divisor = power * incrementNumerator;
+        (UInt128 increments, UInt128 remainder) = UInt128.DivRem(mantissa * incrementDenominator, divisor);
+
+        increments = RoundQuotient(increments, remainder << 1, divisor, negative, mode);
+        return FromIncrements(increments * incrementNumerator, incrementDenominator, negative);
+    }
+
+    private static decimal RoundToIncrementWide(
+        UInt128 mantissa,
+        UInt128 power,
+        bool negative,
+        UInt128 incrementNumerator,
+        UInt128 incrementDenominator,
+        MidpointRounding mode)
+    {
+        var denominator = (System.Numerics.BigInteger)power * incrementNumerator;
+        var increments = System.Numerics.BigInteger.DivRem(
+            (System.Numerics.BigInteger)mantissa * incrementDenominator,
+            denominator,
+            out System.Numerics.BigInteger remainder);
+
+        increments = RoundQuotient(increments, remainder << 1, denominator, negative, mode);
+
+        System.Numerics.BigInteger total = increments * incrementNumerator;
+        var whole = System.Numerics.BigInteger.DivRem(total, incrementDenominator, out System.Numerics.BigInteger fraction);
+
+        decimal magnitude = (decimal)whole + ((decimal)fraction / (decimal)incrementDenominator);
+        return negative ? -magnitude : magnitude;
+    }
+
+    /// <summary>
+    /// Whether <paramref name="amount"/> is an exact whole multiple of
+    /// <paramref name="incrementNumerator"/> ⁄ <paramref name="incrementDenominator"/>.
+    /// </summary>
+    private static bool IsWholeMultiple(decimal amount, long incrementNumerator, long incrementDenominator)
+    {
+        (UInt128 mantissa, UInt128 power, _) = Decompose(amount);
+
+        if (incrementNumerator <= uint.MaxValue && incrementDenominator <= uint.MaxValue)
         {
-            result *= 10;
+            return mantissa * (ulong)incrementDenominator % (power * (ulong)incrementNumerator) == UInt128.Zero;
         }
 
-        return result;
+        return ((System.Numerics.BigInteger)mantissa * incrementDenominator
+            % ((System.Numerics.BigInteger)power * incrementNumerator)).IsZero;
+    }
+
+    /// <summary>
+    /// Applies <paramref name="mode"/> to a quotient whose exact remainder is known, the way
+    /// <see cref="Math.Round(decimal, int, MidpointRounding)"/> treats the digits it discards.
+    /// </summary>
+    /// <param name="quotient">The magnitude's quotient, truncated.</param>
+    /// <param name="remainderTimesTwo">Twice the remainder, so a midpoint compares equal to the divisor.</param>
+    /// <param name="divisor">The divisor the remainder is out of.</param>
+    /// <param name="negative">Whether the value being rounded is negative.</param>
+    /// <param name="mode">The rounding rule.</param>
+    private static T RoundQuotient<T>(T quotient, T remainderTimesTwo, T divisor, bool negative, MidpointRounding mode)
+        where T : System.Numerics.IBinaryInteger<T>
+    {
+        // Validated before the early return, as Math.Round does, so an invalid mode fails the same way
+        // whether or not this particular amount needed rounding.
+        if (mode is < MidpointRounding.ToEven or > MidpointRounding.ToPositiveInfinity)
+        {
+            throw new ArgumentException($"The value '{mode}' is not a valid {nameof(MidpointRounding)}.", nameof(mode));
+        }
+
+        if (T.IsZero(remainderTimesTwo))
+        {
+            return quotient;
+        }
+
+        int midpoint = remainderTimesTwo.CompareTo(divisor);
+
+        bool awayFromZero = mode switch
+        {
+            MidpointRounding.ToEven => midpoint > 0 || (midpoint == 0 && T.IsOddInteger(quotient)),
+            MidpointRounding.AwayFromZero => midpoint >= 0,
+            MidpointRounding.ToZero => false,
+            MidpointRounding.ToNegativeInfinity => negative,
+            _ => !negative
+        };
+
+        return awayFromZero ? quotient + T.One : quotient;
+    }
+
+    /// <summary>
+    /// Builds <c>±total ⁄ denominator</c> as a decimal, splitting off the whole part so the conversion
+    /// never needs more digits than the result has.
+    /// </summary>
+    /// <remarks>
+    /// The fraction is exact because every divisor reaching here divides a power of ten — the
+    /// registration check in <see cref="CurrencyInfo"/> guarantees it for the minor unit, and a cash
+    /// increment is a whole number of minor units.
+    /// </remarks>
+    private static decimal FromIncrements(UInt128 total, UInt128 denominator, bool negative)
+    {
+        (UInt128 whole, UInt128 fraction) = UInt128.DivRem(total, denominator);
+
+        decimal magnitude = (decimal)whole + ((decimal)fraction / (decimal)denominator);
+
+        // Never hand back a negative zero: it compares equal to zero but is a distinct bit pattern, and
+        // nothing about rounding -0.001 should leave a sign behind.
+        return negative && magnitude != 0m ? -magnitude : magnitude;
+    }
+
+    /// <summary>Splits a decimal into its unsigned mantissa, ten to the power of its scale, and its sign.</summary>
+    private static (UInt128 Mantissa, UInt128 Power, bool Negative) Decompose(decimal value)
+    {
+        Span<int> bits = stackalloc int[4];
+        decimal.GetBits(value, bits);
+
+        UInt128 mantissa = ((UInt128)(uint)bits[2] << 64) | ((UInt128)(uint)bits[1] << 32) | (uint)bits[0];
+        int scale = (bits[3] >> 16) & 0xFF;
+
+        UInt128 power = UInt128.One;
+        for (int i = 0; i < scale; i++)
+        {
+            power *= 10u;
+        }
+
+        return (mantissa, power, bits[3] < 0);
+    }
+
+    private static UInt128 GreatestCommonDivisor(UInt128 left, UInt128 right)
+    {
+        while (right != UInt128.Zero)
+        {
+            (left, right) = (right, left % right);
+        }
+
+        return left;
     }
 }

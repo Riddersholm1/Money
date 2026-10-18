@@ -62,7 +62,7 @@ public readonly partial record struct Money
 
             for (int i = 0; i < count; i++)
             {
-                destination[i] = new Money(FromMinorUnits(i < extra ? each + step : each, scale), Currency);
+                destination[i] = new Money(FromScaledUnits(i < extra ? each + step : each, scale), Currency);
             }
 
             return;
@@ -179,7 +179,7 @@ public readonly partial record struct Money
         for (int i = 0; i < count; i++)
         {
             destination[i] = new Money(
-                integerPath ? FromMinorUnits((long)shares[i], scale) : shares[i] / unitsPerMajor,
+                integerPath ? FromScaledUnits((long)shares[i], scale) : shares[i] / unitsPerMajor,
                 Currency);
         }
     }
@@ -424,7 +424,7 @@ public readonly partial record struct Money
     }
 
     /// <summary>Builds a decimal from a whole number of minor units and a scale, without dividing.</summary>
-    private static decimal FromMinorUnits(long units, byte scale)
+    private static decimal FromScaledUnits(long units, byte scale)
     {
         bool negative = units < 0;
         ulong magnitude = negative ? (ulong)(-(units + 1)) + 1 : (ulong)units;
@@ -452,15 +452,18 @@ public readonly partial record struct Money
             throw new InvalidOperationException($"'{Currency.Code}' has no minor unit, so there is no indivisible amount to allocate in.");
         }
 
-        decimal units = Amount * unitsPerMajor;
-
-        if (decimal.Truncate(units) != units)
+        // Checked exactly before multiplying, not by inspecting the product. For a fifth-unit currency
+        // the product of a 28-digit amount needs a digit decimal does not have, so it can round to a
+        // whole number: 3.9999999999999999999999999999 MRU times five came back as exactly 20 khoums,
+        // passed the check, and was allocated as 4.0 MRU — parts that no longer summed to the amount.
+        if (!IsCanonical)
         {
             throw new InvalidOperationException(
                 $"'{this}' is not a whole number of {Currency.Code} minor units, so no set of payable parts "
               + "can sum to it. Call Round() before allocating.");
         }
 
-        return units;
+        // Exact now: a canonical amount times its own divisor is a whole number of minor units.
+        return Amount * unitsPerMajor;
     }
 }

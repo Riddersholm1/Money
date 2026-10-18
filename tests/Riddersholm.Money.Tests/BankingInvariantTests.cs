@@ -462,24 +462,25 @@ public sealed class BankingInvariantTests
     }
 
     /// <summary>
-    /// Rounding an amount too large to scale into minor units overflows rather than silently returning
-    /// something wrong.
+    /// Rounding an amount at the top of decimal's range is exact rather than overflowing.
     /// </summary>
     /// <remarks>
-    /// Only reachable for a currency whose minor unit is not a power of ten, since those are the ones
-    /// that scale by hand. An <see cref="OverflowException"/> is the correct outcome — the honest answer
-    /// does not fit — and this test exists so that the day it becomes a wrong number instead, something
-    /// says so.
+    /// This test used to assert an <see cref="OverflowException"/>, on the reasoning that an amount too
+    /// large to scale into minor units had no honest answer. It does: <c>decimal.MaxValue</c> is a whole
+    /// number, every whole number of ouguiya is a whole number of khoums, so the amount is canonical and
+    /// rounds to itself. The overflow came from multiplying by five to find that out, which the exact
+    /// integer arithmetic no longer needs to do.
     /// </remarks>
     [Fact]
-    public void Rounding_overflows_rather_than_returning_a_wrong_answer()
+    public void Rounding_at_the_top_of_the_range_is_exact_rather_than_overflowing()
     {
         Money enormous = new(decimal.MaxValue, Currency.MRU);
 
-        Assert.Throws<OverflowException>(() => enormous.Round());
-
-        // IsCanonical is a property, so it answers instead of throwing.
-        Assert.False(enormous.IsCanonical);
+        Assert.True(enormous.IsCanonical);
+        Assert.Equal(enormous, enormous.Round());
+        Assert.Equal(enormous, enormous.Floor());
+        Assert.Equal(enormous, enormous.Ceiling());
+        Assert.Equal(enormous, enormous.RoundToCash());
     }
 
     private static decimal Pow10(int exponent)

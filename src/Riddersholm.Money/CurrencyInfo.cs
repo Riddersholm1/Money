@@ -173,8 +173,8 @@ public sealed class CurrencyInfo
     /// Shared with <see cref="Money"/>'s rounding, which needs the same power for the same reason: a
     /// currency's minor-unit divisor can exceed what a <see cref="long"/> holds, and the two must agree
     /// about which divisors a digit count can express or a registration validated here would round
-    /// differently there. <c>Money.Pow10Long</c> is the separate, deliberately narrower helper — it
-    /// answers whether the divisor <em>is</em> a power of ten and returns a sentinel when it cannot.
+    /// differently there. <c>Money.TryGetDecimalPlaces</c> is the separate, deliberately narrower
+    /// helper — it answers whether the divisor <em>is</em> a power of ten, and which one.
     /// </remarks>
     internal static decimal Pow10(int exponent)
     {

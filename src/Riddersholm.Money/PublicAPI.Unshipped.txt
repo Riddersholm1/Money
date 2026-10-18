@@ -1,1 +1,5 @@
 #nullable enable
+const Riddersholm.Money.Money.RoundTripStyles = Riddersholm.Money.MoneyStyles.AllowLeadingSign | Riddersholm.Money.MoneyStyles.AllowDecimalPoint | Riddersholm.Money.MoneyStyles.AllowCurrencyCode | Riddersholm.Money.MoneyStyles.RequireCurrency -> Riddersholm.Money.MoneyStyles
+static Riddersholm.Money.Money.FromMinorUnits(long minorUnits, Riddersholm.Money.Currency currency) -> Riddersholm.Money.Money
+Riddersholm.Money.Money.ToMinorUnits() -> long
+Riddersholm.Money.Money.TryToMinorUnits(out long minorUnits) -> bool
