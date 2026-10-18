@@ -33,6 +33,10 @@ Check((-price).Amount == -100m, "negation");
 Check(new Money(2.225m, Currency.DKK).Round().Amount == 2.22m, "banker's rounding");
 Check(new Money(1.37m, Currency.MRU).Round().Amount == 1.4m, "fifth minor units round to the increment");
 Check(new Money(12.30m, Currency.DKK).RoundToCash().Amount == 12.50m, "cash rounding");
+Check(new Money(3.9999999999999999999999999999m, Currency.MRU).Floor().Amount == 3.8m, "exact fifth-unit rounding at full precision");
+Check(Money.FromMinorUnits(1050, Currency.DKK).Amount == 10.50m, "minor units in");
+Check(new Money(10.50m, Currency.DKK).ToMinorUnits() == 1050, "minor units out");
+Check(Money.TryParse("-1234.50 DKK", Money.RoundTripStyles, CultureInfo.InvariantCulture, out Money roundTrip) && roundTrip.Amount == -1234.50m, "round-trip styles");
 
 Console.WriteLine();
 Console.WriteLine("allocation");

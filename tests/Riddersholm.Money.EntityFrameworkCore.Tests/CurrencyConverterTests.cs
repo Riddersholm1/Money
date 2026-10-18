@@ -91,4 +91,26 @@ public sealed class CurrencyConverterTests
             }
         }
     }
+
+    [Theory]
+    [InlineData("1,5 DKK")]     // a European one-and-a-half, which the lenient styles read as fifteen
+    [InlineData("1,000.50 DKK")]
+    [InlineData("(5) DKK")]
+    [InlineData("kr. 5")]
+    public void The_money_text_converter_refuses_text_it_did_not_write(string stored)
+    {
+        Func<string, Money> read = new MoneyValueConverter().ConvertFromProviderExpression.Compile();
+
+        InvalidOperationException error = Assert.Throws<InvalidOperationException>(() => read(stored));
+
+        Assert.Contains(stored, error.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void The_money_text_converter_tolerates_fixed_length_padding()
+    {
+        Func<string, Money> read = new MoneyValueConverter().ConvertFromProviderExpression.Compile();
+
+        Assert.Equal(new Money(100.5m, Currency.DKK), read("100.50 DKK      "));
+    }
 }
