@@ -9,15 +9,92 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 Nothing yet.
 
-## [1.0.0-rc.1] — 2026-08-05
+## [1.0.0-rc.1] — 2026-10-18
 
 The first release candidate, and the first version of this library to be published at all. The API is
 complete and the implementation is what 1.0.0 is intended to be; the `rc` marks that nobody outside the
 project has consumed it yet, and that the publishing pipeline has never run. Promote to 1.0.0 unchanged
-if nothing surfaces.
+if nothing surfaces. Set this heading's date to the day the release is actually published.
 
-The sections below fold in three rounds of adversarial review. Two of the behavioural changes are
+The sections below fold in four rounds of adversarial review. Several behavioural changes are
 deliberate: each replaces a quiet wrong answer with a loud refusal.
+
+### Production-readiness review
+
+Every item below returned a plausible, wrong answer before its fix, and each has a regression test in
+`ProductionReadinessTests`, `ProductionReadinessGeneratorTests` or `PrecisionGuardTests`.
+
+**Fixed**
+
+- **JSON read `"1,5"` as fifteen.** A quoted amount was parsed with `NumberStyles.Number`, whose group
+  separator turns a European one-and-a-half into 15 under the invariant culture; the compact
+  `"1,5 DKK"` form, `Money` dictionary keys and the EF Core text column had the same flaw. Quoted
+  amounts now accept only a sign and a decimal point, and the compact forms read with the new
+  `Money.RoundTripStyles` — exactly what `ToString("R")` writes.
+- **Duplicate JSON properties were resolved last-wins.** `{"amount":1,"amount":1000000}` read as a
+  million, and other parsers read it as one — the ambiguity a forged payment instruction relies on.
+  A repeated `amount` or `currency` is now a `JsonException`. Property names are also matched
+  case-insensitively as documented, including escaped names; previously only `amount`/`Amount` were.
+- **A customised culture could change how the real one formats.** The derived-format cache was keyed
+  by culture *name*, which a modified clone of `da-DK` shares with `da-DK` itself, so whichever
+  formatted first won: after any code formatted with the clone, every caller of the real culture got
+  its separators (`1_234#50 kr.`). The cache is now keyed by the read-only `NumberFormatInfo` instance;
+  a writable one is derived per call.
+- **Fifth-unit and cash rounding could round the wrong way.** MRU/MGA rounding and cash rounding scaled
+  the amount in `decimal` and then rounded, but the scaling itself rounds when an amount carries 28
+  significant digits: `Floor()` of `3.9999999999999999999999999999 MRU` returned `4.0`, above its
+  input, and CHF cash rounding did the same. `Allocate` passed its whole-units check on that rounded
+  product and allocated `4.0 MRU` from an amount that was not 4. Both paths now use exact 128-bit
+  integer arithmetic (with a `BigInteger` fallback), which also removes the overflow they had near
+  `decimal`'s limits.
+- **A registered currency finer than 18 places overflowed when rounding** any amount above about
+  8×10¹⁰. Power-of-ten rounding now takes its places from the minor-unit divisor itself.
+- **`MoneyStyles.AllowLeadingWhite` and `AllowTrailingWhite` were ignored**; surrounding whitespace was
+  always skipped. They are honoured now.
+- **`CurrencyRegistry.Register` accepted the fallback metadata of an unknown code** (`Currency.Info` for
+  a code nobody described), after which `IsKnown` reported `true` and `Round()` trusted a guessed
+  precision. It is refused now.
+- **The generator turned malformed currency data into wrong currencies.** Values were cast straight to
+  `byte`/`short` (a cash step of 256 became 1, numeric code 70000 became 4464), a missing
+  `decimalDigits` meant zero decimals, `2.7` digits became 2, integers above 2⁵³ were read through a
+  `double`, and a divisor the digit count cannot express was only caught by a consumer's module
+  initializer at startup. Each is now a build error, `RMG006`.
+- **A line break in a currency name broke out of the generated string literal**, so the rest of the
+  name compiled as code. Names and symbols are now fully escaped in both literals and doc comments.
+
+**Added**
+
+- `Money.FromMinorUnits`, `Money.ToMinorUnits` and `Money.TryToMinorUnits` — integer minor units at the
+  ISO 4217 exponent, the form payment processors and ISO 8583 exchange (`1050` for `10.50 DKK`). They
+  never round; an amount finer than the currency is refused.
+- `Money.RoundTripStyles`, for reading back what `ToString("R")` wrote.
+- `UseMoneyPrecisionGuard()` / `MoneyPrecisionInterceptor` in the EF Core package. `decimal(19,4)`
+  columns make SQL Server and PostgreSQL round `13.40123` to `13.4012` silently; with the guard,
+  `SaveChanges` throws instead, naming the entity, property and amount.
+- Withdrawn currencies are kept rather than deleted. The data file can mark a currency `withdrawn`
+  (with `replacedBy`); its `Currency.XYZ` member becomes `[Obsolete]` and its metadata stays, so
+  stored historical amounts still round. Deleting it would have been a breaking change in a routine
+  data update. The runtime gives a reused numeric code (ISO reuses them) to the active currency.
+- `eng/iso-4217.schema.json`, which the data file already referenced but which did not exist.
+- `tools/Riddersholm.Money.DataSync --check`, and a weekly `currency-data` workflow that opens a pull
+  request when ISO 4217 or CLDR changes. See
+  [docs/maintaining-currency-data.md](docs/maintaining-currency-data.md).
+
+**Build and pipeline**
+
+- `.github/workflows/pipeline.yml` now follows the Resultify/EventBus layout exactly — build, test and
+  pack on push, pull request and release; publish via Trusted Publishing on a published release — and
+  keeps this repository's extra gates: Windows and macOS test runs, the NativeAOT publish-and-run gate,
+  the dependency audit, and the package-content checks.
+- xunit.v3 4.0.2 on Microsoft.Testing.Platform 2.x, with TRX reports and code coverage (uploaded to
+  Codecov). xunit.v3 3.x and the coverage extension had been compiled against different platform
+  versions, which is why the pipeline previously ran without coverage.
+- Microsoft.SourceLink.GitHub 10.0.402. 10.0.301 pulled in a vulnerable `Microsoft.Build.Tasks.Git`
+  (GHSA-23fw-v26w-5fgq), so the dependency-audit job failed on `main`.
+- Dependabot ignores major bumps of `Microsoft.CodeAnalysis.Analyzers` as well as `.CSharp`; a grouped
+  update had proposed Roslyn 5.9, which would stop the generator loading in older compilers.
+- Package authorship matches the other Riddersholm packages, and the LICENSE file is packed.
+- ISO 4217 data re-verified against the register and CLDR 48: no currency changes.
 
 ### Build and tooling
 

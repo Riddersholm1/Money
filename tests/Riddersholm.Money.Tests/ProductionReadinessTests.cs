@@ -325,6 +325,59 @@ public sealed class ProductionReadinessTests
         Assert.Equal(1.123456789012345679m, new Money(1.1234567890123456789m, wei).Round().Amount);
     }
 
+    [Fact]
+    public void P5_a_divisor_too_wide_for_128_bit_arithmetic_rounds_exactly_too()
+    {
+        // 5^14 exceeds 32 bits, which sends rounding down the BigInteger path. The oracle is the
+        // definition itself: the nearest whole number of 1/5^14 units, computed with BigInteger.
+        const long units = 6_103_515_625L;
+        Currency fifths = Currency.FromCode("QFW");
+
+        if (!fifths.IsKnown)
+        {
+            CurrencyRegistry.Register(new CurrencyInfo("QFW", 0, "Wide fifths", "QFW", 14, units, 14, 1));
+        }
+
+        foreach (decimal amount in (decimal[])[0.123456789012345678m, -7.5m / 3m, 1m / 7m, 12345.000000000000001m, -0.00000000000016384m])
+        {
+            foreach (MidpointRounding mode in Enum.GetValues<MidpointRounding>())
+            {
+                Money rounded = new Money(amount, fifths).Round(mode);
+
+                Assert.Equal(Oracle(amount, units, mode), rounded.Amount);
+                Assert.True(rounded.IsCanonical, $"{rounded} should be a whole number of 1/{units} units.");
+            }
+        }
+
+        static decimal Oracle(decimal amount, long units, MidpointRounding mode)
+        {
+            // amount = numerator / 10^scale exactly; scaled = amount × units as an exact fraction.
+            int scale = amount.Scale;
+            var power = System.Numerics.BigInteger.Pow(10, scale);
+            var numerator = System.Numerics.BigInteger.Parse(
+                Math.Abs(amount).ToString(Invariant).Replace(".", string.Empty, StringComparison.Ordinal),
+                Invariant);
+
+            System.Numerics.BigInteger scaled = numerator * units;
+            var whole = System.Numerics.BigInteger.DivRem(scaled, power, out System.Numerics.BigInteger remainder);
+            int half = (remainder * 2).CompareTo(power);
+            bool negative = amount < 0;
+
+            bool up = remainder.IsZero ? false : mode switch
+            {
+                MidpointRounding.ToEven => half > 0 || (half == 0 && !whole.IsEven),
+                MidpointRounding.AwayFromZero => half >= 0,
+                MidpointRounding.ToZero => false,
+                MidpointRounding.ToNegativeInfinity => negative,
+                _ => !negative
+            };
+
+            System.Numerics.BigInteger count = up ? whole + 1 : whole;
+            decimal magnitude = (decimal)(count / units) + ((decimal)(count % units) / units);
+            return negative ? -magnitude : magnitude;
+        }
+    }
+
     // ---- P6: there was no way to exchange amounts as integer minor units -------------------------
 
     [Theory]

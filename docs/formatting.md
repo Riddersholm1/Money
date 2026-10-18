@@ -100,8 +100,13 @@ string for the money:
 string line = $"Total: {price:R}";
 ```
 
-The derived `NumberFormatInfo` that carries the currency's symbol and precision is cached per culture
-and currency, so only the first format for a given pair pays to build it.
+The derived `NumberFormatInfo` that carries the currency's symbol and precision is cached per
+read-only format and currency, so only the first format for a given pair pays to build it. The ambient
+`CultureInfo.CurrentCulture` and every `CultureInfo.GetCultureInfo(...)` culture are read-only. A
+writable culture — `new CultureInfo("da-DK")`, or a modified clone — is derived on every call instead,
+which costs an allocation and stays correct however the culture is changed between calls; wrap it in
+`CultureInfo.ReadOnly(...)` on a hot path. (The cache used to be keyed by culture *name*, which let a
+customised clone of `da-DK` change how the real `da-DK` formatted.)
 
 ## Round-tripping
 

@@ -1,4 +1,4 @@
-<Project>
+﻿<Project>
 
   <!--
     Repository-wide defaults. Deliberately does NOT set TargetFramework, and this is not an oversight:
@@ -64,10 +64,11 @@
       single source of truth for what is published; this only governs local and CI pack output.
     -->
     <VersionSuffix>rc.1</VersionSuffix>
-    <Authors>Riddersholm</Authors>
-    <Company>Riddersholm</Company>
+    <!-- Matches the identity on Riddersholm.Resultify and Riddersholm.EventBus. -->
+    <Authors>Jesper Bruhn Riddersholm</Authors>
+    <Company>Jesper Bruhn Riddersholm</Company>
     <Product>Riddersholm.Money</Product>
-    <Copyright>Copyright (c) Riddersholm</Copyright>
+    <Copyright>Copyright (c) 2026 Jesper Bruhn Riddersholm</Copyright>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageProjectUrl>https://github.com/Riddersholm1/Money</PackageProjectUrl>
     <RepositoryUrl>https://github.com/Riddersholm1/Money</RepositoryUrl>

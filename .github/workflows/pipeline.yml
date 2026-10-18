@@ -1,5 +1,9 @@
 name: CI
 
+# One workflow, in the same shape as Resultify's and EventBus's: build, test and pack on every push,
+# pull request and release; publish only when a GitHub Release is published. Publishing a release is
+# the one deliberate, human step in front of nuget.org, where a package can never be deleted — only
+# unlisted.
 on:
   push:
     branches: [main]
@@ -9,8 +13,12 @@ on:
     types: [published]
   workflow_dispatch:
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 permissions:
-  contents: read # default; the publish job overrides with id-token for OIDC
+  contents: read # the publish job adds id-token for OIDC
 
 env:
   DOTNET_VERSION: "10.0.x"
@@ -26,35 +34,159 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v7.0.1
         with:
           fetch-depth: 0 # full history for SourceLink / versioning
 
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v6.0.0
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+          dotnet-quality: ${{ env.DOTNET_QUALITY }}
+
+      # On a release the tag drives the version. Otherwise fall back to the version Directory.Build.props
+      # declares rather than a literal like 0.0.0-dev: package validation compares a build against the
+      # published baseline, and rejects an assembly version lower than it.
       - name: Resolve version
         id: version
         run: |
           set -euo pipefail
           TAG="${{ github.event.release.tag_name }}"
           VERSION="${TAG#v}"
+          DECLARED=$(dotnet msbuild src/Riddersholm.Money/Riddersholm.Money.csproj -getProperty:Version)
 
           if [ -z "$VERSION" ]; then
-            # Not a release build. 0.0.0-dev makes it obvious that any package produced by a PR or
-            # branch build is not publishable, rather than letting it inherit the real version from
-            # Directory.Build.props and look like the genuine article.
-            VERSION="0.0.0-dev"
+            VERSION="$DECLARED"
           elif ! printf '%s' "$VERSION" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$'; then
-            # A release *is* being published, so a tag that is not a version number must stop the run.
-            # Falling through would publish 1.0.0 from Directory.Build.props under the wrong name, and
-            # a package pushed to nuget.org can never be deleted, only unlisted.
+            # A release is being published, so a tag that is not a version must stop the run rather
+            # than ship something under the wrong name.
             echo "::error::Release tag '$TAG' is not a version. Expected v<major>.<minor>.<patch>[-prerelease], e.g. v1.0.0-rc.1."
+            exit 1
+          elif [ "$VERSION" != "$DECLARED" ]; then
+            echo "::warning::Releasing $VERSION from the tag, but Directory.Build.props declares $DECLARED. Update VersionPrefix/VersionSuffix so local builds agree with what shipped."
+          fi
+
+          if [ -z "$VERSION" ]; then
+            echo "::error::Could not resolve a version from the release tag or Directory.Build.props."
             exit 1
           fi
 
-          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
-          echo "Building version $VERSION"
+          echo "Resolved version: $VERSION"
+          echo "VERSION=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Restore
+        run: dotnet restore
+
+      - name: Build
+        run: >
+          dotnet build
+          --no-restore
+          -c ${{ env.CONFIGURATION }}
+          -warnaserror
+          -p:ContinuousIntegrationBuild=true
+          /p:Version=${{ steps.version.outputs.VERSION }}
+
+      # Arguments after `--` go to the test applications. The report and coverage options come from
+      # extensions every test project references (xunit.v3 and Microsoft.Testing.Extensions.CodeCoverage,
+      # via tests/Directory.Build.props); both land in each project's TestResults directory, which the
+      # globs below pick up.
+      - name: Test
+        run: >
+          dotnet test --no-build -c ${{ env.CONFIGURATION }} --
+          --report-xunit-trx --report-xunit-trx-filename test-results.trx
+          --coverage --coverage-output-format cobertura --coverage-output coverage.cobertura.xml
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v7.0.1
+        with:
+          name: test-results
+          path: "**/TestResults/*.trx"
+
+      - name: Upload coverage to Codecov
+        if: always()
+        uses: codecov/codecov-action@v7.1.0
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: "**/TestResults/coverage.cobertura.xml"
+          fail_ci_if_error: false
+
+      # The README claims the library is trimming- and NativeAOT-clean. This is the proof: it publishes a
+      # native binary with IL2xxx/IL3xxx warnings as errors, then runs it, so a trimmed-away code path
+      # fails here rather than in someone's production deployment. PublishAot and TrimMode are set in
+      # the project; passing them with -p: would reach the netstandard2.0 generator, which cannot be
+      # AOT-compiled.
+      - name: NativeAOT & trimming gate
+        run: |
+          dotnet publish tests/Riddersholm.Money.AotTests -c ${{ env.CONFIGURATION }} -r linux-x64
+          ./artifacts/publish/Riddersholm.Money.AotTests/release_linux-x64/Riddersholm.Money.AotTests
+
+      # Packs every project under src/ — Riddersholm.Money, .Generators and .EntityFrameworkCore — so there
+      # is no per-project list to keep in sync. Packing the solution instead would also visit the
+      # samples, and the web SDK warns about every non-packable project it is asked to pack.
+      - name: Pack
+        run: |
+          set -euo pipefail
+          for project in src/*/*.csproj; do
+            dotnet pack "$project" \
+              --no-build \
+              -c ${{ env.CONFIGURATION }} \
+              -o ./artifacts/nuget \
+              -p:ContinuousIntegrationBuild=true \
+              /p:Version=${{ steps.version.outputs.VERSION }}
+          done
+
+      # The README promises the core package has no dependencies, and it references the source generator
+      # as an analyzer. ReferenceOutputAssembly="false" suppresses the compile-time reference but not the
+      # package dependency — only PrivateAssets="all" does that — so this asserts the promise.
+      - name: Verify the packages
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          for id in Riddersholm.Money Riddersholm.Money.Generators Riddersholm.Money.EntityFrameworkCore; do
+            nupkg="artifacts/nuget/$id.${{ steps.version.outputs.VERSION }}.nupkg"
+            [ -f "$nupkg" ] || { echo "::error::Missing package $nupkg"; exit 1; }
+            for entry in README.md LICENSE icon.png; do
+              unzip -l "$nupkg" | grep -q " $entry\$" || { echo "::error::$nupkg does not contain $entry"; exit 1; }
+            done
+          done
+          unzip -p "artifacts/nuget/Riddersholm.Money.${{ steps.version.outputs.VERSION }}.nupkg" Riddersholm.Money.nuspec > core.nuspec
+          cat core.nuspec
+          if grep -q '<dependency ' core.nuspec; then
+            echo "::error::Riddersholm.Money declares package dependencies; the README says it has none."
+            exit 1
+          fi
+
+      - name: Upload NuGet packages
+        uses: actions/upload-artifact@v7.0.1
+        with:
+          name: nuget-packages
+          path: ./artifacts/nuget/*.nupkg
+          if-no-files-found: error
+
+      - name: Upload symbol packages
+        uses: actions/upload-artifact@v7.0.1
+        with:
+          name: nuget-symbols
+          path: ./artifacts/nuget/*.snupkg
+          if-no-files-found: error
+
+  # Formatting and parsing depend on each platform's ICU data, and file paths and line endings differ,
+  # so the suite also runs where consumers run it. Packing happens once, above.
+  cross-platform:
+    name: Test (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, macos-latest]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7.0.1
 
       - name: Setup .NET
-        uses: actions/setup-dotnet@v5
+        uses: actions/setup-dotnet@v6.0.0
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
           dotnet-quality: ${{ env.DOTNET_QUALITY }}
@@ -63,87 +195,25 @@ jobs:
         run: dotnet restore
 
       - name: Build
-        run: dotnet build --no-restore -c ${{ env.CONFIGURATION }} -warnaserror /p:Version=${{ steps.version.outputs.VERSION }}
+        run: dotnet build --no-restore -c ${{ env.CONFIGURATION }} -warnaserror
 
-      # No --logger or --collect. Both are VSTest options, and these projects run on
-      # Microsoft.Testing.Platform, which ignores them — the build prints MTP0001 saying so and
-      # produces neither a .trx nor a coverage file. A step that uploads nothing while reporting
-      # success is worse than no step at all, so there is no test-results or Codecov upload here.
-      #
-      # It is not a configuration mistake and there is nothing to fix on this side:
-      # Microsoft.Testing.Platform.MSBuild 1.9.1, which xunit.v3 3.2.2 brings in, is compiled against
-      # MTP 1.x, while every Microsoft.Testing.Extensions.* package (TrxReport, CodeCoverage)
-      # upgrades Microsoft.Testing.Platform to 2.3.x, where IDataConsumer no longer exists. Adding
-      # either one makes every test project fail at startup with:
-      #
-      #   System.TypeLoadException: Could not load type
-      #   'Microsoft.Testing.Platform.Extensions.TestHost.IDataConsumer'
-      #
-      # Revisit when xunit.v3 and the extensions agree on a platform version.
       - name: Test
         run: dotnet test --no-build -c ${{ env.CONFIGURATION }}
 
-      # The README claims this library is trimming- and NativeAOT-clean, and that CI proves it. This
-      # is the proof: it publishes a native binary with IL2xxx/IL3xxx warnings as errors, then runs
-      # it. A trimmed-away code path fails here rather than in someone's production deployment.
-      - name: NativeAOT & trimming gate
-        run: |
-          dotnet publish tests/Riddersholm.Money.AotTests -c ${{ env.CONFIGURATION }} -r linux-x64
-          ./artifacts/publish/Riddersholm.Money.AotTests/release_linux-x64/Riddersholm.Money.AotTests
-
-      # Packs all three packages: Riddersholm.Money, .Generators and .EntityFrameworkCore. Anything
-      # with IsPackable=false is skipped, so this needs no per-project list to keep in sync.
-      - name: Pack
-        run: dotnet pack --no-build -c ${{ env.CONFIGURATION }} -o ./artifacts/nuget /p:Version=${{ steps.version.outputs.VERSION }}
-
-      # The README and docs/architecture.md both promise the core package has no dependencies, and
-      # it references the source generator as an analyzer. ReferenceOutputAssembly="false" suppresses
-      # the compile-time reference but not the package dependency — only PrivateAssets="all" does
-      # that. This asserts the promise instead of trusting it.
-      - name: Verify the core package declares no dependencies
-        run: |
-          set -euo pipefail
-          shopt -s nullglob
-          packages=(artifacts/nuget/Riddersholm.Money.[0-9]*.nupkg)
-          if [ ${#packages[@]} -ne 1 ]; then
-            echo "::error::Expected exactly one core package, found ${#packages[@]}: ${packages[*]-none}"
-            exit 1
-          fi
-          unzip -p "${packages[0]}" Riddersholm.Money.nuspec > core.nuspec
-          cat core.nuspec
-          if grep -q '<dependency ' core.nuspec; then
-            echo "::error::Riddersholm.Money declares package dependencies; the README says it has none."
-            exit 1
-          fi
-
-      - name: Upload NuGet package
-        uses: actions/upload-artifact@v4
-        with:
-          name: nuget-packages
-          path: ./artifacts/nuget/*.nupkg
-          if-no-files-found: error
-
-      - name: Upload symbol package
-        uses: actions/upload-artifact@v4
-        with:
-          name: nuget-symbols
-          path: ./artifacts/nuget/*.snupkg
-          if-no-files-found: error
-
-  # Vulnerability findings warn locally so a newly published advisory does not break every
-  # developer's build, and fail here so one cannot be released. See WarningsNotAsErrors in
-  # Directory.Build.props.
+  # Directory.Build.props demotes NU1900-NU1904 to warnings so a newly published advisory, or an
+  # unreachable feed, does not break every developer's build. Shipping with a known-vulnerable
+  # dependency is a different matter, so this job promotes them back to errors and the publish job
+  # depends on it.
   audit:
     name: Audit dependencies
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
-        with:
-          fetch-depth: 0
+        uses: actions/checkout@v7.0.1
 
       - name: Setup .NET
-        uses: actions/setup-dotnet@v5
+        uses: actions/setup-dotnet@v6.0.0
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
           dotnet-quality: ${{ env.DOTNET_QUALITY }}
@@ -153,48 +223,71 @@ jobs:
 
   publish:
     name: Publish to NuGet.org
-    needs: [build-test-pack, audit]
+    needs: [build-test-pack, cross-platform, audit]
     if: github.event_name == 'release' && github.event.action == 'published'
     runs-on: ubuntu-latest
 
-    # A second gate. Configure required reviewers on this environment and nothing reaches nuget.org
-    # without a human approving the run; the Trusted Publishing policy is bound to this environment
-    # name too, so a workflow running outside it cannot mint a key.
-    environment: nuget
-
+    # Trusted publishing swaps a GitHub OIDC token for a short-lived NuGet API key, so no long-lived
+    # secret is stored here. `id-token: write` is what lets the runner mint that token; a job-level
+    # block replaces the workflow default entirely, so `contents: read` is restated rather than
+    # inherited.
     permissions:
-      # Required for OIDC → NuGet Trusted Publishing. This is why there is no NUGET_API_KEY secret:
-      # a long-lived push credential in repository secrets is readable by every workflow and every
-      # action they call, and stays valid until someone remembers to rotate it. The key used below is
-      # minted for this run, expires in an hour, and is bound to this repository's immutable GitHub ID.
       id-token: write
       contents: read
 
     steps:
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v6.0.0
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+          dotnet-quality: ${{ env.DOTNET_QUALITY }}
+
       - name: Download packages
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8.0.1
         with:
           name: nuget-packages
           path: ./artifacts
 
       - name: Download symbols
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8.0.1
         with:
           name: nuget-symbols
           path: ./artifacts
 
-      - name: NuGet login (OIDC → temp API key)
-        uses: NuGet/login@v1
-        id: nuget-login
-        with:
-          user: ${{ secrets.NUGET_USER }} # nuget.org profile name, not the email address
+      # Checked up front so a missing variable reports itself plainly instead of surfacing as an opaque
+      # OIDC exchange failure inside the login action.
+      - name: Verify trusted publishing configuration
+        env:
+          NUGET_USER: ${{ vars.NUGET_USER }}
+        run: |
+          if [ -z "$NUGET_USER" ]; then
+            echo "::error::The NUGET_USER repository variable is not set. It must be your NuGet.org username, and it must match the owner of the trusted publishing policy 'Money-GitHubActions'. Add it under Settings > Secrets and variables > Actions > Variables."
+            exit 1
+          fi
+          echo "Publishing to NuGet.org as '$NUGET_USER' via trusted publishing."
 
-      # --skip-duplicate makes a re-run after a partial failure safe rather than fatal: three
-      # packages go up, and a network error between the first and the third should not leave the
-      # release unfinishable.
+      # NuGet.org matches the token's claims (repository owner, repository, and this workflow file)
+      # against the trusted publishing policy. Renaming or moving this file breaks the match until the
+      # policy is updated.
+      - name: NuGet login (trusted publishing)
+        id: nuget-login
+        uses: NuGet/login@v1.2.0
+        with:
+          user: ${{ vars.NUGET_USER }}
+
+      # Pushing a .nupkg also uploads the matching .snupkg beside it. --skip-duplicate makes a re-run
+      # after a partial failure safe: three packages go up, and a network error between the first and
+      # the third must not leave the release unfinishable.
       - name: Push to NuGet.org
-        run: >
-          dotnet nuget push "./artifacts/*.nupkg"
-          --api-key ${{ steps.nuget-login.outputs.NUGET_API_KEY }}
-          --source https://api.nuget.org/v3/index.json
-          --skip-duplicate
+        env:
+          NUGET_API_KEY: ${{ steps.nuget-login.outputs.NUGET_API_KEY }}
+        run: |
+          if [ -z "$NUGET_API_KEY" ]; then
+            echo "::error::Trusted publishing returned an empty API key. Check that the 'Money-GitHubActions' policy on NuGet.org points at repository ${{ github.repository }} and workflow 'pipeline.yml', and that it is still enabled."
+            exit 1
+          fi
+
+          dotnet nuget push "./artifacts/*.nupkg" \
+            --api-key "$NUGET_API_KEY" \
+            --source https://api.nuget.org/v3/index.json \
+            --skip-duplicate

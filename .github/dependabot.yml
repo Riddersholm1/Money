@@ -20,7 +20,11 @@ updates:
     ignore:
       # Pinned deliberately below the SDK's own Roslyn so the analyzer package stays loadable by
       # older tooling — see src/Riddersholm.Money.Generators. Raising it is a compatibility decision.
+      # Analyzers is listed too: a major bump of it drags CSharp along in one "multi" PR, which is how
+      # #12 proposed Roslyn 5.9 despite the CSharp rule.
       - dependency-name: "Microsoft.CodeAnalysis.CSharp"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "Microsoft.CodeAnalysis.Analyzers"
         update-types: ["version-update:semver-major"]
 
   - package-ecosystem: github-actions

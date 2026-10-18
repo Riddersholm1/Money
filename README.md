@@ -44,6 +44,15 @@ var payable  = subtotal.Round();                 // your decision, stated once
 
 `IsCanonical` tells you whether an amount is actually representable in its currency.
 
+Payment APIs and ISO 8583 messages carry amounts as integer minor units, and these conversions never
+round either — an amount finer than the currency is refused rather than cut:
+
+```csharp
+Money.FromMinorUnits(1050, Currency.DKK);       // 10.50 DKK
+new Money(10.50m, Currency.DKK).ToMinorUnits(); // 1050
+new Money(10.505m, Currency.DKK).ToMinorUnits(); // throws — Round() first, deliberately
+```
+
 ### Splitting money never loses any
 
 ```csharp
@@ -137,7 +146,9 @@ JsonSerializer.Serialize(new Money(100.50m, Currency.DKK));
 
 Two alternative shapes via `options.AddMoney(...)`: a quoted amount for JavaScript consumers whose only
 number type is a double, and a compact `"100.50 DKK"` string. Reading accepts all three whatever you
-write, so changing the format never breaks stored documents. `MoneyJsonSerializerContext` gives the
+write, so changing the format never breaks stored documents. Reading is strict where leniency would
+change the amount: `"1,5"` is refused rather than read as fifteen, and a repeated `amount` or
+`currency` property is refused rather than resolved. `MoneyJsonSerializerContext` gives the
 reflection-free path for AOT.
 
 **Entity Framework Core** — `dotnet add package Riddersholm.Money.EntityFrameworkCore`:
@@ -153,6 +164,13 @@ context.Products.Where(p => p.Price.Currency == Currency.DKK);
 The default `decimal(19,4)` covers every ISO currency exactly; EF's own default of `(18,2)` silently
 truncates the three-decimal dinars. A single-column text mapping is available model-wide via
 `ConfigureMoneyConventions()`.
+
+A database still rounds anything finer than its column on save — `13.40123 EUR` becomes `13.4012`
+without a word. Turn that into an exception that names the entity, property and amount:
+
+```csharp
+options.UseSqlServer(connectionString).UseMoneyPrecisionGuard();
+```
 
 **Your own currencies** — `dotnet add package Riddersholm.Money.Generators`:
 
@@ -208,6 +226,7 @@ this library is *slower*, along with why that trade was made on purpose.
 | [Parsing](docs/parsing.md) | What is accepted, and what is refused on purpose |
 | [Allocation](docs/allocation.md) | The algorithms and their guarantees |
 | [Currency data](docs/currency-data.md) | Which currencies ship, and where the data comes from |
+| [Maintaining currency data](docs/maintaining-currency-data.md) | How ISO 4217 changes are tracked and released |
 | [Performance](docs/performance.md) | Measurements, and what is deliberately not optimised |
 
 ## Building

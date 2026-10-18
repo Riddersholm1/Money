@@ -64,17 +64,22 @@ diff already tells them what.
 
 ## Releasing
 
-Publishing to NuGet happens one way, and only one way:
+Publishing to NuGet happens one way, and only one way — the same as for Riddersholm.Resultify and
+Riddersholm.EventBus:
 
-1. Tag the commit — `git tag v1.2.3 && git push origin v1.2.3`.
-2. **Publish a GitHub Release for that tag.** This is what triggers
-   the publish job in [`pipeline.yml`](.github/workflows/pipeline.yml); the tag alone does nothing.
-3. Approve the `nuget` environment if reviewers are configured on it.
+1. Set `VersionPrefix`/`VersionSuffix` in [`Directory.Build.props`](Directory.Build.props) to the version
+   you are releasing, give its `CHANGELOG.md` heading today's date, and merge that to `main`.
+2. Tag the merge commit — `git tag v1.2.3 && git push origin v1.2.3`.
+3. **Publish a GitHub Release for that tag.** This is what triggers the publish job in
+   [`pipeline.yml`](.github/workflows/pipeline.yml); the tag alone does nothing. Tick *Set as a
+   pre-release* for an `-rc`/`-beta` version.
 
-The workflow re-runs the whole gate — build, tests, the NativeAOT publish-and-execute — before it
-packs anything, so a release cannot ship something CI would have rejected. The version comes from the
-tag with the leading `v` stripped, and a tag that is not a version number fails the run rather than
-silently publishing `1.0.0` from `Directory.Build.props`.
+The release run repeats the whole gate — build, tests on Linux, Windows and macOS, the NativeAOT
+publish-and-execute, the dependency audit — before anything is pushed, so a release cannot ship
+something CI would have rejected. The version comes from the tag with the leading `v` stripped; a tag
+that is not a version number fails the run, and one that disagrees with `Directory.Build.props` gets a
+warning. All three packages are pushed with `--skip-duplicate`, so re-running a half-finished release
+is safe.
 
 There is **no `NUGET_API_KEY` secret**, deliberately. The workflow authenticates with
 [Trusted Publishing](https://learn.microsoft.com/nuget/nuget-org/trusted-publishing): GitHub mints an
@@ -83,21 +88,39 @@ bound to this repository's immutable GitHub ID. A long-lived push credential in 
 readable by every workflow and every action they call, and stays valid until someone remembers to
 rotate it — which is the wrong shape of risk for a package that ends up inside banking systems.
 
-One-time setup on nuget.org, under **Account → Trusted Publishing**:
+One-time setup on nuget.org, under **your profile → Trusted Publishing → Create**, mirroring the
+existing `Resultify-GitHubActions` and `EventBus-GitHubActions` policies:
 
 | Field | Value |
 |---|---|
+| Policy name | `Money-GitHubActions` |
 | Repository owner | `Riddersholm1` |
 | Repository | `Money` |
 | Workflow file | `pipeline.yml` |
-| Environment | `nuget` |
+| Environment | *(leave empty)* |
 
-Then add a repository secret **`NUGET_USER`** holding the nuget.org *profile name* — not the email
-address. It is not really a secret, but keeping it beside the other release settings means there is one
-place to look; a repository variable works identically if you prefer.
+Then add a repository **variable** (Settings → Secrets and variables → Actions → *Variables*) named
+**`NUGET_USER`** holding your nuget.org *profile name* — not the email address. The publish job checks
+for it before it tries to log in, so a missing value fails with a plain message rather than an OIDC
+error.
 
 Note the activation rule: a new policy is only **temporarily active for seven days** and becomes
 permanent after the first successful publish. Create it shortly before releasing, not months ahead.
+
+After the first stable release (1.0.0), set `PackageValidationBaselineVersion` to it in
+[`src/Directory.Build.props`](src/Directory.Build.props), so that every later build is checked for
+breaking changes against what is actually on nuget.org.
+
+### Optional repository settings
+
+- **`CODECOV_TOKEN`** secret — enables the coverage upload. The step never fails the build without it.
+- **Settings → Actions → General → "Allow GitHub Actions to create and approve pull requests"** — lets
+  the weekly [currency-data workflow](.github/workflows/currency-data.yml) open its pull request. Without
+  it, the workflow reports the same change in an issue.
+
+### Keeping currency data current
+
+See [docs/maintaining-currency-data.md](docs/maintaining-currency-data.md).
 
 ## Reporting a security issue
 

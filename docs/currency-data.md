@@ -12,8 +12,14 @@ Committing the data rather than fetching it during the build means:
 Regenerate with:
 
 ```sh
-dotnet run --project tools/Riddersholm.Money.DataSync
+dotnet run --project tools/Riddersholm.Money.DataSync              # rewrite the file
+dotnet run --project tools/Riddersholm.Money.DataSync -- --check   # report only; exit 2 on change
 ```
+
+A weekly workflow runs the check and opens a pull request when ISO or CLDR changes — see
+[maintaining-currency-data.md](maintaining-currency-data.md) for the routine. The file's format is
+described by [`eng/iso-4217.schema.json`](../eng/iso-4217.schema.json), which also applies to the files
+consumers point the generator at.
 
 ## Sources
 
@@ -40,6 +46,11 @@ The inclusion rule is data-driven rather than a hand-maintained list:
    unit, so rule 2 alone would let it through.
 4. **Plus `XTS` and `XXX`.** Both are marked `-` by ISO and would be dropped, but they are structurally
    required — see below.
+5. **Withdrawn currencies stay.** A currency that has shipped is never removed when ISO withdraws it.
+   It is marked `"withdrawn": "YYYY-MM"` (and `"replacedBy"` where the register makes the successor
+   unambiguous), its `Currency.XYZ` member becomes `[Obsolete]`, and its metadata stays, so ledgers
+   full of historical amounts still round correctly. Deleting it would remove a public member — a
+   breaking change in what should be a routine data update.
 
 This correctly keeps the five `X`-prefixed codes that really are circulating money: `XAF` (CFA franc
 BEAC), `XOF` (CFA franc BCEAO), `XPF` (CFP franc), `XCD` (East Caribbean dollar), and `XCG` (Caribbean
@@ -74,6 +85,10 @@ ISO records `MinorUnit = 2` for both, which is true about the *digit count* but 
 *increment*. `MinorUnitsPerMajor` therefore comes from an explicit override in the sync tool, and
 `Money.Round()` snaps to the increment rather than simply truncating to N decimals. Rounding
 `1.37 MRU` gives `1.40 MRU`, not `1.37 MRU`.
+
+Integer **minor units** for payment APIs (`Money.ToMinorUnits()`, `Money.FromMinorUnits()`) use ISO's
+digit count, not this increment, because that is what every processor and ISO 8583 message counts:
+`1.20 MRU` is `120`, not `6`.
 
 `XTS` and `XXX` have **no** minor unit. Their `MinorUnitsPerMajor` is `0`, `HasMinorUnit` is `false`,
 and `Round()` is a no-op that preserves full decimal precision — you cannot round to an increment that

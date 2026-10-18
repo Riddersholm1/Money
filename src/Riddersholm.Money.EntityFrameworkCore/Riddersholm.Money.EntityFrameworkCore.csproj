@@ -1,10 +1,11 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <RootNamespace>Riddersholm.Money.EntityFrameworkCore</RootNamespace>
     <AssemblyName>Riddersholm.Money.EntityFrameworkCore</AssemblyName>
     <PackageId>Riddersholm.Money.EntityFrameworkCore</PackageId>
+    <Title>Riddersholm.Money — Entity Framework Core</Title>
     <Description>Entity Framework Core integration for Riddersholm.Money: complex-type mapping, value converters and comparers, and precision helpers that stop decimal amounts being silently truncated.</Description>
     <PackageTags>$(PackageTags);entity-framework-core;efcore;orm</PackageTags>
 

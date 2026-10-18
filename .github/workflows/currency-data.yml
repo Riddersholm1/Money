@@ -1,0 +1,138 @@
+name: Currency data
+
+# Watches the ISO 4217 register and Unicode CLDR for changes to the currencies this library ships, so
+# that an amendment becomes a pull request instead of something somebody has to remember to look for.
+#
+# Weekly, it runs the data sync in --check mode. When nothing has changed the run is green and quiet.
+# When something has, it regenerates eng/iso-4217.json, builds and tests against it, and opens (or
+# updates) a pull request from the automation/currency-data branch with the change summary and the
+# test outcome. See docs/maintaining-currency-data.md for what to do with that pull request.
+#
+# Opening the pull request needs "Allow GitHub Actions to create and approve pull requests" under
+# Settings > Actions > General. Without it the workflow opens an issue with the same summary instead.
+on:
+  schedule:
+    - cron: "17 6 * * 1" # Mondays, 06:17 UTC
+  workflow_dispatch:
+
+concurrency:
+  group: currency-data
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
+env:
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+  BRANCH: automation/currency-data
+
+jobs:
+  check:
+    name: Compare with ISO 4217 and CLDR
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7.0.1
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v6.0.0
+        with:
+          dotnet-version: "10.0.x"
+          dotnet-quality: "ga"
+
+      - name: Check for changes
+        id: check
+        run: |
+          set +e
+          dotnet run --project tools/Riddersholm.Money.DataSync -c Release -- --check | tee check.txt
+          code=${PIPESTATUS[0]}
+          set -e
+
+          { echo "## Currency data check"; echo; echo '```'; cat check.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+
+          case "$code" in
+            0) echo "changed=false" >> "$GITHUB_OUTPUT" ;;
+            2) echo "changed=true" >> "$GITHUB_OUTPUT" ;;
+            *) echo "::error::The data sync failed (exit code $code); see the log above."; exit "$code" ;;
+          esac
+
+      - name: Regenerate eng/iso-4217.json
+        if: steps.check.outputs.changed == 'true'
+        run: dotnet run --project tools/Riddersholm.Money.DataSync -c Release
+
+      # A pull request opened with the workflow token does not trigger the CI workflow, so the build and
+      # tests run here and their outcome goes into the pull request. Failures are expected when a
+      # currency is added or withdrawn: the suite pins the currency count on purpose.
+      - name: Build and test against the new data
+        id: verify
+        if: steps.check.outputs.changed == 'true'
+        run: |
+          set +e
+          dotnet build -c Release > build.txt 2>&1
+          build=$?
+          dotnet test --no-build -c Release > test.txt 2>&1
+          test=$?
+          set -e
+
+          if [ "$build" -eq 0 ] && [ "$test" -eq 0 ]; then
+            echo "outcome=Build and tests pass against the new data." >> "$GITHUB_OUTPUT"
+          else
+            echo "outcome=Build or tests FAIL against the new data (build exit $build, test exit $test) — see the workflow run. Expected when a currency is added or withdrawn: update the pinned counts listed in the guide." >> "$GITHUB_OUTPUT"
+          fi
+
+          tail -n 40 test.txt || true
+
+      - name: Open or update the pull request
+        if: steps.check.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          OUTCOME: ${{ steps.verify.outputs.outcome }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -euo pipefail
+
+          {
+            echo "The scheduled currency-data check found changes in the ISO 4217 register or CLDR."
+            echo
+            echo '```'
+            cat check.txt
+            echo '```'
+            echo
+            echo "**$OUTCOME**"
+            echo
+            echo "Workflow run: $RUN_URL"
+            echo
+            echo "Before merging, follow docs/maintaining-currency-data.md:"
+            echo
+            echo "- [ ] Confirm each change against the ISO 4217 amendment on six-group.com"
+            echo "- [ ] Update the pinned currency counts if a currency was added"
+            echo "- [ ] Add a CHANGELOG entry and choose the version bump"
+            echo "- [ ] Run the CI workflow on this branch (Actions > CI > Run workflow)"
+          } > body.md
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -B "$BRANCH"
+          git add eng/iso-4217.json
+          git commit -m "Update ISO 4217 currency data" -m "$(cat check.txt)"
+          git push --force origin "$BRANCH"
+
+          title="Update ISO 4217 currency data"
+
+          if [ -n "$(gh pr list --head "$BRANCH" --state open --json number --jq '.[].number')" ]; then
+            gh pr edit "$BRANCH" --body-file body.md
+          elif ! gh pr create --base main --head "$BRANCH" --title "$title" --body-file body.md; then
+            echo "::warning::Could not open a pull request (is 'Allow GitHub Actions to create and approve pull requests' enabled?). Reporting in an issue instead; the change is on the $BRANCH branch."
+            issue=$(gh issue list --state open --search "\"$title\" in:title" --json number --jq '.[0].number // empty')
+
+            # One issue that is kept current, rather than a new one every week.
+            if [ -n "$issue" ]; then
+              gh issue edit "$issue" --body-file body.md
+            else
+              gh issue create --title "$title" --body-file body.md
+            fi
+          fi
