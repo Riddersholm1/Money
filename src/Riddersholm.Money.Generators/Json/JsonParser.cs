@@ -199,6 +199,13 @@ internal static class JsonParser
 
         string literal = text.Substring(start, index - start);
 
+        // Integers are kept exact; see JsonValue.From(long).
+        if (literal.IndexOfAny(['.', 'e', 'E']) < 0
+            && long.TryParse(literal, NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out long integer))
+        {
+            return JsonValue.From(integer);
+        }
+
         return double.TryParse(literal, NumberStyles.Float, CultureInfo.InvariantCulture, out double value)
             ? JsonValue.From(value)
             : throw new FormatException($"'{literal}' is not a number.");

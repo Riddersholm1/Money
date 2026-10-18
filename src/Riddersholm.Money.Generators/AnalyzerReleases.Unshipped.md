@@ -1,4 +1,4 @@
-; Unshipped analyzer releases
+﻿; Unshipped analyzer releases
 ; https://github.com/dotnet/roslyn-analyzers/blob/main/src/Microsoft.CodeAnalysis.Analyzers/ReleaseTrackingAnalyzers.Help.md
 
 ### New Rules
@@ -10,3 +10,4 @@ RMG002  | Riddersholm.Money.Generators | Error | Currency definition file has no
 RMG003  | Riddersholm.Money.Generators | Error | Currency code is not a valid ISO 4217 alphabetic code
 RMG004  | Riddersholm.Money.Generators | Error | Duplicate currency code
 RMG005  | Riddersholm.Money.Generators | Error | Currency precision is implausible
+RMG006  | Riddersholm.Money.Generators | Error | Currency property is missing or invalid

@@ -53,7 +53,13 @@ internal static class ExtensionEmitter
 
         foreach (CurrencyDefinition currency in currencies)
         {
-            source.LineInvariant($"        /// <summary>{EscapeXml(currency.Name)} ({currency.Code}).</summary>");
+            source.LineInvariant($"        /// <summary>{SourceEscaping.XmlDoc(currency.Name)} ({currency.Code}).{SourceEscaping.WithdrawnNote(currency)}</summary>");
+
+            if (SourceEscaping.ObsoleteAttribute(currency) is { } obsolete)
+            {
+                source.LineInvariant($"        {obsolete}");
+            }
+
             source.LineInvariant($"        public static Currency {currency.Code} => Values.{currency.Code};");
             source.Line();
         }
@@ -87,8 +93,8 @@ internal static class ExtensionEmitter
             source.Line("        new CurrencyInfo(");
             source.LineInvariant($"            code: \"{currency.Code}\",");
             source.LineInvariant($"            numericCode: {currency.NumericCode},");
-            source.LineInvariant($"            englishName: \"{Escape(currency.Name)}\",");
-            source.LineInvariant($"            symbol: \"{Escape(currency.Symbol)}\",");
+            source.LineInvariant($"            englishName: {SourceEscaping.Literal(currency.Name)},");
+            source.LineInvariant($"            symbol: {SourceEscaping.Literal(currency.Symbol)},");
             source.LineInvariant($"            decimalDigits: {currency.DecimalDigits},");
             source.LineInvariant($"            minorUnitsPerMajor: {currency.MinorUnitsPerMajor},");
             source.LineInvariant($"            cashDecimalDigits: {currency.CashDecimalDigits},");
@@ -127,18 +133,4 @@ internal static class ExtensionEmitter
 
         return identifier.ToString();
     }
-
-    /// <summary>Escapes a value for use inside a C# string literal.</summary>
-    private static string Escape(string value) => value
-        .Replace("\\", "\\\\")
-        .Replace("\"", "\\\"");
-
-    /// <summary>
-    /// Escapes a value for use inside an XML documentation comment. A bare ampersand is not valid XML,
-    /// and two ISO currency names contain one.
-    /// </summary>
-    private static string EscapeXml(string value) => value
-        .Replace("&", "&amp;")
-        .Replace("<", "&lt;")
-        .Replace(">", "&gt;");
 }
