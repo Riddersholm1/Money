@@ -1,4 +1,4 @@
-using Xunit;
+﻿using Xunit;
 
 namespace Riddersholm.Money.Generators.Tests;
 
@@ -35,6 +35,17 @@ public sealed class CurrencyGeneratorOutputTests
         Assert.Contains("[ModuleInitializer]", source, StringComparison.Ordinal);
         Assert.Contains("CurrencyRegistry.Register(", source, StringComparison.Ordinal);
         Assert.Contains("namespace Contoso.Billing;", source, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Extension_mode_imports_the_container_project_wide()
+    {
+        // Without it the members only resolve inside the root namespace, so Currency.XBT failed to
+        // compile from top-level statements — the first place a consumer tries it.
+        Assert.Contains(
+            "global using static global::Contoso.Billing.Currencies;",
+            GeneratorHarness.Run(TwoCurrencies).Source(".Currencies.g.cs")!,
+            StringComparison.Ordinal);
     }
 
     [Fact]

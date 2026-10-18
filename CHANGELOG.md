@@ -61,6 +61,10 @@ Every item below returned a plausible, wrong answer before its fix, and each has
   initializer at startup. Each is now a build error, `RMG006`.
 - **A line break in a currency name broke out of the generated string literal**, so the rest of the
   name compiled as code. Names and symbols are now fully escaped in both literals and doc comments.
+- **Generated currencies were invisible outside the project's root namespace.** The extension members
+  live in a class in that namespace, so `Currency.XBT` failed with `CS0117` in top-level statements —
+  the first place a consumer of the NuGet package tries it. The generated file now carries a
+  `global using static` for that one class. Found by installing the packed packages into a new app.
 
 **Added**
 
