@@ -1,4 +1,4 @@
-using System.Text.Json.Serialization;
+﻿using System.Text.Json.Serialization;
 
 namespace Riddersholm.Money.DataSync;
 
@@ -6,7 +6,7 @@ namespace Riddersholm.Money.DataSync;
 internal sealed record CurrencyDataFile
 {
     [JsonPropertyName("$schema")]
-    public string Schema { get; init; } = "https://github.com/Riddersholm1/Money/blob/main/eng/iso-4217.schema.json";
+    public string Schema { get; init; } = "https://raw.githubusercontent.com/Riddersholm1/Money/main/eng/iso-4217.schema.json";
 
     /// <summary>Provenance, so a stale data file is obvious in review.</summary>
     public required DataSource Source { get; init; }
@@ -60,4 +60,19 @@ internal sealed record CurrencyRecord
     /// (0.05), DKK is 50 (0.50), and 1 means no special cash rounding.
     /// </summary>
     public required byte CashRoundingStep { get; init; }
+
+    /// <summary>
+    /// When ISO withdrew the currency, as <c>YYYY-MM</c>; absent for an active one.
+    /// </summary>
+    /// <remarks>
+    /// A currency that was ever shipped is never deleted from the file, only marked: deleting it would
+    /// remove the public <c>Currency.XYZ</c> member, a breaking change, and leave every stored amount in
+    /// it without a known precision. The generator marks the member <c>[Obsolete]</c> instead.
+    /// </remarks>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? Withdrawn { get; init; }
+
+    /// <summary>The currency that replaced this one, where the ISO register makes that unambiguous.</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? ReplacedBy { get; init; }
 }
