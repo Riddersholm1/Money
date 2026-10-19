@@ -55,23 +55,42 @@ public sealed class CurrencyNumericValueConverter : ValueConverter<Currency, sho
     }
 
     /// <summary>
-    /// Turns a currency into its numeric code, refusing any currency that does not have one.
+    /// Turns a currency into its numeric code, refusing any currency that the code would not identify.
     /// </summary>
     /// <remarks>
+    /// <para>
     /// <see cref="Currency.NumericCode"/> returns <c>0</c> for a currency the library does not know,
     /// and <c>0</c> is not an ISO 4217 numeric code. Writing it would store a row that identifies no
     /// currency and only fails when something later reads it back — a write that silently loses the
     /// data it was given. Failing at the point of the mistake is the whole difference between a bug
     /// found in a test and a corrupt ledger found in an audit.
+    /// </para>
+    /// <para>
+    /// The same goes for a number ISO has since given to another currency. ANG's 532 now belongs to XCG,
+    /// so a stored 532 reads back as XCG; writing ANG as 532 would relabel the amount as a different
+    /// currency on the next read. Such a currency is refused too.
+    /// </para>
     /// </remarks>
-    private static short Write(Currency currency) =>
-        currency.NumericCode != 0
-            ? currency.NumericCode
-            : throw new InvalidOperationException(
+    private static short Write(Currency currency)
+    {
+        if (currency.NumericCode == 0)
+        {
+            throw new InvalidOperationException(
                 $"'{currency.Code}' has no ISO 4217 numeric code, so it cannot be stored by "
               + $"{nameof(CurrencyNumericValueConverter)}. Register it through CurrencyRegistry with a "
               + $"numeric code, or map the column with {nameof(CurrencyValueConverter)}, which stores "
               + "the alphabetic code and round-trips any currency.");
+        }
+
+        if (!Currency.TryFromNumericCode(currency.NumericCode, out Currency owner) || owner != currency)
+        {
+            throw new InvalidOperationException(string.Create(
+                CultureInfo.InvariantCulture,
+                $"'{currency.Code}' cannot be stored by {nameof(CurrencyNumericValueConverter)}: its numeric code {currency.NumericCode} now identifies '{owner.Code}', so it would read back as a different currency. Map the column with {nameof(CurrencyValueConverter)}, which stores the alphabetic code."));
+        }
+
+        return currency.NumericCode;
+    }
 
     private static Currency Convert(short numericCode) =>
         Currency.TryFromNumericCode(numericCode, out Currency currency)

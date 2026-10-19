@@ -1,4 +1,4 @@
-namespace Riddersholm.Money.Generators;
+﻿namespace Riddersholm.Money.Generators;
 
 /// <summary>One currency read from an ISO 4217 definition file.</summary>
 internal sealed record CurrencyDefinition(
@@ -10,4 +10,6 @@ internal sealed record CurrencyDefinition(
     byte DecimalDigits,
     long MinorUnitsPerMajor,
     byte CashDecimalDigits,
-    byte CashRoundingStep);
+    byte CashRoundingStep,
+    string? Withdrawn = null,
+    string? ReplacedBy = null);

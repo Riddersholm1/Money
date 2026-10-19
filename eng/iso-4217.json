@@ -1,11 +1,11 @@
 {
-  "$schema": "https://github.com/Riddersholm1/Money/blob/main/eng/iso-4217.schema.json",
+  "$schema": "https://raw.githubusercontent.com/Riddersholm1/Money/main/eng/iso-4217.schema.json",
   "source": {
     "iso": "https://raw.githubusercontent.com/datasets/currency-codes/main/data/codes-all.csv",
     "cldrFractions": "https://raw.githubusercontent.com/unicode-org/cldr-json/main/cldr-json/cldr-core/supplemental/currencyData.json",
     "cldrNames": "https://raw.githubusercontent.com/unicode-org/cldr-json/main/cldr-json/cldr-numbers-full/main/en/currencies.json",
-    "retrievedUtc": "2026-08-02",
-    "filter": "Active ISO 4217 codes with a numeric minor unit (excludes metals, bond units, SDR and other funds), minus XAD (unit of account), plus XTS and XXX."
+    "retrievedUtc": "2026-10-18",
+    "filter": "Active ISO 4217 codes with a numeric minor unit (excludes metals, bond units, SDR and other funds), minus XAD (unit of account), plus XTS and XXX, plus currencies withdrawn since 2017, which are marked withdrawn. A currency is never removed once shipped."
   },
   "currencies": [
     {
@@ -47,6 +47,18 @@
       "minorUnitsPerMajor": 100,
       "cashDecimalDigits": 0,
       "cashRoundingStep": 1
+    },
+    {
+      "code": "ANG",
+      "numericCode": 532,
+      "name": "Netherlands Antillean Guilder",
+      "symbol": "ANG",
+      "decimalDigits": 2,
+      "minorUnitsPerMajor": 100,
+      "cashDecimalDigits": 2,
+      "cashRoundingStep": 1,
+      "withdrawn": "2025-03",
+      "replacedBy": "XCG"
     },
     {
       "code": "AOA",
@@ -127,6 +139,18 @@
       "minorUnitsPerMajor": 100,
       "cashDecimalDigits": 2,
       "cashRoundingStep": 1
+    },
+    {
+      "code": "BGN",
+      "numericCode": 975,
+      "name": "Bulgarian Lev",
+      "symbol": "BGN",
+      "decimalDigits": 2,
+      "minorUnitsPerMajor": 100,
+      "cashDecimalDigits": 2,
+      "cashRoundingStep": 1,
+      "withdrawn": "2026-01",
+      "replacedBy": "EUR"
     },
     {
       "code": "BHD",
@@ -237,6 +261,18 @@
       "minorUnitsPerMajor": 100,
       "cashDecimalDigits": 2,
       "cashRoundingStep": 1
+    },
+    {
+      "code": "BYR",
+      "numericCode": 974,
+      "name": "Belarusian Ruble (2000–2016)",
+      "symbol": "BYR",
+      "decimalDigits": 0,
+      "minorUnitsPerMajor": 1,
+      "cashDecimalDigits": 0,
+      "cashRoundingStep": 1,
+      "withdrawn": "2017-01",
+      "replacedBy": "BYN"
     },
     {
       "code": "BZD",
@@ -357,6 +393,18 @@
       "minorUnitsPerMajor": 100,
       "cashDecimalDigits": 0,
       "cashRoundingStep": 1
+    },
+    {
+      "code": "CUC",
+      "numericCode": 931,
+      "name": "Cuban Convertible Peso",
+      "symbol": "$",
+      "decimalDigits": 2,
+      "minorUnitsPerMajor": 100,
+      "cashDecimalDigits": 2,
+      "cashRoundingStep": 1,
+      "withdrawn": "2021-06",
+      "replacedBy": "CUP"
     },
     {
       "code": "CUP",
@@ -587,6 +635,18 @@
       "minorUnitsPerMajor": 100,
       "cashDecimalDigits": 2,
       "cashRoundingStep": 1
+    },
+    {
+      "code": "HRK",
+      "numericCode": 191,
+      "name": "Croatian Kuna",
+      "symbol": "kn",
+      "decimalDigits": 2,
+      "minorUnitsPerMajor": 100,
+      "cashDecimalDigits": 2,
+      "cashRoundingStep": 1,
+      "withdrawn": "2023-01",
+      "replacedBy": "EUR"
     },
     {
       "code": "HTG",
@@ -874,7 +934,7 @@
       "name": "Malagasy Ariary",
       "symbol": "Ar",
       "decimalDigits": 2,
-      "minorUnitsPerMajor": 5,
+      "minorUnitsPerMajor": 100,
       "cashDecimalDigits": 0,
       "cashRoundingStep": 1
     },
@@ -919,14 +979,26 @@
       "cashRoundingStep": 1
     },
     {
+      "code": "MRO",
+      "numericCode": 478,
+      "name": "Mauritanian Ouguiya (1973–2017)",
+      "symbol": "MRO",
+      "decimalDigits": 2,
+      "minorUnitsPerMajor": 100,
+      "cashDecimalDigits": 0,
+      "cashRoundingStep": 1,
+      "withdrawn": "2017-12",
+      "replacedBy": "MRU"
+    },
+    {
       "code": "MRU",
       "numericCode": 929,
       "name": "Mauritanian Ouguiya",
       "symbol": "MRU",
       "decimalDigits": 2,
-      "minorUnitsPerMajor": 5,
+      "minorUnitsPerMajor": 100,
       "cashDecimalDigits": 2,
-      "cashRoundingStep": 20
+      "cashRoundingStep": 1
     },
     {
       "code": "MUR",
@@ -1269,6 +1341,18 @@
       "cashRoundingStep": 1
     },
     {
+      "code": "SLL",
+      "numericCode": 694,
+      "name": "Sierra Leonean Leone (1964—2022)",
+      "symbol": "SLL",
+      "decimalDigits": 2,
+      "minorUnitsPerMajor": 100,
+      "cashDecimalDigits": 0,
+      "cashRoundingStep": 1,
+      "withdrawn": "2023-12",
+      "replacedBy": "SLE"
+    },
+    {
       "code": "SOS",
       "numericCode": 706,
       "name": "Somali Shilling",
@@ -1297,6 +1381,18 @@
       "minorUnitsPerMajor": 100,
       "cashDecimalDigits": 2,
       "cashRoundingStep": 1
+    },
+    {
+      "code": "STD",
+      "numericCode": 678,
+      "name": "São Tomé & Príncipe Dobra (1977–2017)",
+      "symbol": "STD",
+      "decimalDigits": 2,
+      "minorUnitsPerMajor": 100,
+      "cashDecimalDigits": 0,
+      "cashRoundingStep": 1,
+      "withdrawn": "2017-12",
+      "replacedBy": "STN"
     },
     {
       "code": "STN",
@@ -1519,6 +1615,17 @@
       "cashRoundingStep": 1
     },
     {
+      "code": "VEF",
+      "numericCode": 937,
+      "name": "Venezuelan Bolívar (2008–2018)",
+      "symbol": "Bs",
+      "decimalDigits": 2,
+      "minorUnitsPerMajor": 100,
+      "cashDecimalDigits": 0,
+      "cashRoundingStep": 1,
+      "withdrawn": "2018-08"
+    },
+    {
       "code": "VES",
       "numericCode": 928,
       "name": "Venezuelan Bolívar",
@@ -1667,6 +1774,18 @@
       "minorUnitsPerMajor": 100,
       "cashDecimalDigits": 2,
       "cashRoundingStep": 1
+    },
+    {
+      "code": "ZWL",
+      "numericCode": 932,
+      "name": "Zimbabwean Dollar (2009–2024)",
+      "symbol": "ZWL",
+      "decimalDigits": 2,
+      "minorUnitsPerMajor": 100,
+      "cashDecimalDigits": 2,
+      "cashRoundingStep": 1,
+      "withdrawn": "2024-09",
+      "replacedBy": "ZWG"
     }
   ]
 }

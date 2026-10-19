@@ -77,7 +77,10 @@ internal static class CurrencyMetadata
         decimalDigits: CurrencyTable.DecimalDigits[ordinal],
         minorUnitsPerMajor: CurrencyTable.GetMinorUnitsPerMajor(ordinal),
         cashDecimalDigits: CurrencyTable.CashDecimalDigits[ordinal],
-        cashRoundingStep: CurrencyTable.CashRoundingSteps[ordinal]);
+        cashRoundingStep: CurrencyTable.CashRoundingSteps[ordinal])
+    {
+        IsWithdrawn = CurrencyTable.Withdrawn[ordinal] != 0
+    };
 
     /// <summary>
     /// Describes a currency the library has never seen, so that loading unfamiliar data reads its
@@ -119,9 +122,23 @@ internal static class CurrencyMetadata
     {
         Dictionary<short, Currency> map = new(CurrencyTable.Count);
 
+        // ISO hands a withdrawn currency's number to its successor — ANG and XCG are both 532 — so the
+        // active currency must win the number. Withdrawn ones are added afterwards, and only where the
+        // number is still free, so a historical code still resolves when nothing replaced it.
         for (int i = 0; i < CurrencyTable.Count; i++)
         {
-            map[CurrencyTable.GetNumericCode(i)] = new Currency(CurrencyTable.GetPacked(i));
+            if (CurrencyTable.Withdrawn[i] == 0)
+            {
+                map[CurrencyTable.GetNumericCode(i)] = new Currency(CurrencyTable.GetPacked(i));
+            }
+        }
+
+        for (int i = 0; i < CurrencyTable.Count; i++)
+        {
+            if (CurrencyTable.Withdrawn[i] != 0)
+            {
+                map.TryAdd(CurrencyTable.GetNumericCode(i), new Currency(CurrencyTable.GetPacked(i)));
+            }
         }
 
         return map.ToFrozenDictionary();

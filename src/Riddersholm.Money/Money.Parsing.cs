@@ -29,6 +29,21 @@ public readonly partial record struct Money :
     /// <summary>The default styles: an amount in any usual accounting form, with an identifiable currency.</summary>
     public const MoneyStyles DefaultStyles = MoneyStyles.Currency;
 
+    /// <summary>
+    /// Exactly what the round-trip format <c>R</c> writes, and nothing more: an optional leading minus,
+    /// digits with a decimal point, and an ISO 4217 code — <c>-1234.50 DKK</c>.
+    /// </summary>
+    /// <remarks>
+    /// Use this with <see cref="CultureInfo.InvariantCulture"/> to read back what this library wrote — a
+    /// column, a message, a file. It refuses group separators, and that is the point: the default styles
+    /// accept them, so under the invariant culture <c>"1,5 DKK"</c> reads as fifteen kroner. That is the
+    /// right answer for <c>1,500</c> and a tenfold error for a European one-and-a-half. The <c>R</c>
+    /// format never writes a group separator, so text containing one came from somewhere else and is
+    /// refused rather than reinterpreted. The JSON converter and the EF Core text mapping read with this.
+    /// </remarks>
+    public const MoneyStyles RoundTripStyles =
+        MoneyStyles.AllowLeadingSign | MoneyStyles.AllowDecimalPoint | MoneyStyles.AllowCurrencyCode | MoneyStyles.RequireCurrency;
+
     /// <summary>Parses an amount of money.</summary>
     /// <param name="s">Text such as <c>100.50 DKK</c>, <c>DKK 100.50</c>, or — with a Danish culture — <c>100,50 kr.</c></param>
     /// <param name="provider">
@@ -117,7 +132,20 @@ public readonly partial record struct Money :
     {
         result = default(Money);
 
-        ReadOnlySpan<char> text = s.Trim();
+        // Surrounding whitespace is removed only when the style allows it, so MoneyStyles means the
+        // same thing here as NumberStyles does to decimal.Parse. Whitespace *between* the number and
+        // an ISO code is the separator the formats write, and is always accepted.
+        ReadOnlySpan<char> text = s;
+
+        if (style.HasFlag(MoneyStyles.AllowLeadingWhite))
+        {
+            text = text.TrimStart();
+        }
+
+        if (style.HasFlag(MoneyStyles.AllowTrailingWhite))
+        {
+            text = text.TrimEnd();
+        }
 
         if (text.IsEmpty)
         {
@@ -147,7 +175,7 @@ public readonly partial record struct Money :
         //
         // Any matched symbol is left in the text for decimal.TryParse, whose AllowCurrencySymbol knows
         // where every culture puts it, including all sixteen negative-currency patterns.
-        if (!decimal.TryParse(text.Trim(), ToNumberStyles(style), NumberFormatInfo.GetInstance(provider), out decimal amount))
+        if (!decimal.TryParse(text, ToNumberStyles(style), NumberFormatInfo.GetInstance(provider), out decimal amount))
         {
             return false;
         }

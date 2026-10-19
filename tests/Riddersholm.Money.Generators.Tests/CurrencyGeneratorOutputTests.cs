@@ -1,4 +1,4 @@
-using Xunit;
+﻿using Xunit;
 
 namespace Riddersholm.Money.Generators.Tests;
 
@@ -35,6 +35,17 @@ public sealed class CurrencyGeneratorOutputTests
         Assert.Contains("[ModuleInitializer]", source, StringComparison.Ordinal);
         Assert.Contains("CurrencyRegistry.Register(", source, StringComparison.Ordinal);
         Assert.Contains("namespace Contoso.Billing;", source, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Extension_mode_imports_the_container_project_wide()
+    {
+        // Without it the members only resolve inside the root namespace, so Currency.XBT failed to
+        // compile from top-level statements — the first place a consumer tries it.
+        Assert.Contains(
+            "global using static global::Contoso.Billing.Currencies;",
+            GeneratorHarness.Run(TwoCurrencies).Source(".Currencies.g.cs")!,
+            StringComparison.Ordinal);
     }
 
     [Fact]
@@ -114,7 +125,7 @@ public sealed class CurrencyGeneratorOutputTests
     [Fact]
     public void An_explicit_minor_unit_overrides_the_power_of_ten()
     {
-        // MRU and MGA divide by five despite recording two decimal digits.
+        // A currency divided into fifths, as MRU and MGA physically are, records two decimal digits.
         string source = GeneratorHarness.Run("""
             { "currencies": [ { "code": "MRU", "numericCode": 929, "name": "Ouguiya", "symbol": "M", "decimalDigits": 2, "minorUnitsPerMajor": 5 } ] }
             """, emitCore: true).Source("Currency.Generated.g.cs")!;

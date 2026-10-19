@@ -1,4 +1,4 @@
-using Microsoft.CodeAnalysis;
+﻿using Microsoft.CodeAnalysis;
 
 namespace Riddersholm.Money.Generators;
 
@@ -46,7 +46,15 @@ internal static class GeneratorDiagnostics
     public static readonly DiagnosticDescriptor InvalidPrecision = new(
         id: "RMG005",
         title: "Currency precision is implausible",
-        messageFormat: "'{0}' declares {1} decimal digits; ISO 4217 currencies have at most 4",
+        messageFormat: "'{0}' declares {1} decimal digits; the supported range is 0 to 28",
+        category: Category,
+        defaultSeverity: DiagnosticSeverity.Error,
+        isEnabledByDefault: true);
+
+    public static readonly DiagnosticDescriptor InvalidProperty = new(
+        id: "RMG006",
+        title: "Currency property is missing or invalid",
+        messageFormat: "'{0}' in '{1}': {2}",
         category: Category,
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);

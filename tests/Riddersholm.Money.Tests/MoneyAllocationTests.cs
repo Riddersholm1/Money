@@ -1,12 +1,11 @@
-using FsCheck.Xunit;
+﻿using FsCheck.Xunit;
 using Xunit;
+using static Riddersholm.Money.Tests.TestMoney;
 
 namespace Riddersholm.Money.Tests;
 
 public sealed class MoneyAllocationTests
 {
-    private static Money Dkk(decimal amount) => new(amount, Currency.DKK);
-
     [Fact]
     public void The_canonical_example_distributes_the_stray_ore()
     {
@@ -151,13 +150,14 @@ public sealed class MoneyAllocationTests
     [Fact]
     public void Allocation_respects_a_fifth_minor_unit()
     {
-        // MRU steps by 0.2, so a three-way split of 1 MRU is 0.4 / 0.4 / 0.2, not 0.34 / 0.33 / 0.33.
-        Currency mru = Currency.MRU;
-        Money[] parts = new Money(1m, mru).Allocate(3);
+        // A currency divided into fifths steps by 0.2, so a three-way split of 1 is 0.4 / 0.4 / 0.2, not
+        // 0.34 / 0.33 / 0.33.
+        Currency fifths = TestMoney.Fifths;
+        Money[] parts = new Money(1m, fifths).Allocate(3);
 
-        Assert.Equal(new Money(1m, mru), parts.Sum());
+        Assert.Equal(new Money(1m, fifths), parts.Sum());
         Assert.All(parts, part => Assert.True(part.IsCanonical));
-        Assert.Equal([new Money(0.4m, mru), new Money(0.4m, mru), new Money(0.2m, mru)], parts);
+        Assert.Equal([new Money(0.4m, fifths), new Money(0.4m, fifths), new Money(0.2m, fifths)], parts);
     }
 
     [Property(MaxTest = 500)]

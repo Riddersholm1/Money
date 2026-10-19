@@ -28,8 +28,9 @@ public sealed class CurrencyInfo
     /// use at most 4; the wider range exists for registered currencies such as Bitcoin, which has 8.
     /// </param>
     /// <param name="minorUnitsPerMajor">
-    /// How many minor units make one major unit — usually a power of ten, but <c>5</c> for MRU and MGA,
-    /// and <c>0</c> for currencies with no minor unit at all.
+    /// How many minor units make one major unit — a power of ten for every ISO currency, <c>0</c> for
+    /// currencies with no minor unit at all, and anything that divides <c>10^</c><paramref name="decimalDigits"/>
+    /// for a registered currency, such as <c>5</c> for one divided into fifths.
     /// </param>
     /// <param name="cashDecimalDigits">The digit count used for physical cash, which may be coarser.</param>
     /// <param name="cashRoundingStep">
@@ -64,8 +65,8 @@ public sealed class CurrencyInfo
         ArgumentOutOfRangeException.ThrowIfZero(cashRoundingStep);
 
         // The minor unit has to be expressible in the declared number of decimal places, or rounding
-        // would snap to an increment the currency cannot represent. 100/5 is fine — that is MRU's
-        // khoum — but 2 digits with 10^18 units is a mis-registration, and silently accepting it
+        // would snap to an increment the currency cannot represent. 100/5 is fine — a fifth is 0.20 —
+        // but 2 digits with 10^18 units is a mis-registration, and silently accepting it
         // produces amounts that look canonical and are not.
         //
         // Checked in decimal across the whole 0..28 range. An earlier version stopped at 18 because it
@@ -135,12 +136,13 @@ public sealed class CurrencyInfo
 
     /// <summary>
     /// How many minor units make one major unit: <c>100</c> for most currencies, <c>1000</c> for KWD,
-    /// <c>5</c> for MRU and MGA, and <c>0</c> for currencies with no minor unit.
+    /// <c>1</c> for JPY, and <c>0</c> for currencies with no minor unit.
     /// </summary>
     /// <remarks>
-    /// This is not always a power of ten. The Mauritanian khoum and Malagasy iraimbilanja are one
-    /// <em>fifth</em> of the major unit, so valid MRU amounts step by <c>0.2</c> rather than <c>0.01</c>,
-    /// even though ISO records two decimal digits for it.
+    /// Every ISO currency uses ten to the power of its <see cref="DecimalDigits"/>, MRU and MGA included:
+    /// their khoum and iraimbilanja are physically a fifth of the major unit, but ISO 4217 records two
+    /// decimal places and every bank and payment system counts them in hundredths. A registered currency
+    /// may use any divisor of <c>10^DecimalDigits</c>; <c>5</c> makes amounts step by <c>0.2</c>.
     /// </remarks>
     public long MinorUnitsPerMajor { get; }
 
@@ -162,6 +164,13 @@ public sealed class CurrencyInfo
     /// </summary>
     public bool IsKnown { get; internal init; } = true;
 
+    /// <summary>Whether ISO 4217 has withdrawn the currency. See <see cref="Currency.IsWithdrawn"/>.</summary>
+    /// <remarks>
+    /// Settable so that a registered currency can say so too; the generator sets it for any entry in a
+    /// definition file that carries <c>"withdrawn"</c>.
+    /// </remarks>
+    public bool IsWithdrawn { get; init; }
+
     /// <summary>The smallest representable amount, for example <c>0.01</c> for DKK; <c>0</c> when there is no minor unit.</summary>
     public decimal MinorUnit => MinorUnitsPerMajor == 0 ? 0m : 1m / MinorUnitsPerMajor;
 
@@ -169,7 +178,14 @@ public sealed class CurrencyInfo
     public override string ToString() => Code;
 
     /// <summary>Ten to the power of <paramref name="exponent"/>, in decimal so the full 0..28 range fits.</summary>
-    private static decimal Pow10(int exponent)
+    /// <remarks>
+    /// Shared with <see cref="Money"/>'s rounding, which needs the same power for the same reason: a
+    /// currency's minor-unit divisor can exceed what a <see cref="long"/> holds, and the two must agree
+    /// about which divisors a digit count can express or a registration validated here would round
+    /// differently there. <c>Money.TryGetDecimalPlaces</c> is the separate, deliberately narrower
+    /// helper — it answers whether the divisor <em>is</em> a power of ten, and which one.
+    /// </remarks>
+    internal static decimal Pow10(int exponent)
     {
         decimal result = 1m;
 

@@ -1,11 +1,10 @@
-using Xunit;
+﻿using Xunit;
+using static Riddersholm.Money.Tests.TestMoney;
 
 namespace Riddersholm.Money.Tests;
 
 public sealed class MoneyArithmeticTests
 {
-    private static Money Dkk(decimal amount) => new(amount, Currency.DKK);
-
     private static Money Eur(decimal amount) => new(amount, Currency.EUR);
 
     [Fact]

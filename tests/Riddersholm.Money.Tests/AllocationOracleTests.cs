@@ -32,8 +32,7 @@ public sealed class AllocationOracleTests
         Currency.JPY,   // 1
         Currency.KWD,   // 1000
         Currency.CLF,   // 10000
-        Currency.MRU,   // 5
-        Currency.MGA // 5
+        TestMoney.Fifths // 5
     ];
 
     [Property(MaxTest = 500)]

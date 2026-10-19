@@ -1,6 +1,11 @@
 <Solution>
   <Folder Name="/.SolutionItems/">
     <File Path=".editorconfig" />
+    <File Path=".github/dependabot.yml" />
+    <File Path=".github/workflows/currency-data.yml" />
+    <File Path=".github/workflows/pipeline.yml" />
+    <File Path="eng/iso-4217.json" />
+    <File Path="eng/iso-4217.schema.json" />
     <File Path=".gitattributes" />
     <File Path=".gitignore" />
     <File Path="CHANGELOG.md" />

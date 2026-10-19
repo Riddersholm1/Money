@@ -2,7 +2,7 @@
 
 A money library for .NET 10, designed from scratch around C# 14 and the .NET 10 type system.
 
-[![CI](https://github.com/Riddersholm1/Money/actions/workflows/ci.yml/badge.svg)](https://github.com/Riddersholm1/Money/actions/workflows/ci.yml)
+[![CI](https://github.com/Riddersholm1/Money/actions/workflows/pipeline.yml/badge.svg)](https://github.com/Riddersholm1/Money/actions/workflows/pipeline.yml)
 [![NuGet](https://img.shields.io/nuget/v/Riddersholm.Money.svg)](https://www.nuget.org/packages/Riddersholm.Money)
 [![Downloads](https://img.shields.io/nuget/dt/Riddersholm.Money)](https://www.nuget.org/packages/Riddersholm.Money)
 [![Latest release](https://img.shields.io/github/v/release/Riddersholm1/Money?include_prereleases)](https://github.com/Riddersholm1/Money/releases)
@@ -44,6 +44,15 @@ var payable  = subtotal.Round();                 // your decision, stated once
 
 `IsCanonical` tells you whether an amount is actually representable in its currency.
 
+Payment APIs and ISO 8583 messages carry amounts as integer minor units, and these conversions never
+round either — an amount finer than the currency is refused rather than cut:
+
+```csharp
+Money.FromMinorUnits(1050, Currency.DKK);       // 10.50 DKK
+new Money(10.50m, Currency.DKK).ToMinorUnits(); // 1050
+new Money(10.505m, Currency.DKK).ToMinorUnits(); // throws — Round() first, deliberately
+```
+
 ### Splitting money never loses any
 
 ```csharp
@@ -62,11 +71,17 @@ Most libraries assume every currency has 100 minor units. ISO 4217 disagrees:
 ```csharp
 Currency.JPY.DecimalDigits;         // 0
 Currency.KWD.DecimalDigits;         // 3
-Currency.MRU.MinorUnitsPerMajor;    // 5 — the khoum is a *fifth* of an ouguiya
+Currency.CLF.DecimalDigits;         // 4
 Currency.XXX.HasMinorUnit;          // false
 
-new Money(1.37m, Currency.MRU).Round();  // 1.4 MRU, not 1.37
+new Money(1.2345m, Currency.KWD).Round();  // 1.234 KWD, not 1.23
 ```
+
+Precision follows ISO 4217 exactly, so amounts agree with every bank, card scheme and ISO 20022 message.
+
+Withdrawn currencies stay usable, because ledgers are full of them. `Currency.FromCode("BGN")` still
+rounds and formats lev amounts after Bulgaria's move to the euro; `IsWithdrawn` tells you not to
+accept it for new money, and naming `Currency.BGN` in new code produces an `[Obsolete]` warning.
 
 Cash precision is tracked separately from accounting precision, because small coins get withdrawn:
 
@@ -137,7 +152,9 @@ JsonSerializer.Serialize(new Money(100.50m, Currency.DKK));
 
 Two alternative shapes via `options.AddMoney(...)`: a quoted amount for JavaScript consumers whose only
 number type is a double, and a compact `"100.50 DKK"` string. Reading accepts all three whatever you
-write, so changing the format never breaks stored documents. `MoneyJsonSerializerContext` gives the
+write, so changing the format never breaks stored documents. Reading is strict where leniency would
+change the amount: `"1,5"` is refused rather than read as fifteen, and a repeated `amount` or
+`currency` property is refused rather than resolved. `MoneyJsonSerializerContext` gives the
 reflection-free path for AOT.
 
 **Entity Framework Core** — `dotnet add package Riddersholm.Money.EntityFrameworkCore`:
@@ -153,6 +170,13 @@ context.Products.Where(p => p.Price.Currency == Currency.DKK);
 The default `decimal(19,4)` covers every ISO currency exactly; EF's own default of `(18,2)` silently
 truncates the three-decimal dinars. A single-column text mapping is available model-wide via
 `ConfigureMoneyConventions()`.
+
+A database still rounds anything finer than its column on save — `13.40123 EUR` becomes `13.4012`
+without a word. Turn that into an exception that names the entity, property and amount:
+
+```csharp
+options.UseSqlServer(connectionString).UseMoneyPrecisionGuard();
+```
 
 **Your own currencies** — `dotnet add package Riddersholm.Money.Generators`:
 
@@ -185,15 +209,16 @@ Nothing in the arithmetic path allocates, and parsing allocates nothing at all.
 
 | | Riddersholm.Money | NodaMoney 2.7.0 |
 |---|---:|---:|
-| Add | 4.6 ns / 0 B | 21.6 ns / 0 B |
-| Multiply | 2.5 ns / 0 B | 30.6 ns / 0 B |
+| Add | 4.7 ns / 0 B | 22.8 ns / 0 B |
+| Multiply | 2.1 ns / 0 B | 31.1 ns / 0 B |
 | Parse | 57 ns / **0 B** | 165 ns / 168 B |
 | Format | 86 ns / 48 B | 163 ns / 392 B |
 | Allocate across 64 | 903 ns | 2744 ns |
 | Allocate into a span | **148 ns / 0 B** | — |
 
-[docs/performance.md](docs/performance.md) has the full tables, the method, and the one row where this
-library is *slower* — along with why that trade was made on purpose.
+Every figure is quoted from [docs/performance.md](docs/performance.md), which is where they are
+measured and where they should be changed — it has the full tables, the method, and the one row where
+this library is *slower*, along with why that trade was made on purpose.
 
 ---
 
@@ -207,6 +232,7 @@ library is *slower* — along with why that trade was made on purpose.
 | [Parsing](docs/parsing.md) | What is accepted, and what is refused on purpose |
 | [Allocation](docs/allocation.md) | The algorithms and their guarantees |
 | [Currency data](docs/currency-data.md) | Which currencies ship, and where the data comes from |
+| [Maintaining currency data](docs/maintaining-currency-data.md) | How ISO 4217 changes are tracked and released |
 | [Performance](docs/performance.md) | Measurements, and what is deliberately not optimised |
 
 ## Building

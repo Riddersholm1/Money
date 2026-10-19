@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <RootNamespace>Riddersholm.Money.Extensibility.Tests</RootNamespace>
@@ -22,6 +22,7 @@
   -->
   <ItemGroup>
     <AdditionalFiles Include="crypto-currencies.json" RiddersholmCurrencies="true" />
+    <AdditionalFiles Include="legacy-currencies.json" RiddersholmCurrencies="true" />
     <CompilerVisibleItemMetadata Include="AdditionalFiles" MetadataName="RiddersholmCurrencies" />
     <CompilerVisibleProperty Include="RiddersholmMoneyEmitCore" />
     <CompilerVisibleProperty Include="RootNamespace" />

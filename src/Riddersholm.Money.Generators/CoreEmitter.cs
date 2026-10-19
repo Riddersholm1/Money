@@ -53,8 +53,14 @@ internal static class CoreEmitter
 
         foreach (CurrencyDefinition currency in currencies)
         {
-            source.Line($"    /// <summary>{EscapeXml(currency.Name)} ({currency.Code}, ISO {currency.NumericCode}).</summary>");
-            source.Line($"    public static Currency {currency.Code} => new({currency.Packed}u);");
+            source.LineInvariant($"    /// <summary>{SourceEscaping.XmlDoc(currency.Name)} ({currency.Code}, ISO {currency.NumericCode}).{SourceEscaping.WithdrawnNote(currency)}</summary>");
+
+            if (SourceEscaping.ObsoleteAttribute(currency) is { } obsolete)
+            {
+                source.LineInvariant($"    {obsolete}");
+            }
+
+            source.LineInvariant($"    public static Currency {currency.Code} => new({currency.Packed}u);");
             source.Line();
         }
 
@@ -67,13 +73,14 @@ internal static class CoreEmitter
         source.Line("internal static class CurrencyTable");
         source.Line("{");
         source.Line("    /// <summary>The number of currencies known at compile time.</summary>");
-        source.Line($"    public const int Count = {currencies.Count};");
+        source.LineInvariant($"    public const int Count = {currencies.Count};");
         source.Line();
 
         EmitOrdinalLookup(source, currencies);
         EmitByteSpan(source, "DecimalDigits", "ISO minor-unit digit counts", currencies, static c => c.DecimalDigits);
         EmitByteSpan(source, "CashDecimalDigits", "cash digit counts", currencies, static c => c.CashDecimalDigits);
         EmitByteSpan(source, "CashRoundingSteps", "cash rounding steps, in last-place units", currencies, static c => c.CashRoundingStep);
+        EmitByteSpan(source, "Withdrawn", "withdrawal flags (1 once ISO has withdrawn the currency)", currencies, static c => c.Withdrawn is null ? (byte)0 : (byte)1);
 
         EmitSwitch(source, "GetMinorUnitsPerMajor", "long", "minor units per major unit (0 when there is none)",
             currencies, static c => c.MinorUnitsPerMajor.ToString(System.Globalization.CultureInfo.InvariantCulture) + "L");
@@ -82,11 +89,11 @@ internal static class CoreEmitter
         EmitSwitch(source, "GetPacked", "uint", "packed alphabetic codes",
             currencies, static c => c.Packed.ToString(System.Globalization.CultureInfo.InvariantCulture) + "u");
         EmitSwitch(source, "GetCode", "string", "ISO alphabetic codes",
-            currencies, static c => Quote(c.Code));
+            currencies, static c => SourceEscaping.Literal(c.Code));
         EmitSwitch(source, "GetName", "string", "English display names",
-            currencies, static c => Quote(c.Name));
+            currencies, static c => SourceEscaping.Literal(c.Name));
         EmitSwitch(source, "GetSymbol", "string", "currency symbols",
-            currencies, static c => Quote(c.Symbol));
+            currencies, static c => SourceEscaping.Literal(c.Symbol));
 
         source.Line("}");
     }
@@ -103,7 +110,7 @@ internal static class CoreEmitter
 
         for (int i = 0; i < currencies.Count; i++)
         {
-            source.Line($"            case {currencies[i].Packed}u: ordinal = {i}; return true; // {currencies[i].Code}");
+            source.LineInvariant($"            case {currencies[i].Packed}u: ordinal = {i}; return true; // {currencies[i].Code}");
         }
 
         source.Line("""
@@ -120,8 +127,8 @@ internal static class CoreEmitter
         IReadOnlyList<CurrencyDefinition> currencies,
         Func<CurrencyDefinition, byte> selector)
     {
-        source.Line($"    /// <summary>Per-ordinal {summary}, laid out as static data rather than a heap array.</summary>");
-        source.Line($"    public static ReadOnlySpan<byte> {name} =>");
+        source.LineInvariant($"    /// <summary>Per-ordinal {summary}, laid out as static data rather than a heap array.</summary>");
+        source.LineInvariant($"    public static ReadOnlySpan<byte> {name} =>");
         source.Line("    [");
 
         // Wrapped so a currency-data change stays readable in a diff instead of being one huge line.
@@ -130,7 +137,7 @@ internal static class CoreEmitter
             StringBuilder line = new("        ");
             for (int j = i; j < currencies.Count && j < i + 16; j++)
             {
-                line.Text($"{selector(currencies[j])}, ");
+                line.TextInvariant($"{selector(currencies[j])}, ");
             }
 
             source.Line(line.ToString().TrimEnd());
@@ -147,35 +154,16 @@ internal static class CoreEmitter
         IReadOnlyList<CurrencyDefinition> currencies,
         Func<CurrencyDefinition, string> selector)
     {
-        source.Line($"    /// <summary>Per-ordinal {summary}.</summary>");
-        source.Line($"    public static {returnType} {name}(int ordinal) => ordinal switch");
+        source.LineInvariant($"    /// <summary>Per-ordinal {summary}.</summary>");
+        source.LineInvariant($"    public static {returnType} {name}(int ordinal) => ordinal switch");
         source.Line("    {");
 
         for (int i = 0; i < currencies.Count; i++)
         {
-            source.Line($"        {i} => {selector(currencies[i])},");
+            source.LineInvariant($"        {i} => {selector(currencies[i])},");
         }
 
         source.Line("        _ => throw new ArgumentOutOfRangeException(nameof(ordinal)),");
         source.Line("    };").Line();
     }
-
-    private static string Quote(string value) => "\"" + Escape(value) + "\"";
-
-    /// <summary>Escapes a value for use inside a C# string literal.</summary>
-    private static string Escape(string value) => value
-        .Replace("\\", "\\\\")
-        .Replace("\"", "\\\"");
-
-    /// <summary>
-    /// Escapes a value for use inside an XML documentation comment.
-    /// </summary>
-    /// <remarks>
-    /// Two ISO currencies carry a bare ampersand — "São Tomé &amp; Príncipe Dobra" and "Trinidad
-    /// &amp; Tobago Dollar" — which is not valid XML and breaks the documentation build.
-    /// </remarks>
-    private static string EscapeXml(string value) => value
-        .Replace("&", "&amp;")
-        .Replace("<", "&lt;")
-        .Replace(">", "&gt;");
 }

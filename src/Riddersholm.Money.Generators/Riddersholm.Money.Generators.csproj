@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <!-- Roslyn loads analyzers into the compiler process, which requires netstandard2.0. -->
@@ -6,6 +6,7 @@
     <RootNamespace>Riddersholm.Money.Generators</RootNamespace>
     <AssemblyName>Riddersholm.Money.Generators</AssemblyName>
     <PackageId>Riddersholm.Money.Generators</PackageId>
+    <Title>Riddersholm.Money — currency generator</Title>
     <Description>Roslyn incremental source generator that turns an ISO 4217 currency definition file into strongly typed Currency members. Reference this package to define your own currencies (crypto, in-game, historic) with no reflection and no runtime registry.</Description>
     <PackageTags>$(PackageTags);roslyn;source-generator;analyzer</PackageTags>
 

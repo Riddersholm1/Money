@@ -96,6 +96,29 @@ public readonly partial record struct Currency :
     public bool IsKnown =>
         CurrencyTable.TryGetOrdinal(PackedValue, out _) || CurrencyRegistry.TryGet(PackedValue, out _);
 
+    /// <summary>
+    /// Whether ISO 4217 has withdrawn this currency — the Bulgarian lev since the euro, the Croatian kuna,
+    /// the Netherlands Antillean guilder.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// A withdrawn currency is still <see cref="IsKnown">known</see>, deliberately: years of stored
+    /// amounts are denominated in it, and they must keep rounding, formatting and allocating with the
+    /// right precision. What it should not do is denominate <em>new</em> money. Check this at the point
+    /// where new amounts enter — a payment instruction, a price list, a currency picker built from
+    /// <see cref="Known"/> — and refuse or filter accordingly.
+    /// </para>
+    /// <para>
+    /// Its generated member, such as <c>Currency.BGN</c>, is marked <see cref="ObsoleteAttribute"/>, so
+    /// code naming it in new logic gets a warning; <see cref="FromCode(string)"/> reads stored data
+    /// without one. <see langword="false"/> for a currency the library does not recognise.
+    /// </para>
+    /// </remarks>
+    public bool IsWithdrawn =>
+        CurrencyTable.TryGetOrdinal(PackedValue, out int ordinal)
+            ? CurrencyTable.Withdrawn[ordinal] != 0
+            : CurrencyRegistry.TryGet(PackedValue, out CurrencyInfo info) && info.IsWithdrawn;
+
     /// <summary>The ISO 4217 numeric code, for example <c>208</c>, or <c>0</c> when unknown.</summary>
     public short NumericCode =>
         CurrencyTable.TryGetOrdinal(PackedValue, out int ordinal)
@@ -130,7 +153,8 @@ public readonly partial record struct Currency :
 
     /// <summary>
     /// How many minor units make one major unit: <c>100</c> for most currencies, <c>1000</c> for KWD,
-    /// <c>5</c> for MRU and MGA, and <c>0</c> for <c>XXX</c> and <c>XTS</c>, which have no minor unit.
+    /// <c>1</c> for JPY, and <c>0</c> for <c>XXX</c> and <c>XTS</c>, which have no minor unit. Always a
+    /// power of ten for an ISO currency; see <see cref="CurrencyInfo.MinorUnitsPerMajor"/>.
     /// </summary>
     public long MinorUnitsPerMajor =>
         CurrencyTable.TryGetOrdinal(PackedValue, out int ordinal)
@@ -182,6 +206,10 @@ public readonly partial record struct Currency :
     /// <summary>Every currency known at compile time, ordered by alphabetic code.</summary>
     /// <remarks>
     /// <para>Runtime-registered currencies are not included; see <see cref="CurrencyRegistry.Custom"/>.</para>
+    /// <para>
+    /// Withdrawn currencies <em>are</em> included, because stored amounts still use them. For a list of
+    /// currencies that new money may be denominated in, filter on <see cref="IsWithdrawn"/>.
+    /// </para>
     /// <para>
     /// Named <c>Known</c> rather than <c>All</c> because <c>ALL</c> is the Albanian lek, and a property
     /// differing from a currency only by case would be a trap in a case-insensitive language and a

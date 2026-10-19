@@ -37,8 +37,27 @@ public sealed class CurrencyConverterTests
 
         foreach (Currency currency in Currency.Known)
         {
-            Assert.Equal(currency, read(write(currency)));
+            // A withdrawn currency whose number ISO reused is refused instead; see the next test.
+            if (Currency.TryFromNumericCode(currency.NumericCode, out Currency owner) && owner == currency)
+            {
+                Assert.Equal(currency, read(write(currency)));
+            }
         }
+    }
+
+    [Fact]
+    public void The_numeric_converter_refuses_a_currency_whose_number_now_belongs_to_another()
+    {
+        // ISO gave ANG's 532 to XCG. Stored as 532, ANG would come back as XCG — a different currency
+        // on the next read, with nothing to say it happened.
+        Func<Currency, short> write = new CurrencyNumericValueConverter().ConvertToProviderExpression.Compile();
+
+        InvalidOperationException error = Assert.Throws<InvalidOperationException>(() => write(Currency.FromCode("ANG")));
+
+        Assert.Contains("XCG", error.Message, StringComparison.Ordinal);
+
+        // A withdrawn currency whose number nobody reused still stores fine.
+        Assert.Equal((short)975, write(Currency.FromCode("BGN")));
     }
 
     [Fact]
@@ -90,5 +109,27 @@ public sealed class CurrencyConverterTests
                 Assert.Equal(original.Currency, restored.Currency);
             }
         }
+    }
+
+    [Theory]
+    [InlineData("1,5 DKK")]     // a European one-and-a-half, which the lenient styles read as fifteen
+    [InlineData("1,000.50 DKK")]
+    [InlineData("(5) DKK")]
+    [InlineData("kr. 5")]
+    public void The_money_text_converter_refuses_text_it_did_not_write(string stored)
+    {
+        Func<string, Money> read = new MoneyValueConverter().ConvertFromProviderExpression.Compile();
+
+        InvalidOperationException error = Assert.Throws<InvalidOperationException>(() => read(stored));
+
+        Assert.Contains(stored, error.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void The_money_text_converter_tolerates_fixed_length_padding()
+    {
+        Func<string, Money> read = new MoneyValueConverter().ConvertFromProviderExpression.Compile();
+
+        Assert.Equal(new Money(100.5m, Currency.DKK), read("100.50 DKK      "));
     }
 }

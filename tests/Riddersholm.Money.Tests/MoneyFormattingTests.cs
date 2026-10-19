@@ -1,6 +1,7 @@
 ﻿using System.Globalization;
 using System.Text;
 using Xunit;
+using static Riddersholm.Money.Tests.TestMoney;
 
 namespace Riddersholm.Money.Tests;
 
@@ -10,7 +11,6 @@ public sealed class MoneyFormattingTests
     private static readonly CultureInfo Danish = new("da-DK");
     private static readonly CultureInfo American = new("en-US");
 
-    private static Money Dkk(decimal amount) => new(amount, Currency.DKK);
 
     [Fact]
     public void General_format_is_amount_then_iso_code()

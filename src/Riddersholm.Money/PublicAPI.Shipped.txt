@@ -10,10 +10,13 @@ Riddersholm.Money.Currency.EnglishName.get -> string!
 Riddersholm.Money.Currency.Equals(Riddersholm.Money.Currency other) -> bool
 static Riddersholm.Money.Currency.FromCode(System.ReadOnlySpan<char> code) -> Riddersholm.Money.Currency
 static Riddersholm.Money.Currency.FromCode(string! code) -> Riddersholm.Money.Currency
+static Riddersholm.Money.Currency.FromKnownCode(System.ReadOnlySpan<char> code) -> Riddersholm.Money.Currency
+static Riddersholm.Money.Currency.FromKnownCode(string! code) -> Riddersholm.Money.Currency
 Riddersholm.Money.Currency.HasMinorUnit.get -> bool
 Riddersholm.Money.Currency.Info.get -> Riddersholm.Money.CurrencyInfo!
 Riddersholm.Money.Currency.IsKnown.get -> bool
 Riddersholm.Money.Currency.IsNone.get -> bool
+Riddersholm.Money.Currency.IsWithdrawn.get -> bool
 static Riddersholm.Money.Currency.Known.get -> System.ReadOnlySpan<Riddersholm.Money.Currency>
 Riddersholm.Money.Currency.MinorUnit.get -> decimal
 Riddersholm.Money.Currency.MinorUnitsPerMajor.get -> long
@@ -27,6 +30,7 @@ Riddersholm.Money.Currency.ToString(string? format, System.IFormatProvider? form
 Riddersholm.Money.Currency.TryFormat(System.Span<byte> utf8Destination, out int bytesWritten, System.ReadOnlySpan<char> format = default(System.ReadOnlySpan<char>), System.IFormatProvider? provider = null) -> bool
 Riddersholm.Money.Currency.TryFormat(System.Span<char> destination, out int charsWritten, System.ReadOnlySpan<char> format = default(System.ReadOnlySpan<char>), System.IFormatProvider? provider = null) -> bool
 static Riddersholm.Money.Currency.TryFromCode(System.ReadOnlySpan<char> code, out Riddersholm.Money.Currency currency) -> bool
+static Riddersholm.Money.Currency.TryFromKnownCode(System.ReadOnlySpan<char> code, out Riddersholm.Money.Currency currency) -> bool
 static Riddersholm.Money.Currency.TryFromNumericCode(short numericCode, out Riddersholm.Money.Currency currency) -> bool
 static Riddersholm.Money.Currency.TryParse(System.ReadOnlySpan<byte> utf8Text, System.IFormatProvider? provider, out Riddersholm.Money.Currency result) -> bool
 static Riddersholm.Money.Currency.TryParse(System.ReadOnlySpan<char> s, System.IFormatProvider? provider, out Riddersholm.Money.Currency result) -> bool
@@ -47,6 +51,8 @@ Riddersholm.Money.CurrencyInfo.DecimalDigits.get -> byte
 Riddersholm.Money.CurrencyInfo.EnglishName.get -> string!
 Riddersholm.Money.CurrencyInfo.HasMinorUnit.get -> bool
 Riddersholm.Money.CurrencyInfo.IsKnown.get -> bool
+Riddersholm.Money.CurrencyInfo.IsWithdrawn.get -> bool
+Riddersholm.Money.CurrencyInfo.IsWithdrawn.init -> void
 Riddersholm.Money.CurrencyInfo.MinorUnit.get -> decimal
 Riddersholm.Money.CurrencyInfo.MinorUnitsPerMajor.get -> long
 Riddersholm.Money.CurrencyInfo.NumericCode.get -> short
@@ -69,6 +75,7 @@ Riddersholm.Money.ExchangeRate.Equals(Riddersholm.Money.ExchangeRate other) -> b
 Riddersholm.Money.ExchangeRate.ExchangeRate() -> void
 Riddersholm.Money.ExchangeRate.ExchangeRate(Riddersholm.Money.Currency baseCurrency, Riddersholm.Money.Currency quoteCurrency, decimal rate) -> void
 Riddersholm.Money.ExchangeRate.Invert() -> Riddersholm.Money.ExchangeRate
+Riddersholm.Money.ExchangeRate.IsSpecified.get -> bool
 Riddersholm.Money.ExchangeRate.QuoteCurrency.get -> Riddersholm.Money.Currency
 Riddersholm.Money.ExchangeRate.Rate.get -> decimal
 static Riddersholm.Money.ExchangeRate.operator !=(Riddersholm.Money.ExchangeRate left, Riddersholm.Money.ExchangeRate right) -> bool
@@ -93,6 +100,7 @@ Riddersholm.Money.Money.Divide(decimal divisor) -> Riddersholm.Money.Money
 Riddersholm.Money.Money.DivideBy(Riddersholm.Money.Money other) -> decimal
 Riddersholm.Money.Money.Equals(Riddersholm.Money.Money other) -> bool
 Riddersholm.Money.Money.Floor() -> Riddersholm.Money.Money
+static Riddersholm.Money.Money.FromMinorUnits(long minorUnits, Riddersholm.Money.Currency currency) -> Riddersholm.Money.Money
 Riddersholm.Money.Money.IsCanonical.get -> bool
 Riddersholm.Money.Money.IsNegative.get -> bool
 Riddersholm.Money.Money.IsPositive.get -> bool
@@ -115,6 +123,7 @@ Riddersholm.Money.Money.Round(int decimals, System.MidpointRounding mode = Syste
 Riddersholm.Money.Money.RoundToCash(System.MidpointRounding mode = System.MidpointRounding.ToEven) -> Riddersholm.Money.Money
 Riddersholm.Money.Money.Sign.get -> int
 Riddersholm.Money.Money.Subtract(Riddersholm.Money.Money other) -> Riddersholm.Money.Money
+Riddersholm.Money.Money.ToMinorUnits() -> long
 Riddersholm.Money.Money.ToString(string? format, System.IFormatProvider? formatProvider) -> string!
 Riddersholm.Money.Money.Truncate() -> Riddersholm.Money.Money
 Riddersholm.Money.Money.TryCompareTo(Riddersholm.Money.Money other, out int result) -> bool
@@ -126,6 +135,7 @@ static Riddersholm.Money.Money.TryParse(System.ReadOnlySpan<char> s, Riddersholm
 static Riddersholm.Money.Money.TryParse(System.ReadOnlySpan<char> s, System.IFormatProvider? provider, out Riddersholm.Money.Money result) -> bool
 static Riddersholm.Money.Money.TryParse(string? s, Riddersholm.Money.MoneyStyles style, System.IFormatProvider? provider, out Riddersholm.Money.Money result) -> bool
 static Riddersholm.Money.Money.TryParse(string? s, System.IFormatProvider? provider, out Riddersholm.Money.Money result) -> bool
+Riddersholm.Money.Money.TryToMinorUnits(out long minorUnits) -> bool
 Riddersholm.Money.Money.WithCurrency(Riddersholm.Money.Currency currency) -> Riddersholm.Money.Money
 static Riddersholm.Money.Money.Zero(Riddersholm.Money.Currency currency) -> Riddersholm.Money.Money
 static Riddersholm.Money.Money.operator !=(Riddersholm.Money.Money left, Riddersholm.Money.Money right) -> bool
@@ -171,6 +181,7 @@ Riddersholm.Money.MoneyStyles.Currency = Riddersholm.Money.MoneyStyles.AllowTrai
 Riddersholm.Money.MoneyStyles.None = 0 -> Riddersholm.Money.MoneyStyles
 Riddersholm.Money.MoneyStyles.Number = Riddersholm.Money.MoneyStyles.AllowLeadingWhite | Riddersholm.Money.MoneyStyles.AllowTrailingWhite | Riddersholm.Money.MoneyStyles.AllowLeadingSign | Riddersholm.Money.MoneyStyles.AllowThousands | Riddersholm.Money.MoneyStyles.AllowDecimalPoint -> Riddersholm.Money.MoneyStyles
 Riddersholm.Money.MoneyStyles.RequireCurrency = 512 -> Riddersholm.Money.MoneyStyles
+Riddersholm.Money.MoneyStyles.RequireKnownCurrency = 1024 -> Riddersholm.Money.MoneyStyles
 Riddersholm.Money.Serialization.CurrencyJsonConverter
 Riddersholm.Money.Serialization.CurrencyJsonConverter.CurrencyJsonConverter() -> void
 Riddersholm.Money.Serialization.MoneyJsonConverter
@@ -198,6 +209,7 @@ const Riddersholm.Money.CurrencyInfo.MaximumDecimalDigits = 28 -> byte
 const Riddersholm.Money.CurrencyInfo.MaximumIsoDecimalDigits = 4 -> byte
 const Riddersholm.Money.CurrencyInfo.MaximumMinorUnitsPerMajor = 1000000000000000000 -> long
 const Riddersholm.Money.Money.DefaultStyles = Riddersholm.Money.MoneyStyles.Currency -> Riddersholm.Money.MoneyStyles
+const Riddersholm.Money.Money.RoundTripStyles = Riddersholm.Money.MoneyStyles.AllowLeadingSign | Riddersholm.Money.MoneyStyles.AllowDecimalPoint | Riddersholm.Money.MoneyStyles.AllowCurrencyCode | Riddersholm.Money.MoneyStyles.RequireCurrency -> Riddersholm.Money.MoneyStyles
 override Riddersholm.Money.Currency.GetHashCode() -> int
 override Riddersholm.Money.Currency.ToString() -> string!
 override Riddersholm.Money.CurrencyInfo.ToString() -> string!

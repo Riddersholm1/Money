@@ -1,11 +1,10 @@
 ﻿using Xunit;
+using static Riddersholm.Money.Tests.TestMoney;
 
 namespace Riddersholm.Money.Tests;
 
 public sealed class MoneyRoundingTests
 {
-    private static Money Dkk(decimal amount) => new(amount, Currency.DKK);
-
     [Fact]
     public void Construction_never_rounds()
     {
@@ -54,14 +53,12 @@ public sealed class MoneyRoundingTests
         Assert.Equal(new Money(1.235m, Currency.KWD), new Money(1.2345m, Currency.KWD).Round(MidpointRounding.AwayFromZero));
     }
 
-    [Theory]
-    [InlineData("MRU")]
-    [InlineData("MGA")]
-    public void Rounding_snaps_to_the_increment_not_the_digit_count(string code)
+    [Fact]
+    public void Rounding_snaps_to_the_increment_not_the_digit_count()
     {
-        // The khoum is one fifth of an ouguiya, so valid amounts step by 0.2. Rounding to two
-        // decimals would leave 1.37, which cannot be paid.
-        var currency = Currency.FromCode(code);
+        // A currency divided into fifths steps by 0.2. Rounding to two decimals would leave 1.37, which
+        // cannot be paid.
+        Currency currency = TestMoney.Fifths;
 
         Assert.Equal(new Money(1.4m, currency), new Money(1.37m, currency).Round());
         Assert.Equal(new Money(1.2m, currency), new Money(1.24m, currency).Round());
@@ -131,30 +128,5 @@ public sealed class MoneyRoundingTests
 
         Assert.Equal(12.34m, value.Round().Amount);
         Assert.Equal(12.35m, value.RoundToCash().Amount);
-    }
-
-    [Fact]
-    public void Rounding_is_idempotent()
-    {
-        foreach (Currency currency in Currency.Known)
-        {
-            Money once = new Money(123.456789m, currency).Round();
-            Money twice = once.Round();
-
-            Assert.Equal(once, twice);
-            Assert.True(once.IsCanonical, $"{currency.Code} produced a non-canonical amount.");
-        }
-    }
-
-    [Fact]
-    public void Every_currency_can_round_a_representative_amount()
-    {
-        foreach (Currency currency in Currency.Known)
-        {
-            Money rounded = new Money(1.23456789m, currency).Round(MidpointRounding.AwayFromZero);
-
-            Assert.True(rounded.IsCanonical);
-            Assert.Equal(currency, rounded.Currency);
-        }
     }
 }

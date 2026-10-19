@@ -96,6 +96,25 @@ var strict = Money.DefaultStyles & ~MoneyStyles.AllowCurrencySymbol;
 
 `RequireCurrency` is on by default because money without a currency is rarely what was meant.
 
+`AllowLeadingWhite` and `AllowTrailingWhite` mean what they say: without them, surrounding whitespace
+fails the parse. The single space between the number and an ISO code is the separator the formats
+write, not padding, and is always accepted.
+
+### Reading back what the library wrote
+
+The default styles accept group separators, so under the invariant culture `"1,5 DKK"` reads as
+**fifteen** kroner — right for `1,500`, a tenfold error for a European one-and-a-half. When the text
+came from this library (a database column, a message, a file), use `Money.RoundTripStyles`, which
+accepts exactly what `ToString("R")` writes and refuses everything else:
+
+```csharp
+Money.Parse("-1234.50 DKK", Money.RoundTripStyles, inv);        // -1234.50 DKK
+Money.TryParse("1,5 DKK", Money.RoundTripStyles, inv, out _);  // false — not something "R" writes
+```
+
+The JSON converter's compact form, `Money` dictionary keys and the EF Core single-column mapping all
+read this way, and a quoted JSON amount (`"amount":"100.50"`) accepts only a sign and a decimal point.
+
 ## Unrecognised currency codes parse
 
 ```csharp
@@ -158,5 +177,5 @@ For any `Money`, in any currency:
 Money.Parse(value.ToString("R", inv), inv) == value
 ```
 
-Property-tested across all 166 currencies. See [formatting.md](formatting.md) for which other formats
+Property-tested across every shipped currency. See [formatting.md](formatting.md) for which other formats
 round-trip.

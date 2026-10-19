@@ -37,7 +37,9 @@ public static class CurrencyRegistry
     /// </remarks>
     /// <exception cref="ArgumentException">
     /// A currency is already defined by ISO 4217, or is already registered with different metadata.
-    /// Overriding a currency's precision silently would corrupt every amount using it.
+    /// Overriding a currency's precision silently would corrupt every amount using it. Also thrown for
+    /// the fallback <see cref="Currency.Info"/> returns for an unrecognised code, whose precision is a
+    /// guess rather than metadata.
     /// </exception>
     public static void Register(params ReadOnlySpan<CurrencyInfo> currencies)
     {
@@ -49,6 +51,18 @@ public static class CurrencyRegistry
         foreach (CurrencyInfo info in currencies)
         {
             ArgumentNullException.ThrowIfNull(info);
+
+            // Currency.Info hands out a synthesised fallback for a code nobody has described, and that
+            // object's precision is the ISO default — a guess. Registering it would launder the guess
+            // into real metadata: Currency.IsKnown would turn true while Info.IsKnown stayed false, and
+            // Round() would start trusting a precision it exists to refuse.
+            if (!info.IsKnown)
+            {
+                throw new ArgumentException(
+                    $"'{info.Code}' is fallback metadata for an unrecognised currency, and its precision is a guess. "
+                  + "Register a CurrencyInfo constructed with the currency's real precision instead.",
+                    nameof(currencies));
+            }
 
             if (CurrencyTable.TryGetOrdinal(info.Currency.PackedValue, out _))
             {
@@ -117,6 +131,7 @@ public static class CurrencyRegistry
         && left.MinorUnitsPerMajor == right.MinorUnitsPerMajor
         && left.CashDecimalDigits == right.CashDecimalDigits
         && left.CashRoundingStep == right.CashRoundingStep
+        && left.IsWithdrawn == right.IsWithdrawn
         && string.Equals(left.EnglishName, right.EnglishName, StringComparison.Ordinal)
         && string.Equals(left.Symbol, right.Symbol, StringComparison.Ordinal);
 }

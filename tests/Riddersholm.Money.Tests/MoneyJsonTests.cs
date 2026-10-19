@@ -1,13 +1,12 @@
 ﻿using System.Text.Json;
 using Riddersholm.Money.Serialization;
 using Xunit;
+using static Riddersholm.Money.Tests.TestMoney;
 
 namespace Riddersholm.Money.Tests;
 
 public sealed class MoneyJsonTests
 {
-    private static Money Dkk(decimal amount) => new(amount, Currency.DKK);
-
     [Fact]
     public void The_default_shape_needs_no_configuration()
     {

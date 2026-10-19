@@ -1,11 +1,10 @@
 ﻿using Xunit;
+using static Riddersholm.Money.Tests.TestMoney;
 
 namespace Riddersholm.Money.Tests;
 
 public sealed class MoneyEnumerableExtensionsTests
 {
-    private static Money Dkk(decimal amount) => new(amount, Currency.DKK);
-
     [Fact]
     public void Sum_adds_a_sequence()
     {

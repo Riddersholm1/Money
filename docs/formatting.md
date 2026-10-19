@@ -53,8 +53,8 @@ new Money(100.5m, Currency.DKK).ToString("C", daDK);   // 100,50 kr.   ← Danis
 new Money(100.5m, Currency.DKK).ToString("C", enUS);   // kr100.50     ← CLDR narrow form
 ```
 
-Sixty-seven of the 166 currencies have no distinct symbol and use their code, which is the honest
-answer rather than an invented glyph.
+Sixty-seven of the 166 currencies in circulation have no distinct symbol and use their code, which is
+the honest answer rather than an invented glyph.
 
 ## Precision is never hidden
 
@@ -100,8 +100,13 @@ string for the money:
 string line = $"Total: {price:R}";
 ```
 
-The derived `NumberFormatInfo` that carries the currency's symbol and precision is cached per culture
-and currency, so only the first format for a given pair pays to build it.
+The derived `NumberFormatInfo` that carries the currency's symbol and precision is cached per
+read-only format and currency, so only the first format for a given pair pays to build it. The ambient
+`CultureInfo.CurrentCulture` and every `CultureInfo.GetCultureInfo(...)` culture are read-only. A
+writable culture — `new CultureInfo("da-DK")`, or a modified clone — is derived on every call instead,
+which costs an allocation and stays correct however the culture is changed between calls; wrap it in
+`CultureInfo.ReadOnly(...)` on a hot path. (The cache used to be keyed by culture *name*, which let a
+customised clone of `da-DK` change how the real `da-DK` formatted.)
 
 ## Round-tripping
 
@@ -111,7 +116,7 @@ and currency, so only the first format for a given pair pays to build it.
 Money.Parse(value.ToString("R", CultureInfo.InvariantCulture), CultureInfo.InvariantCulture) == value
 ```
 
-This is property-tested across all 166 currencies. `G` and `I` also round-trip under the invariant
+This is property-tested across every shipped currency. `G` and `I` also round-trip under the invariant
 culture. `N` does not — it has no currency.
 
 **`C` is display-oriented, and only round-trips for a culture's own currency.** The asymmetry is

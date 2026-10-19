@@ -1,4 +1,4 @@
-<Project>
+﻿<Project>
 
   <Import Project="$([MSBuild]::GetPathOfFileAbove('Directory.Build.props', '$(MSBuildThisFileDirectory)../'))" />
 
@@ -16,6 +16,12 @@
     <IncludeSymbols>true</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
     <EnablePackageValidation>true</EnablePackageValidation>
+    <!--
+      Once 1.0.0 is on nuget.org, uncomment this so every build is compared with the published API and
+      a breaking change fails the build rather than reaching consumers. It cannot be set before then:
+      validation downloads the baseline package, and there is none yet.
+    -->
+    <!-- <PackageValidationBaselineVersion>1.0.0</PackageValidationBaselineVersion> -->
     <!--
       Shipping libraries must survive trimming and NativeAOT. These analyzers turn "probably fine"
       into a build error; tests/Riddersholm.Money.AotTests proves the end result actually publishes.

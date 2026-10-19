@@ -1,0 +1,86 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/Riddersholm1/Money/main/eng/iso-4217.schema.json",
+  "title": "Riddersholm.Money currency definition file",
+  "description": "The input to Riddersholm.Money.Generators: eng/iso-4217.json for the built-in ISO table, or any file a consumer opts in with <AdditionalFiles Include=\"...\" RiddersholmCurrencies=\"true\" />. The generator enforces the same rules and reports a violation as a build error (RMG001-RMG006).",
+  "type": "object",
+  "required": ["currencies"],
+  "properties": {
+    "$schema": { "type": "string" },
+    "$comment": { "type": "string" },
+    "source": {
+      "description": "Provenance, written by tools/Riddersholm.Money.DataSync. Ignored by the generator.",
+      "type": "object"
+    },
+    "currencies": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/currency" }
+    }
+  },
+  "$defs": {
+    "currency": {
+      "type": "object",
+      "required": ["code", "decimalDigits"],
+      "properties": {
+        "code": {
+          "description": "ISO 4217 alphabetic code: three upper-case ASCII letters. Must be unique in the file.",
+          "type": "string",
+          "pattern": "^[A-Z]{3}$"
+        },
+        "numericCode": {
+          "description": "ISO 4217 numeric code, or 0 when the currency has none. Defaults to 0.",
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 999
+        },
+        "name": {
+          "description": "English display name. Defaults to the code.",
+          "type": "string"
+        },
+        "symbol": {
+          "description": "Display symbol. Defaults to the code.",
+          "type": "string"
+        },
+        "decimalDigits": {
+          "description": "ISO 4217 minor-unit digits (the exponent). Required: there is no safe default. ISO currencies use 0-4; registered currencies may use up to 28.",
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 28
+        },
+        "minorUnitsPerMajor": {
+          "description": "Minor units per major unit. Defaults to 10^decimalDigits, and must be given explicitly above 18 digits. 0 for currencies with no minor unit (XXX, XTS); a registered currency divided into fifths uses 5. When non-zero it must divide 10^decimalDigits.",
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000000000000000000
+        },
+        "cashDecimalDigits": {
+          "description": "Digits used for physical cash. Defaults to decimalDigits.",
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 28
+        },
+        "cashRoundingStep": {
+          "description": "Cash rounding step in last-place units of cashDecimalDigits: 5 for CHF (0.05), 50 for DKK (0.50). 0 and 1 both mean no special cash rounding. Defaults to 1.",
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 255
+        },
+        "withdrawn": {
+          "description": "When ISO withdrew the currency, as YYYY-MM or YYYY-MM-DD. The currency stays usable for historical amounts and its generated member is marked [Obsolete].",
+          "type": "string",
+          "pattern": "^[0-9]{4}-(0[1-9]|1[0-2])(-(0[1-9]|[12][0-9]|3[01]))?$"
+        },
+        "replacedBy": {
+          "description": "The currency that replaced a withdrawn one. Only valid together with withdrawn.",
+          "type": "string",
+          "pattern": "^[A-Z]{3}$"
+        }
+      },
+      "dependentRequired": {
+        "replacedBy": ["withdrawn"]
+      },
+      "additionalProperties": false
+    }
+  }
+}

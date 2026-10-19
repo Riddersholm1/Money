@@ -26,6 +26,13 @@ internal sealed class JsonValue
 
     public static JsonValue From(double value) => new(value);
 
+    /// <summary>An integer literal, kept exact rather than widened to a double.</summary>
+    /// <remarks>
+    /// A double stops representing every integer at 2^53, so a minor-unit divisor written as
+    /// <c>999999999999999999</c> would otherwise arrive as <c>10^18</c> — a different currency.
+    /// </remarks>
+    public static JsonValue From(long value) => new(value);
+
     public static JsonValue From(bool value) => new(value);
 
     public static JsonValue From(Dictionary<string, JsonValue> value) => new(value);
@@ -40,13 +47,32 @@ internal sealed class JsonValue
     public JsonValue this[string key] =>
         _value is Dictionary<string, JsonValue> map && map.TryGetValue(key, out JsonValue? value) ? value : Null;
 
-    /// <summary>Reads a numeric value, falling back when the property is missing or not a number.</summary>
-    public long AsInt64(long fallback = 0) => _value switch
+    /// <summary>Reads an integer, refusing anything that is not exactly one.</summary>
+    /// <remarks>
+    /// Strict on purpose. The lenient version this replaced truncated <c>2.7</c> to <c>2</c> and turned
+    /// <c>"two"</c> into a silent default, so a typo in a currency file became a currency with the wrong
+    /// precision rather than a build error. An integer written as a quoted string is still accepted,
+    /// because that is unambiguous.
+    /// </remarks>
+    public bool TryGetInt64(out long value)
     {
-        double d => (long)d,
-        string s when long.TryParse(s, NumberStyles.Integer, CultureInfo.InvariantCulture, out long parsed) => parsed,
-        _ => fallback
-    };
+        switch (_value)
+        {
+            case long integer:
+                value = integer;
+                return true;
+            case double d when d == Math.Floor(d) && d is >= -9_007_199_254_740_992d and <= 9_007_199_254_740_992d:
+                // An integral double within 2^53 is exact; "2.0" and "2e1" are integers in JSON's eyes.
+                value = (long)d;
+                return true;
+            case string s when long.TryParse(s, NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out long parsed):
+                value = parsed;
+                return true;
+            default:
+                value = 0;
+                return false;
+        }
+    }
 
     public bool IsNull => _value is null;
 }

@@ -1,4 +1,4 @@
-<Project>
+﻿<Project>
 
   <!--
     Repository-wide defaults. Deliberately does NOT set TargetFramework, and this is not an oversight:
@@ -53,21 +53,17 @@
 
   <!-- Shared package identity. Individual packages override Description/PackageTags. -->
   <PropertyGroup>
-    <VersionPrefix>1.0.0</VersionPrefix>
     <!--
-      The first public version is a release candidate. Two adversarial audits each turned up real
-      defects, so a third pass — by actual consumers — will probably turn up more, and an rc lets that
-      happen before the API is a permanent semver commitment rather than after. Clear this to promote
-      to 1.0.0.
-
-      The release workflow overrides this with -p:Version from the git tag, so the tag remains the
-      single source of truth for what is published; this only governs local and CI pack output.
+      The version local and CI builds produce. A release takes its version from the git tag instead
+      (-p:Version in pipeline.yml), so the tag is the single source of truth for what is published; the
+      pipeline warns when the two disagree. Add a VersionSuffix (rc.1, beta.1) for a pre-release.
     -->
-    <VersionSuffix>rc.1</VersionSuffix>
-    <Authors>Riddersholm</Authors>
-    <Company>Riddersholm</Company>
+    <VersionPrefix>1.0.0</VersionPrefix>
+    <!-- Matches the identity on Riddersholm.Resultify and Riddersholm.EventBus. -->
+    <Authors>Jesper Bruhn Riddersholm</Authors>
+    <Company>Jesper Bruhn Riddersholm</Company>
     <Product>Riddersholm.Money</Product>
-    <Copyright>Copyright (c) Riddersholm</Copyright>
+    <Copyright>Copyright (c) 2026 Jesper Bruhn Riddersholm</Copyright>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageProjectUrl>https://github.com/Riddersholm1/Money</PackageProjectUrl>
     <RepositoryUrl>https://github.com/Riddersholm1/Money</RepositoryUrl>

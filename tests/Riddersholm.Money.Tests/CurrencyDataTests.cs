@@ -10,7 +10,15 @@ public sealed class CurrencyDataTests
 {
     [Fact]
     public void The_expected_number_of_currencies_is_generated() =>
-        Assert.Equal(166, Currency.Known.Length);
+        Assert.Equal(176, Currency.Known.Length);
+
+    [Fact]
+    public void The_expected_number_of_currencies_is_still_in_circulation()
+    {
+        // 166 active currencies, plus the ten ISO has withdrawn since 2017, kept for historical amounts.
+        Assert.Equal(166, Currency.Known.ToArray().Count(static c => !c.IsWithdrawn));
+        Assert.Equal(10, Currency.Known.ToArray().Count(static c => c.IsWithdrawn));
+    }
 
     [Fact]
     public void Alphabetic_codes_are_unique()
@@ -26,14 +34,30 @@ public sealed class CurrencyDataTests
     [Fact]
     public void Numeric_codes_are_unique_and_resolvable()
     {
+        // Unique among active currencies only: ISO hands a withdrawn currency's number to its successor
+        // (ANG and XCG are both 532), and the number then resolves to the active one.
         HashSet<short> numeric = [];
 
         foreach (Currency currency in Currency.Known)
         {
+            if (currency.IsWithdrawn)
+            {
+                continue;
+            }
+
             Assert.True(numeric.Add(currency.NumericCode), $"Duplicate numeric code on '{currency.Code}'.");
 
             Assert.True(Currency.TryFromNumericCode(currency.NumericCode, out Currency resolved));
             Assert.Equal(currency, resolved);
+        }
+
+        foreach (Currency withdrawn in Currency.Known)
+        {
+            if (withdrawn.IsWithdrawn && !numeric.Contains(withdrawn.NumericCode))
+            {
+                Assert.True(Currency.TryFromNumericCode(withdrawn.NumericCode, out Currency resolved));
+                Assert.Equal(withdrawn, resolved);
+            }
         }
     }
 
@@ -78,15 +102,21 @@ public sealed class CurrencyDataTests
     [Theory]
     [InlineData("MRU")]
     [InlineData("MGA")]
-    public void Fifth_minor_units_are_modelled_rather_than_flattened_to_hundredths(string code)
+    public void Mauritanian_and_Malagasy_amounts_follow_the_iso_exponent(string code)
     {
-        // ISO records two decimal digits, but the khoum and the iraimbilanja are one fifth of the
-        // major unit. Trusting the digit count alone would let 1.37 MRU look like a valid amount.
+        // Both are physically divided into fifths, but ISO 4217 records two decimal places and every
+        // bank, card scheme and ISO 20022 message counts them in hundredths. Treating 1.37 MRU as
+        // invalid would make Round() alter amounts that every counterparty considers exact.
         var currency = Currency.FromCode(code);
 
         Assert.Equal(2, currency.DecimalDigits);
-        Assert.Equal(5, currency.MinorUnitsPerMajor);
-        Assert.Equal(0.2m, currency.MinorUnit);
+        Assert.Equal(100, currency.MinorUnitsPerMajor);
+        Assert.Equal(0.01m, currency.MinorUnit);
+
+        Money valid = new(1234.56m, currency);
+        Assert.True(valid.IsCanonical);
+        Assert.Equal(valid, valid.Round());
+        Assert.Equal(123456, valid.ToMinorUnits());
     }
 
     [Theory]
