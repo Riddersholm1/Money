@@ -25,9 +25,9 @@
   </ItemGroup>
 
   <ItemGroup Label="Entity Framework Core">
-    <PackageVersion Include="Microsoft.EntityFrameworkCore" Version="10.0.10" />
-    <PackageVersion Include="Microsoft.EntityFrameworkCore.Relational" Version="10.0.10" />
-    <PackageVersion Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.10" />
+    <PackageVersion Include="Microsoft.EntityFrameworkCore" Version="10.0.13" />
+    <PackageVersion Include="Microsoft.EntityFrameworkCore.Relational" Version="10.0.13" />
+    <PackageVersion Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.13" />
     <!--
       EF Core's SQLite provider still resolves SQLitePCLRaw 2.1.11, which carries GHSA-2m69-gcr7-jv3q.
       Transitive pinning lifts it to a patched build. Test-only: no shipped package depends on SQLite.
