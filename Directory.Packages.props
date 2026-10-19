@@ -56,7 +56,7 @@
 
   <ItemGroup Label="Benchmarks">
     <PackageVersion Include="BenchmarkDotNet" Version="0.15.8" />
-    <PackageVersion Include="NodaMoney" Version="2.8.0" />
+    <PackageVersion Include="NodaMoney" Version="2.9.0" />
   </ItemGroup>
 
 </Project>
