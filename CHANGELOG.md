@@ -9,12 +9,11 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 Nothing yet.
 
-## [1.0.0-rc.1] — 2026-10-18
+## [1.0.0] — 2026-10-19
 
-The first release candidate, and the first version of this library to be published at all. The API is
-complete and the implementation is what 1.0.0 is intended to be; the `rc` marks that nobody outside the
-project has consumed it yet, and that the publishing pipeline has never run. Promote to 1.0.0 unchanged
-if nothing surfaces. Set this heading's date to the day the release is actually published.
+The first published version. From here on the public API is a semantic-versioning commitment: the
+`PublicAPI.Shipped.txt` baselines record exactly what 1.0.0 contains, and removing or changing any of it
+is a major version. If the release is published on a later day, update this heading's date.
 
 The sections below fold in four rounds of adversarial review. Several behavioural changes are
 deliberate: each replaces a quiet wrong answer with a loud refusal.
@@ -266,5 +265,5 @@ Every item below returned a plausible, wrong answer before its fix, and each has
 - Nullable `Money?` support, a single-column text mapping by convention, and value comparers that treat
   `100 DKK` and `100.00 DKK` as the same money rather than as a modification.
 
-[Unreleased]: https://github.com/Riddersholm1/Money/compare/v1.0.0-rc.1...HEAD
-[1.0.0-rc.1]: https://github.com/Riddersholm1/Money/releases/tag/v1.0.0-rc.1
+[Unreleased]: https://github.com/Riddersholm1/Money/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/Riddersholm1/Money/releases/tag/v1.0.0

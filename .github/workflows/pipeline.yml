@@ -60,7 +60,7 @@ jobs:
           elif ! printf '%s' "$VERSION" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$'; then
             # A release is being published, so a tag that is not a version must stop the run rather
             # than ship something under the wrong name.
-            echo "::error::Release tag '$TAG' is not a version. Expected v<major>.<minor>.<patch>[-prerelease], e.g. v1.0.0-rc.1."
+            echo "::error::Release tag '$TAG' is not a version. Expected v<major>.<minor>.<patch>[-prerelease], e.g. v1.0.0 or v1.1.0-rc.1."
             exit 1
           elif [ "$VERSION" != "$DECLARED" ]; then
             echo "::warning::Releasing $VERSION from the tag, but Directory.Build.props declares $DECLARED. Update VersionPrefix/VersionSuffix so local builds agree with what shipped."

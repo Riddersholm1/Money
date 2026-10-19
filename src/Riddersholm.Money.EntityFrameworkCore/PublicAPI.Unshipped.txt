@@ -1,8 +1,1 @@
 #nullable enable
-Riddersholm.Money.EntityFrameworkCore.MoneyDbContextOptionsBuilderExtensions
-static Riddersholm.Money.EntityFrameworkCore.MoneyDbContextOptionsBuilderExtensions.UseMoneyPrecisionGuard(this Microsoft.EntityFrameworkCore.DbContextOptionsBuilder! optionsBuilder) -> Microsoft.EntityFrameworkCore.DbContextOptionsBuilder!
-static Riddersholm.Money.EntityFrameworkCore.MoneyDbContextOptionsBuilderExtensions.UseMoneyPrecisionGuard<TContext>(this Microsoft.EntityFrameworkCore.DbContextOptionsBuilder<TContext!>! optionsBuilder) -> Microsoft.EntityFrameworkCore.DbContextOptionsBuilder<TContext!>!
-Riddersholm.Money.EntityFrameworkCore.MoneyPrecisionInterceptor
-Riddersholm.Money.EntityFrameworkCore.MoneyPrecisionInterceptor.MoneyPrecisionInterceptor() -> void
-override Riddersholm.Money.EntityFrameworkCore.MoneyPrecisionInterceptor.SavingChanges(Microsoft.EntityFrameworkCore.Diagnostics.DbContextEventData! eventData, Microsoft.EntityFrameworkCore.Diagnostics.InterceptionResult<int> result) -> Microsoft.EntityFrameworkCore.Diagnostics.InterceptionResult<int>
-override Riddersholm.Money.EntityFrameworkCore.MoneyPrecisionInterceptor.SavingChangesAsync(Microsoft.EntityFrameworkCore.Diagnostics.DbContextEventData! eventData, Microsoft.EntityFrameworkCore.Diagnostics.InterceptionResult<int> result, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.ValueTask<Microsoft.EntityFrameworkCore.Diagnostics.InterceptionResult<int>>
