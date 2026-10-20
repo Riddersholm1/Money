@@ -7,7 +7,11 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
-Nothing yet.
+### Build
+
+- Packages are now checked against the published 1.0.0 packages on every pack
+  (`PackageValidationBaselineVersion`), so a breaking change to the public API fails CI instead of
+  shipping. No change to the packages themselves.
 
 ## [1.0.0] — 2026-10-19
 

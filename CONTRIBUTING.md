@@ -73,6 +73,8 @@ Riddersholm.EventBus:
 3. **Publish a GitHub Release for that tag.** This is what triggers the publish job in
    [`pipeline.yml`](.github/workflows/pipeline.yml); the tag alone does nothing. Tick *Set as a
    pre-release* for an `-rc`/`-beta` version.
+4. Once a stable release is on nuget.org, raise `PackageValidationBaselineVersion` in
+   [`src/Directory.Build.props`](src/Directory.Build.props) to it (see below).
 
 The release run repeats the whole gate — build, tests on Linux, Windows and macOS, the NativeAOT
 publish-and-execute, the dependency audit — before anything is pushed, so a release cannot ship
@@ -107,9 +109,18 @@ error.
 Note the activation rule: a new policy is only **temporarily active for seven days** and becomes
 permanent after the first successful publish. Create it shortly before releasing, not months ahead.
 
-After the first stable release (1.0.0), set `PackageValidationBaselineVersion` to it in
-[`src/Directory.Build.props`](src/Directory.Build.props), so that every later build is checked for
-breaking changes against what is actually on nuget.org.
+### Breaking-change check
+
+Every `dotnet pack` downloads the release named by `PackageValidationBaselineVersion` in
+[`src/Directory.Build.props`](src/Directory.Build.props) (today `1.0.0`) and compares the new package
+with it, so removing or changing a published member fails CI with `CP0002` and similar errors, naming
+the member. This checks the compiled packages against what is actually on nuget.org; the
+`PublicAPI.Shipped.txt` files check the source against what you declared.
+
+A major release is the one place to accept a break. Pack once with
+`-p:ApiCompatGenerateSuppressionFile=true`, which writes the accepted differences to a
+`CompatibilitySuppressions.xml` file next to the project, and commit that file with the change. After
+the major release ships, raise the baseline to it and delete the file.
 
 ### Optional repository settings
 
