@@ -41,9 +41,10 @@ who made it is.
 ## Enforcement
 
 Instances of abusive, harassing, or otherwise unacceptable behaviour may be reported to the project
-maintainers through
-[GitHub's private reporting](https://github.com/Riddersholm1/Money/security/advisories/new) or by
-opening a confidential issue. All complaints will be reviewed and investigated promptly and fairly.
+maintainers privately through
+[GitHub's private reporting form](https://github.com/Riddersholm1/Money/security/advisories/new).
+It is meant for security issues, but it is the one channel that reaches the maintainers without being
+public. All complaints will be reviewed and investigated promptly and fairly.
 
 Maintainers are obligated to respect the privacy and security of the reporter of any incident.
 
