@@ -1,0 +1,36 @@
+﻿<Project>
+
+  <Import Project="$([MSBuild]::GetPathOfFileAbove('Directory.Build.props', '$(MSBuildThisFileDirectory)../'))" />
+
+  <PropertyGroup>
+    <IsPackable>true</IsPackable>
+
+    <!--
+      These must be set in .props, not .targets: the SDK computes DocumentationFile from
+      GenerateDocumentationFile while evaluating the project body, so setting it afterwards silently
+      produces a package with no XML documentation at all.
+    -->
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <EnablePackageValidation>true</EnablePackageValidation>
+    <!--
+      Every pack is compared with this published release, so a breaking change fails the build rather
+      than reaching consumers. Raise it after each stable release. A major release accepts its breaks in
+      a CompatibilitySuppressions.xml file; see "Breaking-change check" in CONTRIBUTING.md.
+    -->
+    <PackageValidationBaselineVersion>1.0.0</PackageValidationBaselineVersion>
+    <!--
+      Shipping libraries must survive trimming and NativeAOT. These analyzers turn "probably fine"
+      into a build error; tests/Riddersholm.Money.AotTests proves the end result actually publishes.
+    -->
+    <IsAotCompatible>true</IsAotCompatible>
+    <IsTrimmable>true</IsTrimmable>
+    <EnableTrimAnalyzer>true</EnableTrimAnalyzer>
+    <EnableAotAnalyzer>true</EnableAotAnalyzer>
+    <EnableSingleFileAnalyzer>true</EnableSingleFileAnalyzer>
+  </PropertyGroup>
+
+</Project>

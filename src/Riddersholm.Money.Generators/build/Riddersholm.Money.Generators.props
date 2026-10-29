@@ -1,0 +1,13 @@
+<Project>
+
+  <!--
+    Makes the generator's inputs visible to the compiler. Without these the generator cannot see
+    either the opt-in metadata on AdditionalFiles or the mode switch.
+  -->
+  <ItemGroup>
+    <CompilerVisibleItemMetadata Include="AdditionalFiles" MetadataName="RiddersholmCurrencies" />
+    <CompilerVisibleProperty Include="RiddersholmMoneyEmitCore" />
+    <CompilerVisibleProperty Include="RootNamespace" />
+  </ItemGroup>
+
+</Project>

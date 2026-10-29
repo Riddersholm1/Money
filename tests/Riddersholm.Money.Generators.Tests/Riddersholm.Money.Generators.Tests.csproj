@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>Riddersholm.Money.Generators.Tests</RootNamespace>
+    <AssemblyName>Riddersholm.Money.Generators.Tests</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="xunit.v3" />
+    <!-- The generator is driven directly, so the test project needs Roslyn itself. -->
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!--
+      Referenced as a library rather than as an analyzer: these tests instantiate CurrencyGenerator and
+      run it through CSharpGeneratorDriver so they can assert on diagnostics and generated text.
+    -->
+    <ProjectReference Include="..\..\src\Riddersholm.Money.Generators\Riddersholm.Money.Generators.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The real ISO data, so the snapshot test covers what actually ships. -->
+    <None Include="$(RepositoryRoot)eng\iso-4217.json" CopyToOutputDirectory="PreserveNewest" Link="iso-4217.json" />
+  </ItemGroup>
+
+</Project>

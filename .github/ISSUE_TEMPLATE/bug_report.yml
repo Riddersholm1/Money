@@ -1,0 +1,56 @@
+name: Bug report
+description: Something behaves incorrectly
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        If this is a security issue — a way to lose money, exhaust memory, or crash the parser from
+        untrusted input — please report it privately instead. See SECURITY.md.
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: Include the actual values, not a description of them. `100.005 DKK` is useful; "a price" is not.
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected
+    validations:
+      required: true
+
+  - type: textarea
+    id: repro
+    attributes:
+      label: Smallest code that reproduces it
+      render: csharp
+      placeholder: |
+        var price = new Money(100.005m, Currency.DKK);
+        var parts = price.Allocate(3);
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: Package version
+      placeholder: "1.0.0"
+    validations:
+      required: true
+
+  - type: input
+    id: culture
+    attributes:
+      label: Culture, if formatting or parsing is involved
+      description: The exact culture name — behaviour legitimately differs between them.
+      placeholder: "da-DK"
+
+  - type: input
+    id: runtime
+    attributes:
+      label: Runtime and OS
+      placeholder: ".NET 10.0.1 on Windows 11 / linux-x64 NativeAOT"

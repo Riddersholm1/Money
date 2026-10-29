@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>Riddersholm.Money.EntityFrameworkCore.Tests</RootNamespace>
+    <AssemblyName>Riddersholm.Money.EntityFrameworkCore.Tests</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="xunit.v3" />
+    <!--
+      A real SQLite database, not the in-memory provider. InMemory does not go through the relational
+      stack at all, so it would happily "pass" a mapping that no database could store.
+    -->
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Riddersholm.Money.EntityFrameworkCore\Riddersholm.Money.EntityFrameworkCore.csproj" />
+  </ItemGroup>
+
+</Project>

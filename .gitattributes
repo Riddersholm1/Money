@@ -1,0 +1,42 @@
+###############################################################################
+# Line endings
+#
+# LF in the repository and LF in the working tree, on every platform. `eol=lf`
+# is what makes the second half true: `text=auto` alone normalises on commit but
+# checks out platform-native, so a Windows machine and a Linux CI runner end up
+# with different bytes on disk for the same commit. That disagrees with
+# .editorconfig, which also says LF, and the pair of them disagreeing is how a
+# repository acquires whole-file diffs that contain no changes.
+#
+# Windows tooling — Visual Studio, MSBuild, PowerShell — reads LF without
+# complaint. The two files below that genuinely need CRLF say so explicitly.
+###############################################################################
+* text=auto eol=lf
+
+*.cmd text eol=crlf
+*.bat text eol=crlf
+
+###############################################################################
+# Diff behaviour
+###############################################################################
+*.cs   text diff=csharp
+*.md   text diff=markdown
+
+# The generated currency table is reviewed data, not build output: keep it in
+# diffs and in the language statistics rather than collapsed as generated.
+eng/iso-4217.json linguist-generated=false
+
+###############################################################################
+# Binary files
+#
+# Never guessed. assets/icon.png is the NuGet package icon, and a mis-detected
+# binary that gets line-ending normalisation applied is a corrupt file that
+# nothing in the build would notice — the package would simply ship broken.
+###############################################################################
+*.png   binary
+*.jpg   binary
+*.gif   binary
+*.ico   binary
+*.snk   binary
+*.nupkg binary
+*.snupkg binary

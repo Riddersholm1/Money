@@ -1,0 +1,14 @@
+{
+  "$schema": "https://raw.githubusercontent.com/Riddersholm1/Money/main/eng/iso-4217.schema.json",
+  "$comment": "A consumer-defined currency that has since been withdrawn: proves the generator marks it [Obsolete] and registers it as withdrawn.",
+  "currencies": [
+    {
+      "code": "QLG",
+      "name": "Legacy Loyalty Points",
+      "symbol": "LP",
+      "decimalDigits": 0,
+      "withdrawn": "2024-06",
+      "replacedBy": "XBT"
+    }
+  ]
+}

@@ -1,0 +1,42 @@
+name: Feature request
+description: Suggest something the library should do
+labels: [enhancement]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Please read [docs/design-decisions.md](../blob/main/docs/design-decisions.md) first. Several
+        obvious-looking features are absent on purpose, and each entry records the argument *against*
+        the decision as well as for it. Disagreeing is welcome — arguing the recorded reasoning is far
+        more useful than proposing around it.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: The problem
+      description: What are you unable to do today? Describe the situation, not the solution you have in mind.
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: What you would like
+      render: csharp
+      description: If it is an API, show the call site you wish you could write.
+    validations:
+      required: true
+
+  - type: textarea
+    id: workaround
+    attributes:
+      label: What you do instead today
+
+  - type: checkboxes
+    id: principles
+    attributes:
+      label: Does this hold?
+      options:
+        - label: It does not require money to be rounded implicitly
+        - label: It does not require a currency to be inferred from an ambiguous symbol
+        - label: It does not add a dependency to the core package

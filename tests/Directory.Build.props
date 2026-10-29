@@ -1,0 +1,30 @@
+﻿<Project>
+
+  <Import Project="$([MSBuild]::GetPathOfFileAbove('Directory.Build.props', '$(MSBuildThisFileDirectory)../'))" />
+
+  <PropertyGroup>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+    <TargetFramework>net10.0</TargetFramework>
+    <!--
+      xUnit v3 runs on Microsoft.Testing.Platform: each test project is its own executable, and
+      global.json opts `dotnet test` into the MTP experience (the VSTest bridge refuses these projects
+      on the .NET 10 SDK). The runner property decides how the built executable behaves when started
+      directly, and is what makes the report and coverage options below available.
+    -->
+    <OutputType>Exe</OutputType>
+    <UseMicrosoftTestingPlatformRunner>true</UseMicrosoftTestingPlatformRunner>
+
+    <!-- Tests assert on exact values and exercise APIs in deliberately awkward ways. -->
+    <NoWarn>$(NoWarn);CA1707;CA2007;CA1861;CA1305</NoWarn>
+  </PropertyGroup>
+
+  <!--
+    Coverage is a platform extension: the coverage option only exists when the test application
+    registers this package. The AOT smoke test is an ordinary console program, not a test application.
+  -->
+  <ItemGroup Condition="'$(IsTestProject)' == 'true'">
+    <PackageReference Include="Microsoft.Testing.Extensions.CodeCoverage" />
+  </ItemGroup>
+
+</Project>

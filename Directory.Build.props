@@ -1,0 +1,83 @@
+﻿<Project>
+
+  <!--
+    Repository-wide defaults. Deliberately does NOT set TargetFramework, and this is not an oversight:
+    the shipped packages target net10.0 while Riddersholm.Money.Generators must target netstandard2.0,
+    because that is what the Roslyn compiler can load an analyzer from.
+
+    A repo-wide default would be silently wrong for exactly one project — and wrong in the worst way,
+    since the generator would still compile and only fail when the compiler tried to load it. Every
+    project either states its own framework or inherits one from the src/tests/bench/samples/tools
+    props beside it, so nothing here is missing.
+  -->
+
+  <PropertyGroup>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <InvariantGlobalization>false</InvariantGlobalization>
+  </PropertyGroup>
+
+  <!-- Analysis: the build is the first line of defence, so warnings are errors everywhere. -->
+  <PropertyGroup>
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <AnalysisLevel>latest-recommended</AnalysisLevel>
+    <EnableNETAnalyzers>true</EnableNETAnalyzers>
+    <NoWarn>$(NoWarn);CA1303</NoWarn>
+  </PropertyGroup>
+
+  <!-- Deterministic, reproducible builds. -->
+  <PropertyGroup>
+    <Deterministic>true</Deterministic>
+    <ContinuousIntegrationBuild Condition="'$(CI)' == 'true'">true</ContinuousIntegrationBuild>
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+    <CentralPackageTransitivePinningEnabled>true</CentralPackageTransitivePinningEnabled>
+    <NuGetAudit>true</NuGetAudit>
+    <NuGetAuditMode>all</NuGetAuditMode>
+    <!--
+      Audit findings warn locally and fail in CI, rather than failing everywhere.
+
+      NU1901-NU1904 report vulnerable packages and NU1900 reports that a feed could not be reached to
+      check. Under the blanket TreatWarningsAsErrors above, both classes break the build for reasons
+      outside this repository's control: a newly published advisory against a transitive dependency
+      turns every developer's F5 red with no change to the code, and NU1900 does the same to anyone
+      whose internal feed is behind a VPN that happens to be down.
+
+      Neither is a reason to stop working, but both are certainly a reason to stop shipping. The
+      "Audit dependencies" job in .github/workflows/ci.yml re-runs restore with these promoted back
+      to errors, so the signal is not lost — it just no longer lands on the inner loop.
+    -->
+    <WarningsNotAsErrors>$(WarningsNotAsErrors);NU1900;NU1901;NU1902;NU1903;NU1904</WarningsNotAsErrors>
+  </PropertyGroup>
+
+  <!-- Shared package identity. Individual packages override Description/PackageTags. -->
+  <PropertyGroup>
+    <!--
+      The version local and CI builds produce. A release takes its version from the git tag instead
+      (-p:Version in pipeline.yml), so the tag is the single source of truth for what is published; the
+      pipeline warns when the two disagree. Add a VersionSuffix (rc.1, beta.1) for a pre-release.
+    -->
+    <VersionPrefix>1.0.0</VersionPrefix>
+    <!-- Matches the identity on Riddersholm.Resultify and Riddersholm.EventBus. -->
+    <Authors>Jesper Bruhn Riddersholm</Authors>
+    <Company>Jesper Bruhn Riddersholm</Company>
+    <Product>Riddersholm.Money</Product>
+    <Copyright>Copyright (c) 2026 Jesper Bruhn Riddersholm</Copyright>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/Riddersholm1/Money</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/Riddersholm1/Money</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageTags>money;currency;iso4217;value-object;ddd;decimal;finance</PackageTags>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageIcon>icon.png</PackageIcon>
+    <PackageReleaseNotes>See the CHANGELOG for this release: https://github.com/Riddersholm1/Money/blob/main/CHANGELOG.md</PackageReleaseNotes>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <RepositoryRoot>$(MSBuildThisFileDirectory)</RepositoryRoot>
+    <ArtifactsPath>$(RepositoryRoot)artifacts</ArtifactsPath>
+  </PropertyGroup>
+
+</Project>

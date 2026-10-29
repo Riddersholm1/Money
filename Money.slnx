@@ -1,0 +1,45 @@
+<Solution>
+  <Folder Name="/.SolutionItems/">
+    <File Path=".editorconfig" />
+    <File Path=".github/dependabot.yml" />
+    <File Path=".github/workflows/currency-data.yml" />
+    <File Path=".github/workflows/pipeline.yml" />
+    <File Path="eng/iso-4217.json" />
+    <File Path="eng/iso-4217.schema.json" />
+    <File Path=".gitattributes" />
+    <File Path=".gitignore" />
+    <File Path="CHANGELOG.md" />
+    <File Path="CODE_OF_CONDUCT.md" />
+    <File Path="CONTRIBUTING.md" />
+    <File Path="Directory.Build.props" />
+    <File Path="Directory.Build.targets" />
+    <File Path="Directory.Packages.props" />
+    <File Path="global.json" />
+    <File Path="LICENSE" />
+    <File Path="NuGet.config" />
+    <File Path="README.md" />
+    <File Path="SECURITY.md" />
+  </Folder>
+  <Folder Name="/bench/">
+    <Project Path="bench/Riddersholm.Money.Benchmarks/Riddersholm.Money.Benchmarks.csproj" />
+  </Folder>
+  <Folder Name="/samples/">
+    <Project Path="samples/Riddersholm.Money.Sample.Api/Riddersholm.Money.Sample.Api.csproj" />
+    <Project Path="samples/Riddersholm.Money.Sample.Console/Riddersholm.Money.Sample.Console.csproj" />
+  </Folder>
+  <Folder Name="/src/">
+    <Project Path="src/Riddersholm.Money.EntityFrameworkCore/Riddersholm.Money.EntityFrameworkCore.csproj" />
+    <Project Path="src/Riddersholm.Money.Generators/Riddersholm.Money.Generators.csproj" />
+    <Project Path="src/Riddersholm.Money/Riddersholm.Money.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Riddersholm.Money.AotTests/Riddersholm.Money.AotTests.csproj" />
+    <Project Path="tests/Riddersholm.Money.EntityFrameworkCore.Tests/Riddersholm.Money.EntityFrameworkCore.Tests.csproj" />
+    <Project Path="tests/Riddersholm.Money.Extensibility.Tests/Riddersholm.Money.Extensibility.Tests.csproj" />
+    <Project Path="tests/Riddersholm.Money.Generators.Tests/Riddersholm.Money.Generators.Tests.csproj" />
+    <Project Path="tests/Riddersholm.Money.Tests/Riddersholm.Money.Tests.csproj" />
+  </Folder>
+  <Folder Name="/tools/">
+    <Project Path="tools/Riddersholm.Money.DataSync/Riddersholm.Money.DataSync.csproj" />
+  </Folder>
+</Solution>

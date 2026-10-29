@@ -1,0 +1,30 @@
+{
+  "$comment": "Sample consumer-defined currencies. Proves the generator's extension-member path end to end, including precisions ISO 4217 never needs.",
+  "currencies": [
+    {
+      "code": "XBT",
+      "numericCode": 0,
+      "name": "Bitcoin",
+      "symbol": "₿",
+      "decimalDigits": 8,
+      "minorUnitsPerMajor": 100000000,
+      "cashDecimalDigits": 8,
+      "cashRoundingStep": 1
+    },
+    {
+      "code": "ETH",
+      "numericCode": 0,
+      "name": "Ether",
+      "symbol": "Ξ",
+      "decimalDigits": 18
+    },
+    {
+      "code": "GLD",
+      "numericCode": 0,
+      "name": "Guild Gold",
+      "symbol": "G",
+      "decimalDigits": 0,
+      "minorUnitsPerMajor": 1
+    }
+  ]
+}

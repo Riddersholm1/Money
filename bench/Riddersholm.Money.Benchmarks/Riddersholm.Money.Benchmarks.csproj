@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>Riddersholm.Money.Benchmarks</RootNamespace>
+    <AssemblyName>Riddersholm.Money.Benchmarks</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="BenchmarkDotNet" />
+    <!-- NodaMoney ships lib/net10.0, so the comparison runs natively with no shims. -->
+    <PackageReference Include="NodaMoney" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Riddersholm.Money\Riddersholm.Money.csproj" />
+  </ItemGroup>
+
+</Project>

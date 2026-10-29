@@ -1,0 +1,4 @@
+#nullable enable
+Riddersholm.Money.Generators.CurrencyGenerator
+Riddersholm.Money.Generators.CurrencyGenerator.CurrencyGenerator() -> void
+Riddersholm.Money.Generators.CurrencyGenerator.Initialize(Microsoft.CodeAnalysis.IncrementalGeneratorInitializationContext context) -> void
