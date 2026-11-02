@@ -108,6 +108,7 @@ units:
 | `CHF` | 2 digits | step 5 | cash rounds to `0.05` |
 | `DKK` | 2 digits | step 50 | cash rounds to `0.50` |
 | `HUF` | 2 digits | 0 digits, step 5 | cash rounds to `5` forint |
+| `MRU` | 2 digits | step 20 | cash rounds to `0.20`, one khoum |
 | `NOK`, `SEK`, `CZK` | 2 digits | 0 digits | cash rounds to whole units |
 
 `Money.Round()` uses the accounting precision; `Money.RoundToCash()` uses the cash precision. Ledgers

@@ -110,6 +110,8 @@ public sealed class MoneyRoundingTests
     [InlineData("CHF", 12.32, 12.30)]
     [InlineData("DKK", 12.30, 12.50)]  // cash rounds to 0.50
     [InlineData("DKK", 12.20, 12.00)]
+    [InlineData("MRU", 1.37, 1.40)]    // cash rounds to 0.20, one khoum
+    [InlineData("MRU", 1.29, 1.20)]
     [InlineData("NOK", 12.40, 12.00)]  // cash rounds to whole kroner
     [InlineData("USD", 12.34, 12.34)]  // no special cash rounding
     public void Cash_rounding_uses_the_smallest_payable_amount(string code, double raw, double expected)
