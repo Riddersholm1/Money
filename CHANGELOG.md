@@ -7,6 +7,8 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [1.1.0] — 2026-11-02
+
 A minor release: cash rounding changed for one currency, which changes `RoundToCash()` results (see
 [docs/maintaining-currency-data.md](docs/maintaining-currency-data.md)). No public API changes.
 
@@ -286,5 +288,6 @@ Every item below returned a plausible, wrong answer before its fix, and each has
 - Nullable `Money?` support, a single-column text mapping by convention, and value comparers that treat
   `100 DKK` and `100.00 DKK` as the same money rather than as a modification.
 
-[Unreleased]: https://github.com/Riddersholm1/Money/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/Riddersholm1/Money/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/Riddersholm1/Money/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/Riddersholm1/Money/releases/tag/v1.0.0
