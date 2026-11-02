@@ -136,6 +136,7 @@ public sealed class CurrencyDataTests
     [InlineData("CHF", 2, 5)]    // 0.05 franc
     [InlineData("DKK", 2, 50)]   // 0.50 krone
     [InlineData("HUF", 0, 5)]    // 5 forint
+    [InlineData("MRU", 2, 20)]   // 0.20 ouguiya, one khoum
     [InlineData("NOK", 0, 1)]    // whole kroner
     [InlineData("USD", 2, 1)]    // no special cash rounding
     public void Cash_rounding_is_tracked_separately_from_accounting_precision(
@@ -145,6 +146,16 @@ public sealed class CurrencyDataTests
 
         Assert.Equal(cashDigits, currency.CashDecimalDigits);
         Assert.Equal(cashStep, currency.CashRoundingStep);
+    }
+
+    [Theory]
+    [InlineData("CHF", "Fr.")]  // CLDR's narrow symbol, preferred over the wide "CHF"
+    [InlineData("DKK", "kr")]
+    [InlineData("USD", "$")]
+    [InlineData("AED", "AED")]  // no distinct symbol: the code itself
+    public void Symbols_are_the_cldr_narrow_form(string code, string symbol)
+    {
+        Assert.Equal(symbol, Currency.FromCode(code).Symbol);
     }
 
     [Theory]

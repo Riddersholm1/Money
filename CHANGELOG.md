@@ -7,6 +7,23 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+A minor release: cash rounding changed for one currency, which changes `RoundToCash()` results (see
+[docs/maintaining-currency-data.md](docs/maintaining-currency-data.md)). No public API changes.
+
+### Currency data
+
+ISO 4217 data refreshed against the register and CLDR on 2026-11-02. Both changes come from CLDR; the
+ISO 4217 register itself has not changed.
+
+- **MRU (Mauritanian ouguiya) cash rounds to `0.20`.** CLDR now records a cash step of 20 hundredths,
+  one khoum, the smallest coin in circulation. `new Money(1.37m, Currency.MRU).RoundToCash()` now
+  returns `1.40 MRU` (it was `1.37 MRU`). Accounting precision is unchanged: `Round()`, `IsCanonical`,
+  `Allocate` and minor-unit conversion still follow ISO's two decimals.
+- **CHF (Swiss franc) symbol is `Fr.`** CLDR added a narrow symbol for the franc, and
+  `CurrencyInfo.Symbol` is the narrow form whenever one exists. `Currency.CHF.Symbol` now returns
+  `Fr.` (it was `CHF`), and so does `ToString("C")` under a culture whose region does not use the
+  franc. Swiss cultures keep their own `NumberFormatInfo.CurrencySymbol`.
+
 ### Build
 
 - Packages are now checked against the published 1.0.0 packages on every pack

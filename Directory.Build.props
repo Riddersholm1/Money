@@ -58,7 +58,7 @@
       (-p:Version in pipeline.yml), so the tag is the single source of truth for what is published; the
       pipeline warns when the two disagree. Add a VersionSuffix (rc.1, beta.1) for a pre-release.
     -->
-    <VersionPrefix>1.0.0</VersionPrefix>
+    <VersionPrefix>1.1.0</VersionPrefix>
     <!-- Matches the identity on Riddersholm.Resultify and Riddersholm.EventBus. -->
     <Authors>Jesper Bruhn Riddersholm</Authors>
     <Company>Jesper Bruhn Riddersholm</Company>
