@@ -112,7 +112,7 @@ permanent after the first successful publish. Create it shortly before releasing
 ### Breaking-change check
 
 Every `dotnet pack` downloads the release named by `PackageValidationBaselineVersion` in
-[`src/Directory.Build.props`](src/Directory.Build.props) (today `1.0.0`) and compares the new package
+[`src/Directory.Build.props`](src/Directory.Build.props) (today `1.1.0`) and compares the new package
 with it, so removing or changing a published member fails CI with `CP0002` and similar errors, naming
 the member. This checks the compiled packages against what is actually on nuget.org; the
 `PublicAPI.Shipped.txt` files check the source against what you declared.
